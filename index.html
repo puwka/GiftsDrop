@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Drop | Кейсы</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Шапка -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Gift Drop</h1>
+                <div class="user-balance">
+                    <span class="balance-amount">1000</span>
+                    <span class="balance-icon">🪙</span>
+                    <button class="deposit-btn" onclick="openDepositModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="app-main">
+            <!-- Вкладка "Кейсы" -->
+            <section id="cases" class="tab-content active">
+                <h2 class="section-title">КЕЙСЫ</h2>
+                
+                <div class="cases-grid">
+                    <div class="case-card" onclick="openCase('mix')">
+                        <div class="case-image" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <h3>Микс Кейс</h3>
+                        <p class="case-price">Бесплатно</p>
+                    </div>
+                    
+                    <div class="case-card" onclick="openCase('premium')">
+                        <div class="case-image" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <h3>Премиум Кейс</h3>
+                        <p class="case-price">500 🪙</p>
+                    </div>
+                    
+                    <div class="case-card" onclick="openCase('legendary')">
+                        <div class="case-image" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3>Легендарный Кейс</h3>
+                        <p class="case-price">1000 🪙</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Вкладка "Бонусы" -->
+            <section id="bonuses" class="tab-content">
+                <h2 class="section-title">БОНУСЫ</h2>
+                
+                <div class="roulette-container">
+                    <div class="roulette-track" id="rouletteTrack"></div>
+                    <div class="roulette-pointer">
+                        <div class="pointer-arrow"></div>
+                        <div class="pointer-line"></div>
+                    </div>
+                </div>
+                
+                <button class="spin-button" onclick="spinRoulette()">
+                    <i class="fas fa-sync-alt"></i> КРУТИТЬ (100 🪙)
+                </button>
+                
+                <div class="probability-section">
+                    <h3><i class="fas fa-chart-pie"></i> Шансы выпадения:</h3>
+                    <div class="probability-cards">
+                        <div class="probability-card">
+                            <div class="probability-icon deposit">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <span class="probability-value">45%</span>
+                            <span class="probability-label">Бонус к депозиту</span>
+                        </div>
+                        <div class="probability-card">
+                            <div class="probability-icon discount">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <span class="probability-value">35%</span>
+                            <span class="probability-label">Скидка</span>
+                        </div>
+                        <div class="probability-card">
+                            <div class="probability-icon free">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            <span class="probability-value">20%</span>
+                            <span class="probability-label">Подарки</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="giveaways-section">
+                    <h3><i class="fas fa-ticket-alt"></i> РОЗЫГРЫШИ</h3>
+                    
+                    <div class="giveaway-card" data-min-deposit="500">
+                        <div class="giveaway-image" style="background: linear-gradient(135deg, #ff7676 0%, #f54ea2 100%);">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <div class="giveaway-info">
+                            <h4>Премиум набор</h4>
+                            <p>При пополнении от 500 🪙</p>
+                            <div class="giveaway-progress">
+                                <div class="progress-bar" style="width: 65%"></div>
+                                <span>65% заполнено</span>
+                            </div>
+                            <button class="giveaway-button" onclick="joinGiveaway(500)">
+                                Участвовать
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="giveaway-card" data-min-deposit="1000">
+                        <div class="giveaway-image" style="background: linear-gradient(135deg, #17ead9 0%, #6078ea 100%);">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="giveaway-info">
+                            <h4>Легендарный кейс</h4>
+                            <p>При пополнении от 1000 🪙</p>
+                            <div class="giveaway-progress">
+                                <div class="progress-bar" style="width: 30%"></div>
+                                <span>30% заполнено</span>
+                            </div>
+                            <button class="giveaway-button" onclick="joinGiveaway(1000)">
+                                Участвовать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Вкладка "Профиль" -->
+            <section id="profile" class="tab-content">
+                <h2 class="section-title">ПРОФИЛЬ</h2>
+    
+                <div class="profile-card">
+                    <div class="avatar" id="userAvatar">
+                        <i class="fas fa-user" id="avatarPlaceholder"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="userName">Загрузка...</h3>
+                        <p>Уровень: <span class="level">5</span></p>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <div class="stat-item">
+                        <i class="fas fa-coins"></i>
+                        <span>Баланс: <strong class="balance-amount">1000</strong> 🪙</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-gift"></i>
+                        <span>Открыто кейсов: <strong id="openedCases">12</strong></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-trophy"></i>
+                        <span>Лучший приз: <strong id="bestPrize">Легендарный</strong></span>
+                    </div>
+                </div>
+                
+                <div class="theme-switch-container">
+                    <button class="theme-switch-btn" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                        <span>Темная тема</span>
+                        <div class="theme-switch">
+                            <div class="theme-switch-handle"></div>
+                        </div>
+                    </button>
+                </div>
+                
+                <div class="active-bonuses">
+                    <h3><i class="fas fa-star"></i> ВАШИ БОНУСЫ</h3>
+                    <div id="activeBonusesList" class="bonuses-list">
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <p>Нет активных бонусов</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Нижнее меню -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" onclick="openTab('cases')">
+                <i class="fas fa-gift"></i>
+                <span>Кейсы</span>
+            </button>
+            <button class="nav-btn" onclick="openTab('bonuses')">
+                <i class="fas fa-sync-alt"></i>
+                <span>Бонусы</span>
+            </button>
+            <button class="nav-btn" onclick="openTab('profile')">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Модальные окна -->
+    <div id="depositModal" class="modal hidden">
+        <div class="modal-content">
+            <h3><i class="fas fa-coins"></i> ПОПОЛНЕНИЕ БАЛАНСА</h3>
+            
+            <div class="deposit-tabs">
+                <button class="deposit-tab active" onclick="switchDepositTab('ton')">TON</button>
+                <button class="deposit-tab" onclick="switchDepositTab('stars')">Звезды</button>
+            </div>
+            
+            <div class="deposit-tab-content ton active">
+                <div class="deposit-info">
+                    <p>1 TON = 200 GiftCoin</p>
+                    <p>Минимальное пополнение: 0.5 TON</p>
+                </div>
+                <div class="input-group">
+                    <label>Сумма в TON:</label>
+                    <input type="number" id="tonAmount" min="0.5" step="0.1" placeholder="0.5">
+                </div>
+                <div class="input-group">
+                    <label>Получите GiftCoin:</label>
+                    <div class="giftcoin-amount" id="tonGiftcoin">100</div>
+                </div>
+                <div class="input-group">
+                    <label>Промокод (если есть):</label>
+                    <input type="text" id="tonPromoCode" placeholder="PROMO2023">
+                </div>
+                <button class="modal-button" onclick="processTonDeposit()">
+                    <i class="fab fa-telegram"></i> Пополнить через TON
+                </button>
+            </div>
+            
+            <div class="deposit-tab-content stars">
+                <div class="deposit-info">
+                    <p>1 Звезда = 1 GiftCoin</p>
+                    <p>Минимальное пополнение: 25 звезд</p>
+                </div>
+                <div class="input-group">
+                    <label>Количество звезд:</label>
+                    <input type="number" id="starsAmount" min="25" step="1" placeholder="25">
+                </div>
+                <div class="input-group">
+                    <label>Получите GiftCoin:</label>
+                    <div class="giftcoin-amount" id="starsGiftcoin">25</div>
+                </div>
+                <div class="input-group">
+                    <label>Промокод (если есть):</label>
+                    <input type="text" id="starsPromoCode" placeholder="PROMO2023">
+                </div>
+                <button class="modal-button" onclick="processStarsDeposit()">
+                    <i class="fas fa-star"></i> Пополнить звездами
+                </button>
+            </div>
+            
+            <button class="modal-button secondary" onclick="closeDepositModal()">
+                ОТМЕНА
+            </button>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

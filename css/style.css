@@ -1,0 +1,1035 @@
+:root {
+    /* Цвета */
+    --primary: #8a2be2;
+    --primary-light: #9b4dff;
+    --secondary: #6c5ce7;
+    --dark: #2d3436;
+    --light: #f8f9fa;
+    --accent: #00cec9;
+    --danger: #ff4757;
+    --warning: #ffa502;
+    --success: #2ed573;
+    --gray: #dfe6e9;
+    
+    /* Переменные светлой темы */
+    --bg-color: #ffffff;
+    --text-color: #2d3436;
+    --card-bg: #ffffff;
+    --header-bg: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --nav-bg: #ffffff;
+    --nav-text: #95a5a6;
+    --nav-active: var(--primary);
+    --modal-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Темная тема */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #f8f9fa;
+    --card-bg: #1e1e1e;
+    --header-bg: linear-gradient(135deg, #5a189a 0%, #3a0ca3 100%);
+    --nav-bg: #1e1e1e;
+    --nav-text: #b0b0b0;
+    --nav-active: #9b4dff;
+    --modal-bg: #1e1e1e;
+    --border-color: #333333;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Базовые стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.app-container {
+    max-width: 500px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-color);
+    box-shadow: 0 0 30px var(--shadow-color);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Шапка */
+.app-header {
+    background: var(--header-bg);
+    color: white;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.app-header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(138,43,226,0.2) 0%, transparent 100%);
+    z-index: -1;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.user-balance {
+    background: rgba(255,255,255,0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    backdrop-filter: blur(5px);
+}
+
+/* Основной контент */
+.app-main {
+    flex: 1;
+    padding: 1.5rem;
+    padding-bottom: 80px;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+    font-size: 1.5rem;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    margin: 0.5rem auto 0;
+    border-radius: 3px;
+}
+
+/* Кейсы */
+.cases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.case-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    transition: all 0.3s;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.case-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.case-image {
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    color: white;
+}
+
+.case-price {
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+/* Рулетка */
+.roulette-container {
+    position: relative;
+    width: 100%;
+    margin: 2rem 0;
+    height: 120px;
+    overflow: hidden;
+}
+
+.roulette-track {
+    display: flex;
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    align-items: center;
+}
+
+.roulette-item {
+    min-width: 100px;
+    height: 100px;
+    margin: 0 5px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    font-weight: 600;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s;
+}
+
+.roulette-item i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.roulette-item.deposit {
+    color: var(--success);
+}
+
+.roulette-item.discount {
+    color: var(--primary);
+}
+
+.roulette-item.free {
+    color: var(--warning);
+}
+
+.roulette-pointer {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    height: 100%;
+    width: 2px;
+    z-index: 2;
+}
+
+.pointer-arrow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 15px solid var(--danger);
+}
+
+.pointer-line {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: calc(100% - 15px);
+    background: var(--danger);
+}
+
+/* Кнопка спинера */
+.spin-button {
+    display: block;
+    width: 80%;
+    max-width: 250px;
+    margin: 1.5rem auto;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 5px 15px rgba(138,43,226,0.3);
+}
+
+.spin-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(138,43,226,0.4);
+}
+
+.spin-button:active {
+    transform: translateY(0);
+}
+
+.spin-button:disabled {
+    background: var(--gray);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.spin-button i {
+    margin-right: 8px;
+}
+
+/* Секция вероятностей */
+.probability-section {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.probability-section h3 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.probability-cards {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.probability-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.probability-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.probability-icon.deposit {
+    background: rgba(46,213,115,0.1);
+    color: var(--success);
+}
+
+.probability-icon.discount {
+    background: rgba(138,43,226,0.1);
+    color: var(--primary);
+}
+
+.probability-icon.free {
+    background: rgba(255,165,2,0.1);
+    color: var(--warning);
+}
+
+.probability-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.probability-label {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-top: 0.2rem;
+}
+
+/* Стили для розыгрышей */
+.giveaways-section {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.giveaways-section h3 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.giveaway-card {
+    display: flex;
+    background: var(--bg-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.giveaway-image {
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.giveaway-info {
+    flex: 1;
+    padding: 1rem;
+}
+
+.giveaway-info h4 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.giveaway-info p {
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.giveaway-progress {
+    margin: 0.8rem 0;
+}
+
+.giveaway-progress .progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--primary);
+    margin-bottom: 0.3rem;
+}
+
+.giveaway-progress span {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.giveaway-button {
+    width: 100%;
+    padding: 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.giveaway-button:hover {
+    background: var(--primary-light);
+}
+
+.giveaway-button:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+}
+
+/* Профиль */
+.profile-card {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+
+.profile-info h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.level {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.stats-section {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-item i {
+    width: 30px;
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+.stat-item strong {
+    color: var(--primary);
+}
+
+/* Переключатель темы */
+.theme-switch-container {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.theme-switch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.theme-switch {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: var(--border-color);
+    border-radius: 12px;
+    transition: background 0.3s;
+}
+
+[data-theme="dark"] .theme-switch {
+    background: var(--primary);
+}
+
+.theme-switch-handle {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+[data-theme="dark"] .theme-switch-handle {
+    transform: translateX(26px);
+}
+
+.theme-switch-btn i {
+    margin-right: 10px;
+    color: var(--primary);
+}
+
+.theme-switch-btn span {
+    flex: 1;
+    text-align: left;
+}
+
+/* Активные бонусы */
+.active-bonuses {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.active-bonuses h3 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.bonuses-list {
+    min-height: 100px;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    opacity: 0.6;
+    padding: 2rem 0;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.bonus-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem;
+    background: var(--bg-color);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.bonus-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.8rem;
+    font-size: 1rem;
+}
+
+.bonus-icon.deposit {
+    background: rgba(46,213,115,0.1);
+    color: var(--success);
+}
+
+.bonus-icon.discount {
+    background: rgba(138,43,226,0.1);
+    color: var(--primary);
+}
+
+.bonus-icon.free {
+    background: rgba(255,165,2,0.1);
+    color: var(--warning);
+}
+
+.bonus-info {
+    flex: 1;
+    color: var(--text-color);
+}
+
+.bonus-timer {
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Нижнее меню */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--nav-bg);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    box-shadow: 0 -2px 10px var(--shadow-color);
+    max-width: 500px;
+    margin: 0 auto;
+    z-index: 10;
+    border-top: 1px solid var(--border-color);
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--nav-text);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+.nav-btn i {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.nav-btn.active {
+    color: var(--nav-active);
+    background: rgba(138, 43, 226, 0.1);
+    transform: translateY(-5px);
+}
+
+.nav-btn.active i {
+    color: var(--nav-active);
+}
+
+/* Модальные окна */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s;
+}
+
+.modal-content {
+    background: var(--modal-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+    position: relative;
+    animation: slideUp 0.5s;
+    color: var(--text-color);
+}
+
+/* Модальное окно депозита */
+.deposit-options {
+    margin: 1.5rem 0;
+}
+
+.deposit-option {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.deposit-option:hover {
+    border-color: var(--primary);
+}
+
+.modal-button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 100%;
+}
+
+.modal-button:hover {
+    background: var(--primary-light);
+}
+
+.modal-button.secondary {
+    background: var(--border-color);
+    color: var(--text-color);
+    margin-top: 1rem;
+}
+
+.modal-button.secondary:hover {
+    background: var(--gray);
+}
+
+/* Анимация кейса */
+.case-animation {
+    position: relative;
+    height: 200px;
+    margin: 1rem 0;
+    perspective: 1000px;
+}
+
+.case-top {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 60px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    border-radius: 10px 10px 0 0;
+    transform-origin: bottom center;
+    animation: openCaseTop 1s forwards;
+    z-index: 2;
+}
+
+.case-bottom {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 100px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+#caseReward {
+    font-size: 2rem;
+    animation: bounceIn 0.5s;
+}
+
+.win-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2.5rem;
+}
+
+.win-icon.deposit {
+    background: rgba(46,213,115,0.1);
+    color: var(--success);
+}
+
+.win-icon.discount {
+    background: rgba(138,43,226,0.1);
+    color: var(--primary);
+}
+
+.win-icon.free {
+    background: rgba(255,165,2,0.1);
+    color: var(--warning);
+}
+
+.modal-content h3 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes openCaseTop {
+    0% { transform: translateX(-50%) rotateX(0deg); }
+    50% { transform: translateX(-50%) rotateX(-100deg); }
+    100% { transform: translateX(-50%) rotateX(-180deg); }
+}
+
+.hidden {
+    display: none;
+}
+
+/* Вкладки */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.5s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Кнопка пополнения */
+.deposit-btn {
+    background: rgba(255,255,255,0.3);
+    border: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.deposit-btn:hover {
+    background: rgba(255,255,255,0.5);
+    transform: scale(1.1);
+}
+
+/* Вкладки пополнения */
+.deposit-tabs {
+    display: flex;
+    margin: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.deposit-tab {
+    flex: 1;
+    padding: 0.8rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.deposit-tab.active {
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+}
+
+.deposit-tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
+.deposit-tab-content.active {
+    display: block;
+}
+
+.deposit-info {
+    background: rgba(138,43,226,0.1);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.deposit-info p {
+    margin-bottom: 0.3rem;
+}
+
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.giftcoin-amount {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    padding: 0.8rem;
+    background: var(--bg-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+/* Убираем стрелки у числовых полей ввода */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Аватар пользователя */
+.avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+#avatarPlaceholder {
+    z-index: 2;
+}
+
+/* Для тестирования вне Telegram */
+.test-warning {
+    background: var(--warning);
+    color: white;
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+}
