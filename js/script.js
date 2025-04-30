@@ -78,6 +78,22 @@ import {
       addTestButton();
     }
   }
+
+  // Делегирование событий для вкладок
+  document.querySelector('.bottom-nav').addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('.nav-btn');
+    if (tabBtn) {
+      openTab(tabBtn.dataset.tab);
+    }
+  });
+  
+  // Делегирование для других элементов
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="deposit"]')) {
+      openDepositModal();
+    }
+    // Добавьте другие обработчики по аналогии
+  });
   
   function updateProfile() {
     if (!currentUser) return;
