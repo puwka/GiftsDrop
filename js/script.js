@@ -1,3 +1,8 @@
+// Глобальная проверка
+console.log("Telegram object exists:", typeof Telegram !== 'undefined');
+console.log("WebApp data:", Telegram?.WebApp?.initDataUnsafe);
+console.log("User data:", Telegram?.WebApp?.initDataUnsafe?.user);
+
 // Глобальные переменные
 let balance = 1000;
 let canSpin = true;
@@ -42,92 +47,65 @@ const PROMO_CODES = {
     'FREEGIFT': { amount: 200, used: false }
 };
 
-// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
-function initTelegramWebApp() {
-    // Проверяем доступность Telegram WebApp API
+// Проверяем загрузку Telegram WebApp SDK
+function initApp() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        console.log("Telegram WebApp API доступен");
-        
-        const webApp = Telegram.WebApp;
-        const user = webApp.initDataUnsafe?.user;
-        
-        if (user) {
-            console.log("Данные пользователя Telegram:", user);
-            
-            // Развертываем на весь экран
-            webApp.expand();
-            webApp.ready();
-            
-            // Обновляем профиль с реальными данными
-            updateProfileWithTelegramData(user);
-            return;
-        }
-    }
-    
-    console.log("Режим тестирования (вне Telegram)");
-    // Используем тестовые данные только если не в Telegram
-    updateProfileWithTelegramData({
-        first_name: "Тестовый",
-        last_name: "Пользователь",
-        username: "test_user",
-        photo_url: "https://via.placeholder.com/150"
-    });
-}
-
-// Обновление профиля с данными из Telegram
-function updateProfileWithTelegramData(user) {
-    const userName = document.getElementById('userName');
-    const avatar = document.getElementById('userAvatar');
-    const placeholder = document.getElementById('avatarPlaceholder');
-    
-    // Формируем имя для отображения
-    let displayName = user.first_name || "Гость";
-    if (user.last_name) {
-        displayName += ` ${user.last_name}`;
-    }
-    if (user.username) {
-        displayName += ` (@${user.username})`;
-    }
-    
-    userName.textContent = displayName;
-    
-    // Устанавливаем аватар
-    if (user.photo_url) {
-        placeholder.style.display = 'none';
-        avatar.style.backgroundImage = `url(${user.photo_url})`;
-        avatar.style.backgroundSize = 'cover';
-        avatar.style.backgroundPosition = 'center';
+      console.log('Telegram WebApp detected');
+      initTelegramWebApp();
     } else {
-        placeholder.style.display = 'flex';
-        avatar.style.backgroundImage = 'none';
-        avatar.style.backgroundColor = 'var(--primary)';
+      console.warn('Regular browser mode');
+      loadTestData();
+      initRegularApp();
     }
+  }
+  
+  // Для Telegram
+  function initTelegramWebApp() {
+    const webApp = Telegram.WebApp;
     
-    // Обновляем уровень (примерная логика)
-    const levelElement = document.querySelector('.profile-info .level');
-    if (levelElement) {
-        const userId = user.id || 0;
-        levelElement.textContent = Math.max(1, Math.min(10, Math.floor(userId % 10) + 1));
+    // Развернуть на весь экран
+    webApp.expand();
+    webApp.ready();
+  
+    // Проверяем данные пользователя
+    if (!webApp.initDataUnsafe?.user) {
+      console.error('No user data! Requesting access...');
+      webApp.requestWriteAccess();
+      return;
     }
+  
+    const user = webApp.initDataUnsafe.user;
+    updateProfile({
+      name: [user.first_name, user.last_name].filter(Boolean).join(' '),
+      username: user.username ? `@${user.username}` : '',
+      photo: user.photo_url || '',
+      id: user.id
+    });
+  }
+  
+  // Для тестового режима
+  function loadTestData() {
+    updateProfile({
+      name: "Тестовый Пользователь",
+      username: "@test_user",
+      photo: "", // Убрал битый URL
+      id: 0
+    });
+  }
+  
+  // Обновление профиля
+  function updateProfile(data) {
+    const userName = document.getElementById('userName');
+    if (userName) userName.textContent = `${data.name} ${data.username}`;
     
-    // Обновляем статистику
-    updateUserStats(user.id || 0);
-}
-
-// Обновление статистики пользователя
-function updateUserStats(userId) {
-    const openedCases = document.getElementById('openedCases');
-    const bestPrize = document.getElementById('bestPrize');
-    
-    if (openedCases) {
-        openedCases.textContent = Math.max(0, Math.floor(userId % 20));
+    const avatar = document.getElementById('userAvatar');
+    if (avatar) {
+      avatar.style.backgroundImage = data.photo ? `url(${data.photo})` : 'none';
     }
-    
-    if (bestPrize) {
-        const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-        bestPrize.textContent = prizes[Math.floor(userId % 4)] || 'Обычный';
-    }
-}
+  }
+  
+  // Инициализация при загрузке
+  document.addEventListener('DOMContentLoaded', initApp);
 
 // ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
 // Инициализация темы
