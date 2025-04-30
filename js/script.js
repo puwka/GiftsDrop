@@ -8,13 +8,13 @@ let activeBonuses = [];
 let userDeposits = 0;
 let currentUser = null;
 
-// Добавляем в script.js после глобальных переменных
 const LEVELS = [
-    { level: 1, xpRequired: 0, reward: 0, bonus: "Открытие кейсов" },
-    { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
-    { level: 3, xpRequired: 300, reward: 100, bonus: "Доступ к премиум кейсам" },
-    { level: 4, xpRequired: 600, reward: 200, bonus: "+1 спин в день" },
-    { level: 5, xpRequired: 1000, reward: 500, bonus: "Эксклюзивные бонусы" }
+    { level: 1, xpRequired: 0, reward: 0, bonus: "Начальный уровень" },
+    { level: 2, xpRequired: 200, reward: 100, bonus: "+5% к выигрышам" },
+    { level: 3, xpRequired: 500, reward: 200, bonus: "Доступ к премиум кейсам" },
+    { level: 4, xpRequired: 1000, reward: 500, bonus: "+1 спин в день" },
+    { level: 5, xpRequired: 2000, reward: 1000, bonus: "VIP статус" },
+    { level: 6, xpRequired: 4000, reward: 2000, bonus: "Эксклюзивные кейсы" }
 ];
 
 let userXP = 0;
@@ -100,6 +100,7 @@ function initApp() {
     initDepositModal();
     updateActiveBonuses();
     checkAvailableGiveaways();
+    initUserLevel();
     loadUserProgress();
     updateLevelSystem();
     
@@ -188,6 +189,12 @@ function updateUserStats() {
     }
 }
 
+// Новая функция для расчета XP
+function calculateXPForLevel(level) {
+    if (level <= 1) return 0;
+    return LEVELS[level - 1]?.xpRequired || 0;
+}
+
 // Добавляем новые функции
 function addXP(amount) {
     if (amount <= 0) return;
@@ -251,23 +258,26 @@ function closeLevelUpModal() {
     document.getElementById('levelUpModal').classList.add('hidden');
 }
 
+// Обновляем функцию отображения
 function updateLevelSystem() {
     const currentLevelData = LEVELS[userLevel - 1];
     const nextLevelData = LEVELS[userLevel] || currentLevelData;
     
-    // Обновляем прогресс-бар
-    const progressBar = document.getElementById('levelProgress');
-    const xpText = document.getElementById('xpText');
-    const levelText = document.getElementById('levelText');
+    // Обновляем уровень в профиле
+    const levelElement = document.getElementById('userLevel');
+    if (levelElement) {
+        levelElement.textContent = userLevel;
+    }
     
+    // Обновляем прогресс-бар
     const progress = nextLevelData 
         ? (userXP - currentLevelData.xpRequired) / 
           (nextLevelData.xpRequired - currentLevelData.xpRequired) * 100
         : 100;
     
-    progressBar.style.width = `${progress}%`;
-    xpText.textContent = `${userXP}/${nextLevelData.xpRequired} XP`;
-    levelText.textContent = `Ур. ${userLevel}`;
+    document.getElementById('levelProgress').style.width = `${progress}%`;
+    document.getElementById('xpText').textContent = 
+        `${userXP}/${nextLevelData.xpRequired} XP`;
 }
 
 function saveUserProgress() {
@@ -287,8 +297,12 @@ function saveUserProgress() {
 }
 
 function loadUserProgress() {
-    let data = null;
+    // Проверяем текущий уровень в интерфейсе
+    const levelElement = document.getElementById('userLevel');
+    const uiLevel = levelElement ? parseInt(levelElement.textContent) : 1;
     
+    // Загружаем сохраненные данные
+    let data = null;
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         data = Telegram.WebApp.CloudStorage.getItem('userProgress');
     } else {
@@ -298,12 +312,33 @@ function loadUserProgress() {
     if (data) {
         try {
             const parsed = JSON.parse(data);
-            userXP = parsed.xp || 0;
-            userLevel = parsed.level || 1;
+            // Используем максимальный уровень (из сохранения или интерфейса)
+            userLevel = Math.max(parsed.level || 1, uiLevel);
+            userXP = Math.max(parsed.xp || 0, calculateXPForLevel(userLevel));
             dailySpins = parsed.spins || 1;
         } catch (e) {
             console.error('Error loading progress:', e);
+            userLevel = uiLevel;
+            userXP = calculateXPForLevel(userLevel);
         }
+    } else {
+        userLevel = uiLevel;
+        userXP = calculateXPForLevel(userLevel);
+    }
+}
+
+function initUserLevel() {
+    const levelElement = document.getElementById('userLevel');
+    if (levelElement) {
+        // Получаем текущий уровень из интерфейса
+        const currentLevel = parseInt(levelElement.textContent) || 1;
+        
+        // Инициализируем систему
+        userLevel = currentLevel;
+        userXP = calculateXPForLevel(currentLevel);
+        
+        // Обновляем отображение
+        updateLevelSystem();
     }
 }
 
