@@ -7,12 +7,13 @@ let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
 let currentUser = null;
+let dailySpins = 1;
 
 const API_URL = process.env.NODE_ENV === 'development' 
     ? 'http://localhost:3000' 
-    : 'https://gifts-drop.vercel.app/';
+    : 'https://gifts-drop.vercel.app';
 
-// В объектах LEVELS добавьте свойство bonus
+// Уровни
 const LEVELS = [
     { level: 1, xpRequired: 0, reward: 0, bonus: "Доступ к базовым кейсам" },
     { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
@@ -21,7 +22,6 @@ const LEVELS = [
     { level: 5, xpRequired: 1000, reward: 500, bonus: "Эксклюзивные бонусы" }
 ];
 
-// Глобальные переменные
 let userXP = 0;
 let userLevel = 1;
 
@@ -61,16 +61,13 @@ const BONUS_TYPES = [
 ];
 
 function initApp() {
-    // 1. Авторизация
     try {
         const authResult = initTelegramAuth();
         
         if (authResult && authResult.data) {
-            // Режим Telegram - используем реальные данные
             currentUser = formatUserData(authResult.data);
             console.log('Authenticated as Telegram user:', currentUser);
             
-            // Настройка WebApp
             if (authResult.webAppInstance) {
                 try {
                     authResult.webAppInstance.setHeaderColor('#8a2be2');
@@ -80,11 +77,9 @@ function initApp() {
                 }
             }
         } else {
-            // Тестовый режим
             currentUser = formatUserData(getTestUserData());
             console.log('Using test user:', currentUser);
             
-            // Добавляем предупреждение в интерфейс
             if (!document.querySelector('.test-warning')) {
                 const warning = document.createElement('div');
                 warning.className = 'test-warning';
@@ -97,7 +92,6 @@ function initApp() {
         currentUser = formatUserData(getTestUserData());
     }
 
-    // 2. Обновление интерфейса
     updateProfile();
     initTheme();
     initRoulette();
@@ -107,24 +101,19 @@ function initApp() {
     initUserLevel();
     loadUserProgress();
     updateLevelSystem();
-    initLevelSystem(); // Всегда начинаем с 1 уровня
     loadProgress();
     
-    // 3. Открываем стартовую вкладку
     openTab('cases', document.querySelector('.nav-btn'));
     
-    // 4. Периодическое обновление
     setInterval(updateActiveBonuses, 60000);
 }
 
-// Инициализация темы
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeSwitch(savedTheme);
 }
 
-// Переключение темы
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -134,7 +123,6 @@ function toggleTheme() {
     updateThemeSwitch(newTheme);
 }
 
-// Обновление переключателя темы
 function updateThemeSwitch(theme) {
     const icon = document.querySelector('.theme-switch-btn i');
     const text = document.querySelector('.theme-switch-btn span');
@@ -148,7 +136,6 @@ function updateThemeSwitch(theme) {
     }
 }
 
-// Обновление профиля
 function updateProfile() {
     if (!currentUser) return;
     
@@ -156,10 +143,8 @@ function updateProfile() {
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
 
-    // Обновляем имя пользователя
     userName.textContent = currentUser.name;
     
-    // Обновляем аватар
     if (currentUser.photo) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${currentUser.photo})`;
@@ -169,7 +154,6 @@ function updateProfile() {
         placeholder.style.display = 'flex';
         avatar.style.backgroundImage = 'none';
         
-        // Генерируем инициалы для аватара
         const initials = currentUser.name.split(' ')
             .map(n => n[0])
             .join('')
@@ -180,7 +164,6 @@ function updateProfile() {
     updateUserStats();
 }
 
-// Обновление статистики
 function updateUserStats() {
     const openedCases = document.getElementById('openedCases');
     const bestPrize = document.getElementById('bestPrize');
@@ -195,29 +178,22 @@ function updateUserStats() {
     }
 }
 
-// Новая функция для расчета XP
 function calculateXPForLevel(level) {
     if (level <= 1) return 0;
     return LEVELS[level - 1]?.xpRequired || 0;
 }
 
-// Новая функция инициализации уровней
 function initLevelSystem() {
-    // Сбрасываем всегда на 1 уровень при инициализации
     userLevel = 1;
     userXP = 0;
-    
-    // Обновляем отображение
     updateLevelDisplay();
 }
 
-// Обновите функцию addXP
 function addXP(amount) {
     if (amount <= 0) return;
     
     userXP += amount;
     
-    // Проверяем повышение уровня
     let leveledUp = false;
     while (userLevel < LEVELS.length && userXP >= LEVELS[userLevel].xpRequired) {
         userLevel++;
@@ -285,18 +261,15 @@ function closeLevelUpModal() {
     document.getElementById('levelUpModal').classList.add('hidden');
 }
 
-// Обновляем функцию отображения
 function updateLevelSystem() {
     const currentLevelData = LEVELS[userLevel - 1];
     const nextLevelData = LEVELS[userLevel] || currentLevelData;
     
-    // Обновляем уровень в профиле
     const levelElement = document.getElementById('userLevel');
     if (levelElement) {
         levelElement.textContent = userLevel;
     }
     
-    // Обновляем прогресс-бар
     const progress = nextLevelData 
         ? (userXP - currentLevelData.xpRequired) / 
           (nextLevelData.xpRequired - currentLevelData.xpRequired) * 100
@@ -307,15 +280,12 @@ function updateLevelSystem() {
         `${userXP}/${nextLevelData.xpRequired} XP`;
 }
 
-// Функция обновления отображения
 function updateLevelDisplay() {
     const currentLevel = LEVELS[userLevel - 1];
     const nextLevel = LEVELS[userLevel] || currentLevel;
     
-    // Обновляем цифру уровня
     document.getElementById('userLevel').textContent = userLevel;
     
-    // Обновляем прогресс-бар
     const progressPercent = nextLevel 
         ? ((userXP - currentLevel.xpRequired) / 
           (nextLevel.xpRequired - currentLevel.xpRequired)) * 100
@@ -342,7 +312,6 @@ function saveUserProgress() {
     }
 }
 
-// Сохранение прогресса
 function saveProgress() {
     const progressData = {
         level: userLevel,
@@ -353,11 +322,9 @@ function saveProgress() {
 }
 
 function loadUserProgress() {
-    // Проверяем текущий уровень в интерфейсе
     const levelElement = document.getElementById('userLevel');
     const uiLevel = levelElement ? parseInt(levelElement.textContent) : 1;
     
-    // Загружаем сохраненные данные
     let data = null;
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         data = Telegram.WebApp.CloudStorage.getItem('userProgress');
@@ -368,7 +335,6 @@ function loadUserProgress() {
     if (data) {
         try {
             const parsed = JSON.parse(data);
-            // Используем максимальный уровень (из сохранения или интерфейса)
             userLevel = Math.max(parsed.level || 1, uiLevel);
             userXP = Math.max(parsed.xp || 0, calculateXPForLevel(userLevel));
             dailySpins = parsed.spins || 1;
@@ -383,7 +349,6 @@ function loadUserProgress() {
     }
 }
 
-// Загрузка прогресса
 function loadProgress() {
     const savedData = localStorage.getItem('userProgress');
     if (savedData) {
@@ -401,34 +366,24 @@ function loadProgress() {
 function initUserLevel() {
     const levelElement = document.getElementById('userLevel');
     if (levelElement) {
-        // Получаем текущий уровень из интерфейса
         const currentLevel = parseInt(levelElement.textContent) || 1;
-        
-        // Инициализируем систему
         userLevel = currentLevel;
         userXP = calculateXPForLevel(currentLevel);
-        
-        // Обновляем отображение
         updateLevelSystem();
     }
 }
 
-// Переключение вкладок
 function openTab(tabName, clickedElement) {
-    // Скрыть все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Убрать активное состояние у всех кнопок
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Показать выбранную вкладку
     document.getElementById(tabName).classList.add('active');
     
-    // Активировать кнопку
     if (clickedElement) {
         clickedElement.classList.add('active');
     } else {
@@ -436,12 +391,10 @@ function openTab(tabName, clickedElement) {
     }
 }
 
-// Инициализация рулетки
 function initRoulette() {
     const track = document.getElementById('rouletteTrack');
     track.innerHTML = '';
     
-    // Создаем 20 элементов для плавной прокрутки
     for (let i = 0; i < 20; i++) {
         const type = getRandomBonusType();
         const bonus = getRandomVariant(type);
@@ -458,7 +411,6 @@ function initRoulette() {
     }
 }
 
-// Получение случайного типа бонуса с учетом вероятности
 function getRandomBonusType() {
     const random = Math.random() * 100;
     let cumulative = 0;
@@ -471,13 +423,11 @@ function getRandomBonusType() {
     return 'deposit';
 }
 
-// Получение случайного варианта бонуса
 function getRandomVariant(type) {
     const bonusType = BONUS_TYPES.find(t => t.type === type);
     return bonusType.variants[Math.floor(Math.random() * bonusType.variants.length)];
 }
 
-// Прокрутка рулетки
 function spinRoulette() {
     if (!canSpin || dailySpins <= 0) {
         showToast("Нет доступных спинов", "error");
@@ -507,21 +457,17 @@ function spinRoulette() {
     const track = document.getElementById('rouletteTrack');
     const items = document.querySelectorAll('.roulette-item');
     
-    // Выбираем случайный бонус с учетом вероятностей
     const targetType = getRandomBonusType();
     const targetItems = Array.from(items).filter(item => item.dataset.type === targetType);
     const targetItem = targetItems[Math.floor(Math.random() * targetItems.length)];
     const itemIndex = Array.from(items).indexOf(targetItem);
     
-    // Расчет позиции для остановки
     const itemWidth = 110;
     const stopPosition = -(itemIndex * itemWidth) + (window.innerWidth / 2 - itemWidth / 2);
     
-    // Анимация прокрутки
     track.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
     track.style.transform = `translateX(${stopPosition}px)`;
     
-    // После завершения анимации
     setTimeout(() => {
         const wonBonus = {
             title: targetItem.dataset.title,
@@ -534,7 +480,6 @@ function spinRoulette() {
         activateBonus(wonBonus);
         showWinModal(wonBonus);
         
-        // Сброс анимации
         setTimeout(() => {
             track.style.transition = 'none';
             initRoulette();
@@ -544,7 +489,6 @@ function spinRoulette() {
     }, 3000);
 }
 
-// Активация бонуса
 function activateBonus(bonus) {
     if (bonus.type === 'free') {
         showToast(`Вы получили ${bonus.value} подарка!`, "success");
@@ -557,7 +501,6 @@ function activateBonus(bonus) {
     }
 }
 
-// Обновление списка активных бонусов
 function updateActiveBonuses() {
     const now = Date.now();
     activeBonuses = activeBonuses.filter(b => b.endTime > now);
@@ -594,7 +537,6 @@ function updateActiveBonuses() {
     });
 }
 
-// Показ модального окна с выигрышем
 function showWinModal(bonus) {
     const modal = document.getElementById('winModal');
     const icon = document.getElementById('winIcon');
@@ -609,12 +551,10 @@ function showWinModal(bonus) {
     modal.classList.remove('hidden');
 }
 
-// Закрытие модального окна
 function closeWinModal() {
     document.getElementById('winModal').classList.add('hidden');
 }
 
-// Участие в розыгрыше
 function joinGiveaway(minAmount) {
     if (userDeposits >= minAmount) {
         showToast(`Вы участвуете в розыгрыше!`, 'success');
@@ -624,7 +564,6 @@ function joinGiveaway(minAmount) {
     }
 }
 
-// Инициализация модалки пополнения
 function initDepositModal() {
     const tonInput = document.getElementById('tonAmount');
     const starsInput = document.getElementById('starsAmount');
@@ -641,7 +580,6 @@ function initDepositModal() {
     });
 }
 
-// Переключение вкладок пополнения
 function switchDepositTab(tabName) {
     document.querySelectorAll('.deposit-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -655,8 +593,7 @@ function switchDepositTab(tabName) {
     document.querySelector(`.deposit-tab-content.${tabName}`).classList.add('active');
 }
 
-// Обработка пополнения через TON
-function processTonDeposit() {
+async function processTonDeposit() {
     const tonAmount = parseFloat(document.getElementById('tonAmount').value);
     const promoCode = document.getElementById('tonPromoCode').value.toUpperCase();
     
@@ -665,24 +602,38 @@ function processTonDeposit() {
         return;
     }
     
-    let giftcoinAmount = tonAmount * 200;
-    
-    // Применяем промокод, если он валиден
-    if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
-        giftcoinAmount += PROMO_CODES[promoCode].amount;
-        PROMO_CODES[promoCode].used = true;
-        showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
+    try {
+        const response = await fetch(`${API_URL}/api/transactions/deposit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                amount: tonAmount * 200,
+                method: 'TON',
+                promo_code: promoCode
+            })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            updateBalance(data.new_balance - balance);
+            userDeposits += tonAmount * 200;
+            showToast(`Баланс пополнен на ${tonAmount * 200} GiftCoin`, "success");
+            closeDepositModal();
+            checkAvailableGiveaways();
+        } else {
+            showToast(data.msg || "Ошибка при пополнении", "error");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast("Ошибка соединения", "error");
     }
-    
-    updateBalance(giftcoinAmount);
-    userDeposits += giftcoinAmount;
-    showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
-    closeDepositModal();
-    checkAvailableGiveaways();
 }
 
-// Обработка пополнения звездами
-function processStarsDeposit() {
+async function processStarsDeposit() {
     const starsAmount = parseInt(document.getElementById('starsAmount').value);
     const promoCode = document.getElementById('starsPromoCode').value.toUpperCase();
     
@@ -691,33 +642,45 @@ function processStarsDeposit() {
         return;
     }
     
-    let giftcoinAmount = starsAmount;
-    
-    // Применяем промокод, если он валиден
-    if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
-        giftcoinAmount += PROMO_CODES[promoCode].amount;
-        PROMO_CODES[promoCode].used = true;
-        showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
+    try {
+        const response = await fetch(`${API_URL}/api/transactions/deposit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                amount: starsAmount,
+                method: 'STARS',
+                promo_code: promoCode
+            })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            updateBalance(data.new_balance - balance);
+            userDeposits += starsAmount;
+            showToast(`Баланс пополнен на ${starsAmount} GiftCoin`, "success");
+            closeDepositModal();
+            checkAvailableGiveaways();
+        } else {
+            showToast(data.msg || "Ошибка при пополнении", "error");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast("Ошибка соединения", "error");
     }
-    
-    updateBalance(giftcoinAmount);
-    userDeposits += giftcoinAmount;
-    showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
-    closeDepositModal();
-    checkAvailableGiveaways();
 }
 
-// Открытие модального окна пополнения
 function openDepositModal() {
     document.getElementById('depositModal').classList.remove('hidden');
 }
 
-// Закрытие модального окна пополнения
 function closeDepositModal() {
     document.getElementById('depositModal').classList.add('hidden');
 }
 
-// Проверка доступных розыгрышей
 function checkAvailableGiveaways() {
     const giveawayCards = document.querySelectorAll('.giveaway-card');
     
@@ -729,13 +692,11 @@ function checkAvailableGiveaways() {
     });
 }
 
-// Обновление баланса
 function updateBalance(amount) {
     balance += amount;
     document.querySelectorAll('.balance-amount').forEach(el => {
         el.textContent = balance;
         
-        // Анимация изменения баланса
         el.style.transform = 'scale(1.2)';
         el.style.color = amount > 0 ? 'var(--success)' : 'var(--danger)';
         setTimeout(() => {
@@ -761,7 +722,6 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Инициализация Telegram WebApp
 function initTelegramWebApp() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         Telegram.WebApp.ready();
@@ -769,7 +729,6 @@ function initTelegramWebApp() {
     }
 }
 
-// Пример: открытие кейса
 async function openCase(caseType) {
     try {
         const response = await fetch(`${API_URL}/api/cases/open`, {
@@ -801,7 +760,6 @@ async function openCase(caseType) {
     }
 }
 
-// Экспорт функций для HTML
 window.initApp = initApp;
 window.openTab = openTab;
 window.toggleTheme = toggleTheme;
@@ -816,5 +774,4 @@ window.closeDepositModal = closeDepositModal;
 window.openCase = openCase;
 window.closeLevelUpModal = closeLevelUpModal;
 
-// Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);
