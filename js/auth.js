@@ -1,11 +1,5 @@
-// auth.js - Отдельный модуль для работы с Telegram WebApp
-
-/**
- * Инициализация Telegram WebApp
- * @returns {Object|null} Объект с данными пользователя или null
- */
+// auth.js
 export function initTelegramAuth() {
-    // Проверяем доступность Telegram WebApp API
     if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
       console.warn('Telegram WebApp not detected');
       return null;
@@ -13,7 +7,6 @@ export function initTelegramAuth() {
   
     const webApp = Telegram.WebApp;
     
-    // Инициализируем WebApp
     try {
       webApp.expand();
       webApp.ready();
@@ -35,10 +28,6 @@ export function initTelegramAuth() {
     }
   }
   
-  /**
-   * Получение данных тестового пользователя
-   * @returns {Object} Тестовые данные
-   */
   export function getTestUserData() {
     return {
       first_name: "Тестовый",
@@ -49,11 +38,6 @@ export function initTelegramAuth() {
     };
   }
   
-  /**
-   * Форматирование данных пользователя
-   * @param {Object} userData 
-   * @returns {Object} Форматированные данные
-   */
   export function formatUserData(userData) {
     return {
       name: [userData.first_name, userData.last_name].filter(Boolean).join(' '),

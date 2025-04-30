@@ -1,256 +1,199 @@
-import { 
-    initTelegramAuth,
-    getTestUserData,
-    formatUserData
-  } from './auth.js';
+// Импорт функций авторизации
+import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
+
+// Глобальные переменные
+let balance = 1000;
+let canSpin = true;
+let activeBonuses = [];
+let userDeposits = 0;
+let currentUser = null;
+
+// ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
+
+// Инициализация приложения
+async function initApp() {
+  // 1. Авторизация
+  const authResult = initTelegramAuth();
+  currentUser = authResult 
+    ? formatUserData(authResult.data)
+    : formatUserData(getTestUserData());
+
+  // 2. Обновление интерфейса
+  updateProfile();
+  initTheme();
+  initRoulette();
+  initDepositModal();
+  updateActiveBonuses();
+  checkAvailableGiveaways();
   
-  // Глобальные переменные
-  let balance = 1000;
-  let canSpin = true;
-  let activeBonuses = [];
-  let userDeposits = 0;
-  let currentUser = null;
+  // 3. Открываем стартовую вкладку
+  openTab('cases', true);
+
+  // 4. Периодическое обновление
+  setInterval(updateActiveBonuses, 60000);
+}
+
+// Обновление профиля
+function updateProfile() {
+  if (!currentUser) return;
   
-  // Типы бонусов
-  const BONUS_TYPES = [
-    {
-      type: 'deposit',
-      probability: 45,
-      variants: [
-        { icon: 'fa-coins', title: '+10% к депозиту', value: 10, duration: 24 },
-        { icon: 'fa-piggy-bank', title: '+15% к депозиту', value: 15, duration: 12 },
-        { icon: 'fa-wallet', title: '+20% к депозиту', value: 20, duration: 6 }
-      ]
-    },
-    {
-      type: 'discount',
-      probability: 35,
-      variants: [
-        { icon: 'fa-percentage', title: 'Скидка 10%', value: 10, duration: 24 },
-        { icon: 'fa-tag', title: 'Скидка 15%', value: 15, duration: 12 },
-        { icon: 'fa-badge-percent', title: 'Скидка 20%', value: 20, duration: 6 }
-      ]
-    },
-    {
-      type: 'free',
-      probability: 20,
-      variants: [
-        { icon: 'fa-gift', title: '1 бесплатный кейс', value: 1, duration: 0 },
-        { icon: 'fa-box-open', title: '2 бесплатных кейса', value: 2, duration: 0 },
-        { icon: 'fa-star', title: '3 бесплатных кейса', value: 3, duration: 0 }
-      ]
-    }
-  ];
+  const userName = document.getElementById('userName');
+  const avatar = document.getElementById('userAvatar');
+  const placeholder = document.getElementById('avatarPlaceholder');
+
+  userName.textContent = `${currentUser.name} ${currentUser.username}`;
   
-  // Промокоды
-  const PROMO_CODES = {
-    'WELCOME': { amount: 100, used: false },
-    'BONUS50': { amount: 50, used: false },
-    'FREEGIFT': { amount: 200, used: false }
-  };
-  
-  // ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
-  
-  function initApp() {
-    // 1. Инициализация авторизации
-    const authResult = initTelegramAuth();
-    currentUser = authResult 
-      ? formatUserData(authResult.data)
-      : formatUserData(getTestUserData());
-  
-    // 2. Обновление интерфейса
-    updateProfile();
-    updateUserStats(currentUser.id);
-  
-    // 3. Инициализация компонентов
-    initTheme();
-    initRoulette();
-    initDepositModal();
-    updateActiveBonuses();
-    openTab('cases');
-    checkAvailableGiveaways();
-  
-    // 4. Периодическое обновление
-    setInterval(updateActiveBonuses, 60000);
-  
-    // 5. Добавляем кнопку для теста (только вне Telegram)
-    if (typeof Telegram === 'undefined') {
-      addTestButton();
-    }
+  if (currentUser.photo) {
+    placeholder.style.display = 'none';
+    avatar.style.backgroundImage = `url(${currentUser.photo})`;
+  } else {
+    placeholder.style.display = 'flex';
+    avatar.style.backgroundImage = 'none';
   }
 
-  // Делегирование событий для вкладок
-  document.querySelector('.bottom-nav').addEventListener('click', (e) => {
-    const tabBtn = e.target.closest('.nav-btn');
-    if (tabBtn) {
-      openTab(tabBtn.dataset.tab);
-    }
-  });
+  // Обновляем статистику
+  updateUserStats();
+}
+
+// Обновление статистики
+function updateUserStats() {
+  const openedCases = document.getElementById('openedCases');
+  const bestPrize = document.getElementById('bestPrize');
   
-  // Делегирование для других элементов
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="deposit"]')) {
-      openDepositModal();
-    }
-    // Добавьте другие обработчики по аналогии
-  });
-  
-  function updateProfile() {
-    if (!currentUser) return;
-  
-    const userName = document.getElementById('userName');
-    const avatar = document.getElementById('userAvatar');
-    const placeholder = document.getElementById('avatarPlaceholder');
-  
-    userName.textContent = `${currentUser.name} ${currentUser.username}`;
-  
-    if (currentUser.photo) {
-      placeholder.style.display = 'none';
-      avatar.style.backgroundImage = `url(${currentUser.photo})`;
-      avatar.style.backgroundSize = 'cover';
-    } else {
-      placeholder.style.display = 'flex';
-      avatar.style.backgroundImage = 'none';
-    }
+  if (openedCases) {
+    openedCases.textContent = Math.abs(currentUser.id % 20);
   }
   
-  function updateUserStats(userId) {
-    const openedCases = document.getElementById('openedCases');
-    const bestPrize = document.getElementById('bestPrize');
+  if (bestPrize) {
+    const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
+    bestPrize.textContent = prizes[Math.floor(currentUser.id % 4)];
+  }
+}
+
+// ====================== СИСТЕМА ВКЛАДОК ======================
+function openTab(tabName, isInitial = false) {
+  try {
+    if (!isInitial && !event) return;
+
+    // Скрыть все вкладки
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab?.classList.remove('active');
+    });
     
-    if (openedCases) {
-      openedCases.textContent = Math.max(0, Math.floor(userId % 20));
+    // Снять активность с кнопок
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn?.classList.remove('active');
+    });
+    
+    // Показать выбранную вкладку
+    const tab = document.getElementById(tabName);
+    if (tab) tab.classList.add('active');
+    
+    // Активировать кнопку (если не начальная загрузка)
+    if (!isInitial) {
+      event.currentTarget?.classList.add('active');
     }
+  } catch (e) {
+    console.error('Tab error:', e);
+  }
+}
+
+// ====================== РУЛЕТКА БОНУСОВ ======================
+function initRoulette() {
+  const track = document.getElementById('rouletteTrack');
+  if (!track) return;
+  
+  track.innerHTML = '';
+  
+  for (let i = 0; i < 20; i++) {
+    const type = getRandomBonusType();
+    const bonus = getRandomVariant(type);
     
-    if (bestPrize) {
-      const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-      bestPrize.textContent = prizes[Math.floor(userId % 4)] || 'Обычный';
-    }
+    const item = document.createElement('div');
+    item.className = `roulette-item ${type}`;
+    item.innerHTML = `<i class="fas ${bonus.icon}"></i>`;
+    item.dataset.type = type;
+    item.dataset.value = bonus.value;
+    
+    track.appendChild(item);
+  }
+}
+
+function spinRoulette() {
+  if (!canSpin || balance < 100) {
+    showToast("Недостаточно средств или подождите", "error");
+    return;
   }
   
-  // ====================== ФУНКЦИИ ИНТЕРФЕЙСА ======================
+  updateBalance(-100);
+  canSpin = false;
   
-  function openTab(tabName) {
-    const tabs = document.querySelectorAll('.tab-content');
-    const buttons = document.querySelectorAll('.nav-btn');
-    const targetTab = document.getElementById(tabName);
-    const currentBtn = event?.currentTarget;
+  const track = document.getElementById('rouletteTrack');
+  if (!track) return;
   
-    if (!targetTab || !currentBtn) return;
+  track.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+  track.style.transform = `translateX(${-Math.random() * 2000}px)`;
   
-    tabs.forEach(tab => tab?.classList.remove('active'));
-    buttons.forEach(btn => btn?.classList.remove('active'));
-  
-    targetTab?.classList.add('active');
-    currentBtn?.classList.add('active');
-  }
-  
-  function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeSwitch(savedTheme);
-  }
-  
-  function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeSwitch(newTheme);
-  }
-  
-  function updateThemeSwitch(theme) {
-    const icon = document.querySelector('.theme-switch-btn i');
-    const text = document.querySelector('.theme-switch-btn span');
-    
-    if (theme === 'dark') {
-      icon.className = 'fas fa-sun';
-      text.textContent = 'Светлая тема';
-    } else {
-      icon.className = 'fas fa-moon';
-      text.textContent = 'Темная тема';
-    }
-  }
-  
-  // ====================== РУЛЕТКА И КЕЙСЫ ======================
-  
-  function initRoulette() {
-    const track = document.getElementById('rouletteTrack');
-    track.innerHTML = '';
-    
-    for (let i = 0; i < 20; i++) {
-      const type = getRandomBonusType();
-      const bonus = getRandomVariant(type);
-      
-      const item = document.createElement('div');
-      item.className = `roulette-item ${type}`;
-      item.innerHTML = `<i class="fas ${bonus.icon}"></i>`;
-      item.dataset.type = type;
-      item.dataset.title = bonus.title;
-      item.dataset.value = bonus.value;
-      item.dataset.duration = bonus.duration;
-      
-      track.appendChild(item);
-    }
-  }
-  
-  function spinRoulette() {
-    if (!canSpin || balance < 100) {
-      showToast("Недостаточно средств или подождите", "error");
-      return;
-    }
-    
-    updateBalance(-100);
-    canSpin = false;
-    document.querySelector('.spin-button').disabled = true;
-    
-    const track = document.getElementById('rouletteTrack');
+  setTimeout(() => {
     const items = document.querySelectorAll('.roulette-item');
-    const targetType = getRandomBonusType();
-    const targetItems = Array.from(items).filter(item => item.dataset.type === targetType);
-    const targetItem = targetItems[Math.floor(Math.random() * targetItems.length)];
-    const itemIndex = Array.from(items).indexOf(targetItem);
-    const itemWidth = 110;
-    const stopPosition = -(itemIndex * itemWidth) + (window.innerWidth / 2 - itemWidth / 2);
+    const winner = items[Math.floor(Math.random() * items.length)];
     
-    track.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
-    track.style.transform = `translateX(${stopPosition}px)`;
+    activateBonus({
+      type: winner.dataset.type,
+      value: winner.dataset.value
+    });
     
     setTimeout(() => {
-      const wonBonus = {
-        title: targetItem.dataset.title,
-        type: targetItem.dataset.type,
-        value: parseFloat(targetItem.dataset.value),
-        duration: parseInt(targetItem.dataset.duration),
-        icon: targetItem.querySelector('i').className
-      };
-      
-      activateBonus(wonBonus);
-      showWinModal(wonBonus);
-      
-      setTimeout(() => {
-        track.style.transition = 'none';
-        initRoulette();
-        canSpin = true;
-        document.querySelector('.spin-button').disabled = false;
-      }, 500);
-    }, 3000);
-  }
+      track.style.transition = 'none';
+      initRoulette();
+      canSpin = true;
+    }, 500);
+  }, 3000);
+}
+
+// ====================== СИСТЕМА ПОПОЛНЕНИЯ ======================
+function initDepositModal() {
+  const tonInput = document.getElementById('tonAmount');
+  const starsInput = document.getElementById('starsAmount');
   
-  // ====================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======================
+  tonInput?.addEventListener('input', updateTonCalculation);
+  starsInput?.addEventListener('input', updateStarsCalculation);
+}
+
+function updateTonCalculation() {
+  const ton = parseFloat(this.value) || 0;
+  document.getElementById('tonGiftcoin').textContent = Math.floor(ton * 200);
+}
+
+function updateStarsCalculation() {
+  const stars = parseInt(this.value) || 0;
+  document.getElementById('starsGiftcoin').textContent = stars;
+}
+
+function openDepositModal() {
+  document.getElementById('depositModal')?.classList.remove('hidden');
+}
+
+function closeDepositModal() {
+  document.getElementById('depositModal')?.classList.add('hidden');
+}
+
+// ====================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======================
+function updateBalance(amount) {
+  balance += amount;
+  document.querySelectorAll('.balance-amount').forEach(el => {
+    el.textContent = balance;
+  });
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
   
-  function addTestButton() {
-    const testBtn = document.createElement('button');
-    testBtn.className = 'test-data-btn';
-    testBtn.textContent = 'Тестовые данные';
-    testBtn.onclick = () => {
-      currentUser = formatUserData(getTestUserData());
-      updateProfile();
-      showToast("Тестовые данные загружены", "success");
-    };
-    document.body.appendChild(testBtn);
-  }
-  
-  // Запуск приложения
-  document.addEventListener('DOMContentLoaded', initApp);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', initApp);
