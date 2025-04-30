@@ -40,30 +40,28 @@ const BONUS_TYPES = [
     }
 ];
 
-// Функция инициализации Telegram WebApp
-// Инициализация Telegram WebApp
 function initTelegramWebApp() {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const webApp = Telegram.WebApp;
-        
-        // Получаем данные пользователя
-        const user = webApp.initDataUnsafe.user || {};
-        
-        // Заполняем профиль
-        document.getElementById('userName').textContent = 
-            user.first_name || user.username || 'Пользователь';
-        
-        // Аватар
-        if (user.photo_url) {
-            document.getElementById('avatarPlaceholder').style.display = 'none';
-            document.getElementById('userAvatar').style.backgroundImage = `url(${user.photo_url})`;
-        }
-        
-        // Раскрываем приложение на весь экран
-        webApp.expand();
-    } else {
-        console.log("Тестовый режим (вне Telegram)");
-        document.getElementById('userName').textContent = "Тестовый Пользователь";
+    if (!window.Telegram?.WebApp) {
+        console.error("Telegram WebApp API not available");
+        return;
+    }
+
+    const webApp = Telegram.WebApp;
+    
+    // Принудительная инициализация
+    webApp.ready();
+    webApp.expand();
+    
+    // Получаем данные пользователя
+    const user = webApp.initDataUnsafe?.user || {};
+    console.log("Telegram User:", user);
+    
+    // Заполняем профиль
+    updateProfileData(user);
+    
+    // Для теста: добавляем кнопку "Share" если в веб-версии
+    if (!webApp.platform) {
+        addTestShareButton();
     }
 }
 
