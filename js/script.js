@@ -1,4 +1,4 @@
-import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
+import { initTelegramAuth, getTestUserData, formatUserData } from '../giftdrop-backend/controllers/auth';
 
 // Глобальные переменные
 let balance = 1000;
@@ -12,7 +12,7 @@ let userXP = 0;
 let userLevel = 1;
 
 // Константы
-const API_URL = 'https://your-backend-api.vercel.app/api';
+const API_URL = 'https://gifts-drop.vercel.app/';
 const LEVELS = [
     { level: 1, xpRequired: 0, reward: 0, bonus: "Доступ к базовым кейсам" },
     { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
