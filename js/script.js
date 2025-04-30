@@ -137,31 +137,23 @@ function updateUserStats() {
 }
 
 // ====================== СИСТЕМА ВКЛАДОК ======================
-function openTab(tabName, isInitial = false) {
-  try {
-    if (!isInitial && !event) return;
-
+// Переключение вкладок
+function openTab(tabName) {
     // Скрыть все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
-      tab?.classList.remove('active');
+        tab.classList.remove('active');
     });
     
-    // Снять активность с кнопок
+    // Убрать активное состояние у всех кнопок
     document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn?.classList.remove('active');
+        btn.classList.remove('active');
     });
     
     // Показать выбранную вкладку
-    const tab = document.getElementById(tabName);
-    if (tab) tab.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
     
-    // Активировать кнопку (если не начальная загрузка)
-    if (!isInitial) {
-      event.currentTarget?.classList.add('active');
-    }
-  } catch (e) {
-    console.error('Tab error:', e);
-  }
+    // Активировать кнопку
+    event.currentTarget.classList.add('active');
 }
 
 // ====================== РУЛЕТКА БОНУСОВ ======================
