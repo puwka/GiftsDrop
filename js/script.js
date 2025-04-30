@@ -1,7 +1,3 @@
-const API_URL = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000' 
-    : 'https://gifts-drop.vercel.app/';
-
 // script.js
 import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
 
@@ -11,6 +7,10 @@ let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
 let currentUser = null;
+
+const API_URL = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : 'https://gifts-drop.vercel.app/';
 
 // В объектах LEVELS добавьте свойство bonus
 const LEVELS = [
