@@ -1,3 +1,7 @@
+const API_URL = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : 'https://gifts-drop.vercel.app/';
+
 // script.js
 import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
 
@@ -765,34 +769,36 @@ function initTelegramWebApp() {
     }
 }
 
-// Открытие кейса
-function openCase(caseType) {
-    let price = 0;
-    switch (caseType) {
-        case 'mix': price = 0; break;
-        case 'premium': price = 500; break;
-        case 'legendary': price = 1000; break;
+// Пример: открытие кейса
+async function openCase(caseType) {
+    try {
+        const response = await fetch(`${API_URL}/api/cases/open`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                case_type: caseType
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            updateBalance(data.new_balance - balance);
+            showToast(`Кейс "${caseType}" открыт! Получено: ${data.prize_description}`, "success");
+            
+            if (data.leveled_up) {
+                showLevelUpModal(data.current_level);
+            }
+        } else {
+            showToast(data.msg || "Ошибка при открытии кейса", "error");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast("Ошибка соединения", "error");
     }
-
-    const xpReward = caseType === 'mix' ? 10 : 
-                    caseType === 'premium' ? 25 : 50;
-    addXP(xpReward);
-    
-    if (balance < price) {
-        showToast("Недостаточно средств", "error");
-        return;
-    }
-    
-    if (price > 0) {
-        updateBalance(-price);
-    }
-    
-    // Здесь должна быть логика открытия кейса
-    showToast(`Кейс "${caseType}" открыт!`, "success");
-
-    const xpGain = caseType === 'mix' ? 10 : 
-                  caseType === 'premium' ? 25 : 50;
-    addXP(xpGain);
 }
 
 // Экспорт функций для HTML
