@@ -43,20 +43,24 @@ const BONUS_TYPES = [
     }
 ];
 
-async function initApp() {
+function initApp() {
     // 1. Авторизация
     try {
-        const authResult = await initTelegramAuth();
+        const authResult = initTelegramAuth();
         
         if (authResult && authResult.data) {
             // Режим Telegram - используем реальные данные
             currentUser = formatUserData(authResult.data);
-            console.log('Authenticated as real user:', currentUser);
+            console.log('Authenticated as Telegram user:', currentUser);
             
             // Настройка WebApp
             if (authResult.webAppInstance) {
-                authResult.webAppInstance.setHeaderColor('#8a2be2');
-                authResult.webAppInstance.enableClosingConfirmation();
+                try {
+                    authResult.webAppInstance.setHeaderColor('#8a2be2');
+                    authResult.webAppInstance.enableClosingConfirmation();
+                } catch (e) {
+                    console.log('WebApp settings error:', e);
+                }
             }
         } else {
             // Тестовый режим
@@ -64,10 +68,12 @@ async function initApp() {
             console.log('Using test user:', currentUser);
             
             // Добавляем предупреждение в интерфейс
-            const warning = document.createElement('div');
-            warning.className = 'test-warning';
-            warning.textContent = 'Режим тестирования: используются тестовые данные';
-            document.body.prepend(warning);
+            if (!document.querySelector('.test-warning')) {
+                const warning = document.createElement('div');
+                warning.className = 'test-warning';
+                warning.textContent = 'Режим тестирования: используются тестовые данные';
+                document.body.prepend(warning);
+            }
         }
     } catch (e) {
         console.error('Auth error:', e);

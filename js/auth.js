@@ -1,9 +1,9 @@
 // auth.js
 export function initTelegramAuth() {
     // Проверяем, что мы в Telegram WebApp
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+    if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
         try {
-            const webApp = Telegram.WebApp;
+            const webApp = window.Telegram.WebApp;
             
             // Инициализируем WebApp
             webApp.expand();
@@ -11,7 +11,7 @@ export function initTelegramAuth() {
             
             // Если есть данные пользователя - возвращаем их
             if (webApp.initDataUnsafe?.user) {
-                console.log('Real Telegram user detected');
+                console.log('Real Telegram user detected:', webApp.initDataUnsafe.user);
                 return {
                     platform: 'telegram',
                     data: webApp.initDataUnsafe.user,
@@ -19,20 +19,20 @@ export function initTelegramAuth() {
                 };
             }
             
-            console.log('No Telegram user data available');
+            console.log('Telegram WebApp detected but no user data');
             return null;
         } catch (e) {
             console.error('Telegram auth error:', e);
             return null;
         }
     }
-    console.log('Not in Telegram environment');
+    console.log('Not in Telegram environment - using test data');
     return null;
 }
 
 export function getTestUserData() {
     return {
-        id: 0,
+        id: Math.floor(Math.random() * 1000000),
         first_name: "Тестовый",
         last_name: "Пользователь",
         username: "test_user",
@@ -46,7 +46,7 @@ export function formatUserData(userData) {
     
     return {
         id: userData.id || 0,
-        name: [userData.first_name, userData.last_name].filter(Boolean).join(' '),
+        name: [userData.first_name, userData.last_name].filter(Boolean).join(' ') || "Пользователь",
         username: userData.username ? `@${userData.username}` : '',
         photo: userData.photo_url || '',
         language: userData.language_code || 'ru'
