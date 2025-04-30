@@ -41,28 +41,29 @@ const BONUS_TYPES = [
 ];
 
 // Функция инициализации Telegram WebApp
+// Инициализация Telegram WebApp
 function initTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
         const webApp = Telegram.WebApp;
         
         // Получаем данные пользователя
-        tgUserData = webApp.initDataUnsafe.user || {};
+        const user = webApp.initDataUnsafe.user || {};
         
-        // Показываем данные в профиле
-        updateProfileData();
+        // Заполняем профиль
+        document.getElementById('userName').textContent = 
+            user.first_name || user.username || 'Пользователь';
         
-        // Развернуть приложение на весь экран
+        // Аватар
+        if (user.photo_url) {
+            document.getElementById('avatarPlaceholder').style.display = 'none';
+            document.getElementById('userAvatar').style.backgroundImage = `url(${user.photo_url})`;
+        }
+        
+        // Раскрываем приложение на весь экран
         webApp.expand();
     } else {
-        console.log("Running outside Telegram");
-        // Заглушка для тестирования вне Telegram
-        tgUserData = {
-            first_name: "Тестовый",
-            last_name: "Пользователь",
-            username: "test_user",
-            photo_url: ""
-        };
-        updateProfileData();
+        console.log("Тестовый режим (вне Telegram)");
+        document.getElementById('userName').textContent = "Тестовый Пользователь";
     }
 }
 
@@ -508,15 +509,18 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Обновите инициализацию приложения
+// Обновленная функция инициализации
 document.addEventListener('DOMContentLoaded', () => {
+    initTelegramWebApp(); // Первая инициализация
     initTheme();
-    initTelegramWebApp(); // Добавьте эту строку первой
     initRoulette();
-    initDepositModal();
     updateActiveBonuses();
-    openTab('cases');
     checkAvailableGiveaways();
     
-    setInterval(updateActiveBonuses, 60000);
+    // Равномерное распределение кейсов
+    const caseCards = document.querySelectorAll('.case-card');
+    caseCards.forEach(card => {
+        card.style.flex = '1 1 100%';
+        card.style.maxWidth = '100%';
+    });
 });
