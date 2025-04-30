@@ -1,6 +1,7 @@
 // script.js
-import { initTelegramAuth, getTestUserData, formatUserData } from 'js/auth.js';
+import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
 
+// Глобальные переменные
 let balance = 1000;
 let canSpin = true;
 let activeBonuses = [];
@@ -43,34 +44,13 @@ const BONUS_TYPES = [
 ];
 
 // Инициализация приложения
-async function initApp() {
+function initApp() {
     // 1. Авторизация
     try {
         const authResult = initTelegramAuth();
-        
-        if (authResult) {
-            // Режим Telegram - используем реальные данные
-            currentUser = formatUserData(authResult.data);
-            console.log('Authenticated as:', currentUser);
-            
-            // Можно добавить дополнительные данные из Telegram
-            const webApp = authResult.webAppInstance;
-            if (webApp) {
-                document.body.classList.add('telegram-theme');
-                webApp.setHeaderColor('#8a2be2');
-                webApp.enableClosingConfirmation();
-            }
-        } else {
-            // Тестовый режим
-            currentUser = formatUserData(getTestUserData());
-            console.log('Using test user:', currentUser);
-            
-            // Добавляем предупреждение в интерфейс
-            const warning = document.createElement('div');
-            warning.className = 'test-warning';
-            warning.textContent = 'Режим тестирования: используются тестовые данные';
-            document.body.prepend(warning);
-        }
+        currentUser = authResult 
+            ? formatUserData(authResult.data)
+            : formatUserData(getTestUserData());
     } catch (e) {
         console.error('Auth error:', e);
         currentUser = formatUserData(getTestUserData());
@@ -545,7 +525,7 @@ function openCase(caseType) {
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);
 
-// Глобальные функции для HTML
+window.initApp = initApp;
 window.openTab = openTab;
 window.toggleTheme = toggleTheme;
 window.spinRoulette = spinRoulette;
