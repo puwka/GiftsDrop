@@ -1,4 +1,4 @@
-// Импорт функций авторизации
+// script.js
 import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
 
 // Глобальные переменные
@@ -43,29 +43,32 @@ const BONUS_TYPES = [
     }
 ];
 
-// ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
-
 // Инициализация приложения
 async function initApp() {
-  // 1. Авторизация
-  const authResult = initTelegramAuth();
-  currentUser = authResult 
-    ? formatUserData(authResult.data)
-    : formatUserData(getTestUserData());
+    // 1. Авторизация
+    try {
+        const authResult = initTelegramAuth();
+        currentUser = authResult 
+            ? formatUserData(authResult.data)
+            : formatUserData(getTestUserData());
+    } catch (e) {
+        console.error('Auth error:', e);
+        currentUser = formatUserData(getTestUserData());
+    }
 
-  // 2. Обновление интерфейса
-  updateProfile();
-  initTheme();
-  initRoulette();
-  initDepositModal();
-  updateActiveBonuses();
-  checkAvailableGiveaways();
-  
-  // 3. Открываем стартовую вкладку
-  openTab('cases', true);
-
-  // 4. Периодическое обновление
-  setInterval(updateActiveBonuses, 60000);
+    // 2. Обновление интерфейса
+    updateProfile();
+    initTheme();
+    initRoulette();
+    initDepositModal();
+    updateActiveBonuses();
+    checkAvailableGiveaways();
+    
+    // 3. Открываем стартовую вкладку
+    openTab('cases', document.querySelector('.nav-btn'));
+    
+    // 4. Периодическое обновление
+    setInterval(updateActiveBonuses, 60000);
 }
 
 // Инициализация темы
@@ -101,44 +104,42 @@ function updateThemeSwitch(theme) {
 
 // Обновление профиля
 function updateProfile() {
-  if (!currentUser) return;
-  
-  const userName = document.getElementById('userName');
-  const avatar = document.getElementById('userAvatar');
-  const placeholder = document.getElementById('avatarPlaceholder');
+    if (!currentUser) return;
+    
+    const userName = document.getElementById('userName');
+    const avatar = document.getElementById('userAvatar');
+    const placeholder = document.getElementById('avatarPlaceholder');
 
-  userName.textContent = `${currentUser.name} ${currentUser.username}`;
-  
-  if (currentUser.photo) {
-    placeholder.style.display = 'none';
-    avatar.style.backgroundImage = `url(${currentUser.photo})`;
-  } else {
-    placeholder.style.display = 'flex';
-    avatar.style.backgroundImage = 'none';
-  }
+    userName.textContent = `${currentUser.name} ${currentUser.username}`;
+    
+    if (currentUser.photo) {
+        placeholder.style.display = 'none';
+        avatar.style.backgroundImage = `url(${currentUser.photo})`;
+    } else {
+        placeholder.style.display = 'flex';
+        avatar.style.backgroundImage = 'none';
+    }
 
-  // Обновляем статистику
-  updateUserStats();
+    updateUserStats();
 }
 
 // Обновление статистики
 function updateUserStats() {
-  const openedCases = document.getElementById('openedCases');
-  const bestPrize = document.getElementById('bestPrize');
-  
-  if (openedCases) {
-    openedCases.textContent = Math.abs(currentUser.id % 20);
-  }
-  
-  if (bestPrize) {
-    const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-    bestPrize.textContent = prizes[Math.floor(currentUser.id % 4)];
-  }
+    const openedCases = document.getElementById('openedCases');
+    const bestPrize = document.getElementById('bestPrize');
+    
+    if (openedCases) {
+        openedCases.textContent = Math.abs(currentUser.id % 20);
+    }
+    
+    if (bestPrize) {
+        const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
+        bestPrize.textContent = prizes[Math.floor(currentUser.id % 4)];
+    }
 }
 
-// ====================== СИСТЕМА ВКЛАДОК ======================
 // Переключение вкладок
-function openTab(tabName) {
+function openTab(tabName, clickedElement) {
     // Скрыть все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -153,10 +154,13 @@ function openTab(tabName) {
     document.getElementById(tabName).classList.add('active');
     
     // Активировать кнопку
-    event.currentTarget.classList.add('active');
+    if (clickedElement) {
+        clickedElement.classList.add('active');
+    } else {
+        document.querySelector(`.nav-btn[onclick*="${tabName}"]`).classList.add('active');
+    }
 }
 
-// ====================== РУЛЕТКА БОНУСОВ ======================
 // Инициализация рулетки
 function initRoulette() {
     const track = document.getElementById('rouletteTrack');
@@ -200,8 +204,13 @@ function getRandomVariant(type) {
 
 // Прокрутка рулетки
 function spinRoulette() {
-    if (!canSpin || balance < 100) {
-        showToast("Недостаточно средств или подождите", "error");
+    if (!canSpin) {
+        showToast("Подождите, пока завершится текущий спин", "error");
+        return;
+    }
+    
+    if (balance < 100) {
+        showToast("Недостаточно средств для спина", "error");
         return;
     }
     
@@ -219,7 +228,7 @@ function spinRoulette() {
     const itemIndex = Array.from(items).indexOf(targetItem);
     
     // Расчет позиции для остановки
-    const itemWidth = 110; // Ширина элемента + отступ
+    const itemWidth = 110;
     const stopPosition = -(itemIndex * itemWidth) + (window.innerWidth / 2 - itemWidth / 2);
     
     // Анимация прокрутки
@@ -242,7 +251,7 @@ function spinRoulette() {
         // Сброс анимации
         setTimeout(() => {
             track.style.transition = 'none';
-            initRoulette(); // Переинициализация для бесконечной прокрутки
+            initRoulette();
             canSpin = true;
             document.querySelector('.spin-button').disabled = false;
         }, 500);
@@ -251,12 +260,10 @@ function spinRoulette() {
 
 // Активация бонуса
 function activateBonus(bonus) {
-    // Применяем мгновенные бонусы
     if (bonus.type === 'free') {
         showToast(`Вы получили ${bonus.value} подарка!`, "success");
     }
     
-    // Добавляем временные бонусы
     if (bonus.duration > 0) {
         bonus.endTime = Date.now() + bonus.duration * 3600000;
         activeBonuses.push(bonus);
@@ -321,7 +328,6 @@ function closeWinModal() {
     document.getElementById('winModal').classList.add('hidden');
 }
 
-// ====================== СИСТЕМА ПОПОЛНЕНИЯ ======================
 // Участие в розыгрыше
 function joinGiveaway(minAmount) {
     if (userDeposits >= minAmount) {
@@ -359,7 +365,7 @@ function switchDepositTab(tabName) {
         content.classList.remove('active');
     });
     
-    document.querySelector(`.deposit-tab[onclick="switchDepositTab('${tabName}')"]`).classList.add('active');
+    document.querySelector(`.deposit-tab[onclick*="${tabName}"]`).classList.add('active');
     document.querySelector(`.deposit-tab-content.${tabName}`).classList.add('active');
 }
 
@@ -382,8 +388,6 @@ function processTonDeposit() {
         showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
     }
     
-    // Здесь должна быть интеграция с TON кошельком
-    // В демо-режиме просто добавляем баланс
     updateBalance(giftcoinAmount);
     userDeposits += giftcoinAmount;
     showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
@@ -410,8 +414,6 @@ function processStarsDeposit() {
         showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
     }
     
-    // Здесь должна быть интеграция с Telegram Stars API
-    // В демо-режиме просто добавляем баланс
     updateBalance(giftcoinAmount);
     userDeposits += giftcoinAmount;
     showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
@@ -443,26 +445,11 @@ function checkAvailableGiveaways() {
 
 // Обновление баланса
 function updateBalance(amount) {
-    const balanceElements = document.querySelectorAll('.balance-amount');
-    const startBalance = balance;
     balance += amount;
-    
-    let current = startBalance;
-    const increment = amount / 20;
-    
-    const timer = setInterval(() => {
-        current += increment;
-        if ((amount > 0 && current >= balance) || (amount < 0 && current <= balance)) {
-            clearInterval(timer);
-            current = balance;
-        }
-        balanceElements.forEach(el => {
-            el.textContent = Math.floor(current);
-        });
-    }, 20);
-    
-    // Анимация
-    balanceElements.forEach(el => {
+    document.querySelectorAll('.balance-amount').forEach(el => {
+        el.textContent = balance;
+        
+        // Анимация изменения баланса
         el.style.transform = 'scale(1.2)';
         el.style.color = amount > 0 ? 'var(--success)' : 'var(--danger)';
         setTimeout(() => {
@@ -475,7 +462,7 @@ function updateBalance(amount) {
 // Показ уведомления
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = `toast ${type}`;
     toast.textContent = message;
     
     const colors = {
@@ -493,39 +480,48 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// ====================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======================
-function updateBalance(amount) {
-  balance += amount;
-  document.querySelectorAll('.balance-amount').forEach(el => {
-    el.textContent = balance;
-  });
+// Инициализация Telegram WebApp
+function initTelegramWebApp() {
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+    }
 }
 
-function showToast(message, type = 'info') {
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => toast.remove(), 3000);
+// Открытие кейса
+function openCase(caseType) {
+    let price = 0;
+    switch (caseType) {
+        case 'mix': price = 0; break;
+        case 'premium': price = 500; break;
+        case 'legendary': price = 1000; break;
+    }
+    
+    if (balance < price) {
+        showToast("Недостаточно средств", "error");
+        return;
+    }
+    
+    if (price > 0) {
+        updateBalance(-price);
+    }
+    
+    // Здесь должна быть логика открытия кейса
+    showToast(`Кейс "${caseType}" открыт!`, "success");
 }
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);
 
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Инициализация Telegram WebApp (должна быть первой!)
-    initTelegramWebApp();
-    
-    // 2. Инициализация остальных компонентов
-    initTheme();
-    initRoulette();
-    initDepositModal();
-    updateActiveBonuses();
-    openTab('cases');
-    checkAvailableGiveaways();
-    
-    // 3. Периодическое обновление
-    setInterval(updateActiveBonuses, 60000);
-});
+// Глобальные функции для HTML
+window.openTab = openTab;
+window.toggleTheme = toggleTheme;
+window.spinRoulette = spinRoulette;
+window.closeWinModal = closeWinModal;
+window.joinGiveaway = joinGiveaway;
+window.switchDepositTab = switchDepositTab;
+window.processTonDeposit = processTonDeposit;
+window.processStarsDeposit = processStarsDeposit;
+window.openDepositModal = openDepositModal;
+window.closeDepositModal = closeDepositModal;
+window.openCase = openCase;
