@@ -207,25 +207,20 @@ function initLevelSystem() {
     updateLevelDisplay();
 }
 
+// Модифицированная функция добавления опыта
 function addXP(amount) {
     if (amount <= 0) return;
     
     userXP += amount;
-    let leveledUp = false;
     
     // Проверяем повышение уровня
     while (userLevel < LEVELS.length && userXP >= LEVELS[userLevel].xpRequired) {
         userLevel++;
-        leveledUp = true;
-        showLevelUpModal(userLevel);
+        showToast(`Новый уровень ${userLevel}!`, "success");
     }
     
     updateLevelDisplay();
     saveProgress();
-    
-    if (!leveledUp) {
-        showToast(`+${amount} опыта!`, "success");
-    }
 }
 
 function checkLevelUp() {
