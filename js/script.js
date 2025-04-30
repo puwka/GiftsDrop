@@ -1,5 +1,3 @@
-import { initTelegramAuth, getTestUserData, formatUserData } from '../giftdrop-backend/controllers/auth';
-
 // Глобальные переменные
 let balance = 1000;
 let canSpin = true;
@@ -54,6 +52,33 @@ const BONUS_TYPES = [
     }
 ];
 
+// Удалите эту строку:
+// import { initTelegramAuth, getTestUserData, formatUserData } from '../giftdrop-backend/controllers/auth';
+
+// Добавьте эти функции прямо в файл:
+function initTelegramAuth() {
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+      return Telegram.WebApp.initData;
+    }
+    return null;
+  }
+  
+  function getTestUserData() {
+    return {
+      id: Math.floor(Math.random() * 100000),
+      name: 'Test User',
+      photo: null
+    };
+  }
+  
+  function formatUserData(user) {
+    return {
+      id: user.id || user._id,
+      name: user.name || 'Anonymous',
+      photo: user.photo || user.photo_url || null
+    };
+  }
+
 // ====================== ИНИЦИАЛИЗАЦИЯ ======================
 async function initApp() {
     // Проверяем Telegram WebApp
@@ -84,26 +109,26 @@ async function initApp() {
 async function handleTelegramAuth() {
     const authResult = initTelegramAuth();
     if (!authResult) return null;
-
+  
     try {
-        const response = await fetch(`${API_URL}/auth`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'tg-webapp-data': Telegram.WebApp.initData
-            },
-            body: JSON.stringify({
-                initData: Telegram.WebApp.initData
-            })
-        });
-
-        if (!response.ok) throw new Error('Auth failed');
-        return await response.json();
+      const response = await fetch(`${API_URL}/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          initData: authResult
+        })
+      });
+  
+      if (!response.ok) throw new Error('Auth failed');
+      const data = await response.json();
+      return formatUserData(data);
     } catch (e) {
-        console.error('Auth API error:', e);
-        return null;
+      console.error('Auth API error:', e);
+      return null;
     }
-}
+  }
 
 async function loadUserData() {
     try {

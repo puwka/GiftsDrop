@@ -1,18 +1,15 @@
 const mongoose = require('mongoose');
 
-const UserSchema = new mongoose.Schema({
-  telegramId: { type: Number, unique: true },
-  name: String,
-  username: String,
+const userSchema = new mongoose.Schema({
+  telegramId: { type: Number, required: true, unique: true },
+  name: { type: String, required: true },
+  username: { type: String },
+  photo_url: { type: String },
   balance: { type: Number, default: 1000 },
-  deposits: { type: Number, default: 0 },
-  openedCases: { type: Number, default: 0 },
-  bonuses: [{
-    type: { type: String },
-    value: Number,
-    expiresAt: Date
-  }],
+  level: { type: Number, default: 1 },
+  xp: { type: Number, default: 0 },
+  dailySpins: { type: Number, default: 1 },
   lastActivity: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', userSchema);
