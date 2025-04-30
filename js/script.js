@@ -4,55 +4,66 @@ let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
 let tgUserData = {
-    first_name: "Тестовый",
-    last_name: "Пользователь",
-    username: "test_user",
+    first_name: "Гость",
     photo_url: ""
 };
 
-// Инициализация Telegram WebApp (должна быть первой!)
+// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
 function initTelegramWebApp() {
-    // 1. Проверяем, что мы внутри Telegram WebApp
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-        console.log("Telegram WebApp detected");
+    // Проверяем доступность Telegram WebApp API
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        console.log("Telegram WebApp API доступен");
         
-        // 2. Получаем реальные данные
-        tgUserData = {
-            ...window.Telegram.WebApp.initDataUnsafe.user,
-            photo_url: window.Telegram.WebApp.initDataUnsafe.user?.photo_url || ""
-        };
+        const webApp = Telegram.WebApp;
         
-        console.log("Real user data:", tgUserData);
+        // Получаем данные пользователя
+        if (webApp.initDataUnsafe?.user) {
+            tgUserData = {
+                first_name: webApp.initDataUnsafe.user.first_name || "Гость",
+                last_name: webApp.initDataUnsafe.user.last_name || "",
+                username: webApp.initDataUnsafe.user.username || "",
+                photo_url: webApp.initDataUnsafe.user.photo_url || ""
+            };
+            console.log("Данные пользователя:", tgUserData);
+        }
         
-        // 3. Развертываем на весь экран
-        Telegram.WebApp.expand();
+        // Развертываем на весь экран
+        webApp.expand();
+        webApp.ready();
     } else {
-        console.warn("Not in Telegram. Using test data");
+        console.log("Режим тестирования (вне Telegram)");
     }
     
-    // 4. Обновляем профиль (в любом случае)
+    // Всегда обновляем профиль
     updateProfileView();
 }
 
-// Обновление интерфейса профиля
+// Обновление профиля
 function updateProfileView() {
     const userName = document.getElementById('userName');
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
     
     // Устанавливаем имя
-    userName.textContent = 
-        (tgUserData.first_name || tgUserData.last_name) 
-            ? `${tgUserData.first_name || ''} ${tgUserData.last_name || ''}`.trim()
-            : (tgUserData.username ? `@${tgUserData.username}` : "Гость");
+    let displayName = "Гость";
+    if (tgUserData.first_name && tgUserData.last_name) {
+        displayName = `${tgUserData.first_name} ${tgUserData.last_name}`;
+    } else if (tgUserData.first_name) {
+        displayName = tgUserData.first_name;
+    } else if (tgUserData.username) {
+        displayName = `@${tgUserData.username}`;
+    }
+    userName.textContent = displayName;
     
     // Устанавливаем аватар
     if (tgUserData.photo_url) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${tgUserData.photo_url})`;
+        avatar.style.backgroundSize = 'cover';
     } else {
         placeholder.style.display = 'flex';
         avatar.style.backgroundImage = 'none';
+        avatar.style.backgroundColor = 'var(--primary)';
     }
 }
 
@@ -470,12 +481,12 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// ====================== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ======================
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Сначала загружаем Telegram WebApp
+    // 1. Инициализация Telegram WebApp (должна быть первой!)
     initTelegramWebApp();
     
-    // 2. Затем инициализируем остальные компоненты
+    // 2. Инициализация остальных компонентов
     initTheme();
     initRoulette();
     initDepositModal();
@@ -483,14 +494,29 @@ document.addEventListener('DOMContentLoaded', () => {
     openTab('cases');
     checkAvailableGiveaways();
     
-    // 3. Проверяем через 1 секунду, загрузились ли данные
-    setTimeout(() => {
-        if (!tgUserData) {
-            console.error("Failed to load user data, using fallback");
-            tgUserData = getFallbackUserData();
-            updateProfileView();
-        }
-    }, 1000);
-    
+    // 3. Периодическое обновление
     setInterval(updateActiveBonuses, 60000);
+    
+    // 4. Добавляем кнопку для теста (только вне Telegram)
+    if (typeof Telegram === 'undefined') {
+        addTestButton();
+    }
 });
+
+// Кнопка для тестирования
+function addTestButton() {
+    const btn = document.createElement('button');
+    btn.textContent = "Тестовые данные";
+    btn.className = "test-btn";
+    btn.onclick = () => {
+        tgUserData = {
+            first_name: "Тестовый",
+            last_name: "Пользователь",
+            username: "test_user",
+            photo_url: "https://via.placeholder.com/150"
+        };
+        updateProfileView();
+        showToast("Тестовые данные загружены", "success");
+    };
+    document.body.appendChild(btn);
+}
