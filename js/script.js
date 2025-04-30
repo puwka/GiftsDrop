@@ -3,185 +3,128 @@ let balance = 1000;
 let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
-let tgUserData = {
-    first_name: "Гость",
-    photo_url: ""
+
+// Типы бонусов и их вероятности
+const BONUS_TYPES = [
+    {
+        type: 'deposit',
+        probability: 45,
+        variants: [
+            { icon: 'fa-coins', title: '+10% к депозиту', value: 10, duration: 24 },
+            { icon: 'fa-piggy-bank', title: '+15% к депозиту', value: 15, duration: 12 },
+            { icon: 'fa-wallet', title: '+20% к депозиту', value: 20, duration: 6 }
+        ]
+    },
+    {
+        type: 'discount',
+        probability: 35,
+        variants: [
+            { icon: 'fa-percentage', title: 'Скидка 10%', value: 10, duration: 24 },
+            { icon: 'fa-tag', title: 'Скидка 15%', value: 15, duration: 12 },
+            { icon: 'fa-badge-percent', title: 'Скидка 20%', value: 20, duration: 6 }
+        ]
+    },
+    {
+        type: 'free',
+        probability: 20,
+        variants: [
+            { icon: 'fa-gift', title: '1 бесплатный кейс', value: 1, duration: 0 },
+            { icon: 'fa-box-open', title: '2 бесплатных кейса', value: 2, duration: 0 },
+            { icon: 'fa-star', title: '3 бесплатных кейса', value: 3, duration: 0 }
+        ]
+    }
+];
+
+// Промокоды
+const PROMO_CODES = {
+    'WELCOME': { amount: 100, used: false },
+    'BONUS50': { amount: 50, used: false },
+    'FREEGIFT': { amount: 200, used: false }
 };
 
-// Функция для загрузки данных пользователя из Telegram
-function loadTelegramUserData() {
-    // Проверяем, что мы внутри Telegram WebApp
+// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
+function initTelegramWebApp() {
+    // Проверяем доступность Telegram WebApp API
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        console.log("Telegram WebApp API доступен");
+        
         const webApp = Telegram.WebApp;
         
         // Получаем данные пользователя
         const user = webApp.initDataUnsafe?.user;
         
         if (user) {
-            // Формируем объект с данными пользователя
-            const userData = {
-                id: user.id || 0,
-                firstName: user.first_name || 'Гость',
-                lastName: user.last_name || '',
-                username: user.username ? `@${user.username}` : '',
-                photoUrl: user.photo_url || '',
-                languageCode: user.language_code || 'ru'
-            };
+            console.log("Данные пользователя:", user);
             
-            console.log('Данные пользователя Telegram:', userData);
-            return userData;
+            // Развертываем на весь экран
+            webApp.expand();
+            webApp.ready();
+            
+            // Обновляем профиль с реальными данными
+            updateTelegramProfile(user);
+            return;
         }
     }
     
-    // Возвращаем данные по умолчанию, если не в Telegram
-    console.log('Режим тестирования (вне Telegram)');
-    return {
-        id: 0,
-        firstName: 'Гость',
-        lastName: '',
-        username: '',
-        photoUrl: '',
-        languageCode: 'ru'
-    };
+    console.log("Режим тестирования (вне Telegram)");
+    // Используем тестовые данные
+    updateTelegramProfile({
+        first_name: "Тестовый",
+        last_name: "Пользователь",
+        username: "test_user",
+        photo_url: "https://via.placeholder.com/150"
+    });
 }
 
-// Функция для обновления профиля на основе данных Telegram
-function updateProfileWithTelegramData() {
-    const userData = loadTelegramUserData();
+// Обновление профиля с данными из Telegram
+function updateTelegramProfile(user) {
+    const userName = document.getElementById('userName');
+    const avatar = document.getElementById('userAvatar');
+    const placeholder = document.getElementById('avatarPlaceholder');
     
-    // Получаем элементы DOM
-    const userNameElement = document.getElementById('userName');
-    const userAvatarElement = document.getElementById('userAvatar');
-    const avatarPlaceholder = document.getElementById('avatarPlaceholder');
-    
-    // Формируем полное имя пользователя
-    let fullName = userData.firstName;
-    if (userData.lastName) {
-        fullName += ` ${userData.lastName}`;
+    // Формируем имя для отображения
+    let displayName = user.first_name || "Гость";
+    if (user.last_name) {
+        displayName += ` ${user.last_name}`;
+    }
+    if (user.username) {
+        displayName += ` (@${user.username})`;
     }
     
-    // Устанавливаем имя пользователя
-    if (userData.username) {
-        userNameElement.textContent = `${fullName} (${userData.username})`;
-    } else {
-        userNameElement.textContent = fullName;
-    }
+    userName.textContent = displayName;
     
     // Устанавливаем аватар
-    if (userData.photoUrl) {
-        // Скрываем placeholder и показываем аватар
-        avatarPlaceholder.style.display = 'none';
-        userAvatarElement.style.backgroundImage = `url(${userData.photoUrl})`;
-        userAvatarElement.style.backgroundSize = 'cover';
-        userAvatarElement.style.backgroundPosition = 'center';
+    if (user.photo_url) {
+        placeholder.style.display = 'none';
+        avatar.style.backgroundImage = `url(${user.photo_url})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.style.backgroundPosition = 'center';
     } else {
-        // Показываем placeholder, если нет аватара
-        avatarPlaceholder.style.display = 'flex';
-        userAvatarElement.style.backgroundImage = 'none';
-        userAvatarElement.style.backgroundColor = 'var(--primary)';
+        placeholder.style.display = 'flex';
+        avatar.style.backgroundImage = 'none';
+        avatar.style.backgroundColor = 'var(--primary)';
     }
     
-    // Добавляем дополнительные данные, если нужно
-    const userLevelElement = document.querySelector('.profile-info .level');
-    if (userLevelElement) {
-        // Можно добавить логику определения уровня на основе id пользователя
-        // Например, четные ID - уровень 5, нечетные - уровень 3
-        userLevelElement.textContent = userData.id % 2 === 0 ? '5' : '3';
-    }
-    
-    // Обновляем статистику (можно добавить логику сохранения статистики)
-    updateUserStats();
+    // Обновляем статистику
+    updateUserStats(user.id || 0);
 }
 
-// Функция для обновления статистики пользователя
-function updateUserStats() {
-    const userData = loadTelegramUserData();
+// Обновление статистики пользователя
+function updateUserStats(userId) {
+    const openedCases = document.getElementById('openedCases');
+    const bestPrize = document.getElementById('bestPrize');
     
-    // Генерируем статистику на основе ID пользователя для демонстрации
-    const openedCasesElement = document.getElementById('openedCases');
-    const bestPrizeElement = document.getElementById('bestPrize');
-    
-    if (openedCasesElement) {
-        const baseCases = Math.abs(userData.id % 20); // От 0 до 19
-        openedCasesElement.textContent = baseCases + 3; // От 3 до 22
+    if (openedCases) {
+        openedCases.textContent = (Math.abs(userId % 20) + 5); // 5-24 кейса
     }
     
-    if (bestPrizeElement) {
+    if (bestPrize) {
         const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-        const prizeIndex = Math.abs(userData.id % 4);
-        bestPrizeElement.textContent = prizes[prizeIndex];
+        bestPrize.textContent = prizes[Math.abs(userId % 4)];
     }
 }
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Инициализация Telegram WebApp
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        Telegram.WebApp.expand();
-        Telegram.WebApp.ready();
-    }
-    
-    // 2. Загрузка данных пользователя
-    updateProfileWithTelegramData();
-    
-    // 3. Добавляем кнопку для теста, если не в Telegram
-    if (typeof Telegram === 'undefined') {
-        addTestUserButton();
-    }
-});
-
-// Функция для добавления тестовой кнопки (вне Telegram)
-function addTestUserButton() {
-    const testBtn = document.createElement('button');
-    testBtn.className = 'test-data-btn';
-    testBtn.textContent = 'Тестовые данные';
-    testBtn.onclick = () => {
-        // Имитируем данные пользователя Telegram
-        const testUser = {
-            id: 123456789,
-            firstName: 'Иван',
-            lastName: 'Иванов',
-            username: 'ivanov',
-            photoUrl: 'https://via.placeholder.com/150',
-            languageCode: 'ru'
-        };
-        
-        // Сохраняем тестовые данные
-        window.tgUserData = testUser;
-        
-        // Обновляем профиль
-        updateProfileWithTelegramData();
-        
-        // Показываем уведомление
-        showToast('Тестовые данные загружены', 'success');
-    };
-    
-    document.body.appendChild(testBtn);
-}
-
-// Вспомогательная функция для показа уведомлений
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.textContent = message;
-    
-    // Стили в зависимости от типа
-    const colors = {
-        'info': 'var(--primary)',
-        'success': 'var(--success)',
-        'error': 'var(--danger)'
-    };
-    
-    toast.style.backgroundColor = colors[type] || colors.info;
-    document.body.appendChild(toast);
-    
-    // Автоматическое скрытие
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
+// ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
 // Инициализация темы
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -378,31 +321,51 @@ function updateActiveBonuses() {
 
 // Показ модального окна с выигрышем
 function showWinModal(bonus) {
-    const modal = document.getElementById('winModal');
-    const icon = document.getElementById('winIcon');
-    const title = document.getElementById('winTitle');
-    const desc = document.getElementById('winDescription');
+    const modal = document.createElement('div');
+    modal.id = 'winModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>ПОЗДРАВЛЯЕМ!</h3>
+            <div class="win-icon ${bonus.type}">
+                <i class="${bonus.icon}"></i>
+            </div>
+            <p>${bonus.title}</p>
+            <button class="modal-button" onclick="closeWinModal()">OK</button>
+        </div>
+    `;
     
-    icon.className = `win-icon ${bonus.type}`;
-    icon.innerHTML = `<i class="${bonus.icon}"></i>`;
-    title.textContent = "ПОЗДРАВЛЯЕМ!";
-    desc.textContent = bonus.title;
-    
-    modal.classList.remove('hidden');
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
 }
 
 // Закрытие модального окна
 function closeWinModal() {
-    document.getElementById('winModal').classList.add('hidden');
+    const modal = document.getElementById('winModal');
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
 }
 
 // Открытие кейса
 function openCase(caseType) {
-    const modal = document.getElementById('caseModal');
-    const rewardElement = document.getElementById('caseReward');
+    const modal = document.createElement('div');
+    modal.id = 'caseModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>${caseType === 'mix' ? 'МИКС КЕЙС' : caseType === 'premium' ? 'ПРЕМИУМ КЕЙС' : 'ЛЕГЕНДАРНЫЙ КЕЙС'}</h3>
+            <div class="case-animation">
+                <div class="case-top"></div>
+                <div class="case-bottom">
+                    <div id="caseReward"></div>
+                </div>
+            </div>
+            <button class="modal-button" onclick="closeCaseModal()">ЗАКРЫТЬ</button>
+        </div>
+    `;
     
-    // Скрываем все кейсы
-    modal.classList.remove('hidden');
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
     
     // Через 1 секунду показываем награду
     setTimeout(() => {
@@ -413,7 +376,7 @@ function openCase(caseType) {
         };
         
         const randomReward = rewards[caseType][Math.floor(Math.random() * rewards[caseType].length)];
-        rewardElement.textContent = randomReward.split(' ')[0];
+        document.getElementById('caseReward').textContent = randomReward.split(' ')[0];
         
         // Добавляем валюту
         updateBalance(100);
@@ -422,7 +385,9 @@ function openCase(caseType) {
 
 // Закрытие модального окна кейса
 function closeCaseModal() {
-    document.getElementById('caseModal').classList.add('hidden');
+    const modal = document.getElementById('caseModal');
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
 }
 
 // Участие в розыгрыше
@@ -595,3 +560,37 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Инициализация Telegram WebApp (должна быть первой!)
+    initTelegramWebApp();
+    
+    // 2. Инициализация остальных компонентов
+    initTheme();
+    initRoulette();
+    initDepositModal();
+    updateActiveBonuses();
+    openTab('cases');
+    checkAvailableGiveaways();
+    
+    // 3. Периодическое обновление
+    setInterval(updateActiveBonuses, 60000);
+    
+    // 4. Добавляем кнопку для теста (только вне Telegram)
+    if (typeof Telegram === 'undefined') {
+        const testBtn = document.createElement('button');
+        testBtn.className = 'test-data-btn';
+        testBtn.textContent = 'Тестовые данные';
+        testBtn.onclick = () => {
+            updateTelegramProfile({
+                first_name: "Тестовый",
+                last_name: "Пользователь",
+                username: "test_user",
+                photo_url: "https://via.placeholder.com/150"
+            });
+            showToast("Тестовые данные загружены", "success");
+        };
+        document.body.appendChild(testBtn);
+    }
+});
