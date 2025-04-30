@@ -8,18 +8,18 @@ let activeBonuses = [];
 let userDeposits = 0;
 let currentUser = null;
 
+// Константы уровней (в начале файла)
 const LEVELS = [
-    { level: 1, xpRequired: 0, reward: 0, bonus: "Начальный уровень" },
-    { level: 2, xpRequired: 200, reward: 100, bonus: "+5% к выигрышам" },
-    { level: 3, xpRequired: 500, reward: 200, bonus: "Доступ к премиум кейсам" },
-    { level: 4, xpRequired: 1000, reward: 500, bonus: "+1 спин в день" },
-    { level: 5, xpRequired: 2000, reward: 1000, bonus: "VIP статус" },
-    { level: 6, xpRequired: 4000, reward: 2000, bonus: "Эксклюзивные кейсы" }
+    { level: 1, xpRequired: 0, reward: 0 },
+    { level: 2, xpRequired: 100, reward: 50 },
+    { level: 3, xpRequired: 300, reward: 100 },
+    { level: 4, xpRequired: 600, reward: 200 },
+    { level: 5, xpRequired: 1000, reward: 500 }
 ];
 
+// Глобальные переменные
 let userXP = 0;
 let userLevel = 1;
-let dailySpins = 1;
 
 // Промокоды
 const PROMO_CODES = {
@@ -103,6 +103,8 @@ function initApp() {
     initUserLevel();
     loadUserProgress();
     updateLevelSystem();
+    initLevelSystem(); // Всегда начинаем с 1 уровня
+    loadProgress();
     
     // 3. Открываем стартовую вкладку
     openTab('cases', document.querySelector('.nav-btn'));
@@ -195,15 +197,30 @@ function calculateXPForLevel(level) {
     return LEVELS[level - 1]?.xpRequired || 0;
 }
 
-// Добавляем новые функции
+// Новая функция инициализации уровней
+function initLevelSystem() {
+    // Сбрасываем всегда на 1 уровень при инициализации
+    userLevel = 1;
+    userXP = 0;
+    
+    // Обновляем отображение
+    updateLevelDisplay();
+}
+
+// Модифицированная функция добавления опыта
 function addXP(amount) {
     if (amount <= 0) return;
     
     userXP += amount;
-    checkLevelUp();
-    saveUserProgress();
-    updateLevelSystem();
-    showToast(`+${amount} опыта!`, "success");
+    
+    // Проверяем повышение уровня
+    while (userLevel < LEVELS.length && userXP >= LEVELS[userLevel].xpRequired) {
+        userLevel++;
+        showToast(`Новый уровень ${userLevel}!`, "success");
+    }
+    
+    updateLevelDisplay();
+    saveProgress();
 }
 
 function checkLevelUp() {
@@ -280,6 +297,25 @@ function updateLevelSystem() {
         `${userXP}/${nextLevelData.xpRequired} XP`;
 }
 
+// Функция обновления отображения
+function updateLevelDisplay() {
+    const currentLevel = LEVELS[userLevel - 1];
+    const nextLevel = LEVELS[userLevel] || currentLevel;
+    
+    // Обновляем цифру уровня
+    document.getElementById('userLevel').textContent = userLevel;
+    
+    // Обновляем прогресс-бар
+    const progressPercent = nextLevel 
+        ? ((userXP - currentLevel.xpRequired) / 
+          (nextLevel.xpRequired - currentLevel.xpRequired)) * 100
+        : 100;
+    
+    document.getElementById('levelProgress').style.width = `${progressPercent}%`;
+    document.getElementById('xpDisplay').textContent = 
+        `${userXP}/${nextLevel.xpRequired} XP`;
+}
+
 function saveUserProgress() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         Telegram.WebApp.CloudStorage.setItem('userProgress', JSON.stringify({
@@ -294,6 +330,16 @@ function saveUserProgress() {
             spins: dailySpins
         }));
     }
+}
+
+// Сохранение прогресса
+function saveProgress() {
+    const progressData = {
+        level: userLevel,
+        xp: userXP
+    };
+    
+    localStorage.setItem('userProgress', JSON.stringify(progressData));
 }
 
 function loadUserProgress() {
@@ -325,6 +371,21 @@ function loadUserProgress() {
         userLevel = uiLevel;
         userXP = calculateXPForLevel(userLevel);
     }
+}
+
+// Загрузка прогресса
+function loadProgress() {
+    const savedData = localStorage.getItem('userProgress');
+    if (savedData) {
+        try {
+            const { level, xp } = JSON.parse(savedData);
+            userLevel = Math.min(level, LEVELS.length);
+            userXP = Math.max(xp, LEVELS[userLevel - 1].xpRequired);
+        } catch (e) {
+            console.error("Ошибка загрузки прогресса:", e);
+        }
+    }
+    updateLevelDisplay();
 }
 
 function initUserLevel() {
@@ -412,6 +473,8 @@ function spinRoulette() {
         showToast("Нет доступных спинов", "error");
         return;
     }
+
+    addXP(15);
     
     dailySpins--;
     saveUserProgress();
@@ -672,23 +735,18 @@ function updateBalance(amount) {
     });
 }
 
-// Показ уведомления
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
-    
-    const colors = {
-        'info': 'var(--primary)',
-        'success': 'var(--success)',
-        'error': 'var(--danger)'
-    };
-    
-    toast.style.background = colors[type];
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                         type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        ${message}
+    `;
     document.body.appendChild(toast);
     
     setTimeout(() => {
-        toast.classList.add('hidden');
+        toast.classList.add('fade-out');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
@@ -725,6 +783,10 @@ function openCase(caseType) {
     
     // Здесь должна быть логика открытия кейса
     showToast(`Кейс "${caseType}" открыт!`, "success");
+
+    const xpGain = caseType === 'mix' ? 10 : 
+                  caseType === 'premium' ? 25 : 50;
+    addXP(xpGain);
 }
 
 // Экспорт функций для HTML
