@@ -130,18 +130,20 @@ async function handleTelegramAuth() {
     }
   }
 
-async function loadUserData() {
+  async function loadUserData() {
     try {
-        const response = await fetch(`${API_URL}/user`, {
+        const response = await fetch(`${API_URL}/api/user`, {
+            method: 'GET',
             headers: {
+                'Content-Type': 'application/json',
                 'tg-webapp-data': Telegram.WebApp.initData
             }
         });
         
         if (response.ok) {
             const data = await response.json();
-            balance = data.balance;
-            userDeposits = data.deposits;
+            balance = data.balance || 1000;
+            userDeposits = data.deposits || 0;
             activeBonuses = data.bonuses || [];
             userXP = data.xp || 0;
             userLevel = data.level || 1;

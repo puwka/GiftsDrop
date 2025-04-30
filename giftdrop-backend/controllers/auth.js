@@ -28,29 +28,6 @@ function validateTelegramData(initData) {
   return JSON.parse(params.get('user'));
 }
 
-exports.initTelegramAuth = () => {
-  if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-    return Telegram.WebApp.initData;
-  }
-  return null;
-};
-
-exports.getTestUserData = () => {
-  return {
-    id: Math.floor(Math.random() * 100000),
-    name: 'Test User',
-    photo: null
-  };
-};
-
-exports.formatUserData = (user) => {
-  return {
-    id: user._id || user.id,
-    name: user.name || 'Anonymous',
-    photo: user.photo_url || null
-  };
-};
-
 exports.auth = async (req, res) => {
   const { initData } = req.body;
   
@@ -70,7 +47,9 @@ exports.auth = async (req, res) => {
           balance: 1000,
           level: 1,
           xp: 0,
-          dailySpins: 1 
+          dailySpins: 1,
+          deposits: 0,
+          bonuses: []
         }
       },
       { upsert: true, new: true }
@@ -84,7 +63,9 @@ exports.auth = async (req, res) => {
       balance: user.balance,
       level: user.level,
       xp: user.xp,
-      dailySpins: user.dailySpins
+      dailySpins: user.dailySpins,
+      deposits: user.deposits,
+      bonuses: user.bonuses
     });
   } catch (err) {
     console.error('Auth error:', err);
