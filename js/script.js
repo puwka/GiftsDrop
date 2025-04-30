@@ -155,7 +155,7 @@ function openTab(tabName) {
     document.getElementById(tabName).classList.add('active');
     
     // Активировать кнопку
-    event.currentTarget.classList.add('active');
+    if (element) element?.classList?.add('active');
 }
 
 // Инициализация рулетки
