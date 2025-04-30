@@ -40,35 +40,38 @@ const BONUS_TYPES = [
     }
 ];
 
+// Инициализация Telegram WebApp
 function initTelegramWebApp() {
-    if (!window.Telegram?.WebApp) {
-        console.error("Telegram WebApp API not available");
-        return;
-    }
-
-    const webApp = Telegram.WebApp;
-    
-    // Принудительная инициализация
-    webApp.ready();
-    webApp.expand();
-    
-    // Получаем данные пользователя
-    const user = webApp.initDataUnsafe?.user || {};
-    console.log("Telegram User:", user);
-    
-    // Заполняем профиль
-    updateProfileData(user);
-    
-    // Для теста: добавляем кнопку "Share" если в веб-версии
-    if (!webApp.platform) {
-        addTestShareButton();
+    if (window.Telegram?.WebApp) {
+        const webApp = Telegram.WebApp;
+        
+        // Включаем полноэкранный режим
+        webApp.expand();
+        
+        // Получаем данные пользователя
+        tgUserData = webApp.initDataUnsafe?.user || {};
+        console.log("Telegram User Data:", tgUserData);
+        
+        // Обновляем профиль
+        updateProfileData();
+        
+        // Для теста вне Telegram
+        if (!webApp.initData) {
+            addTestDataButton();
+        }
+    } else {
+        console.warn("Telegram WebApp API not found. Running in test mode.");
+        addTestDataButton();
     }
 }
 
 // Обновление данных профиля
 function updateProfileData() {
-    // Имя пользователя
     const userName = document.getElementById('userName');
+    const avatar = document.getElementById('userAvatar');
+    const placeholder = document.getElementById('avatarPlaceholder');
+    
+    // Имя пользователя
     if (tgUserData.first_name || tgUserData.last_name) {
         userName.textContent = `${tgUserData.first_name || ''} ${tgUserData.last_name || ''}`.trim();
     } else if (tgUserData.username) {
@@ -77,20 +80,43 @@ function updateProfileData() {
         userName.textContent = "Аноним";
     }
     
-    // Аватарка
-    const avatar = document.getElementById('userAvatar');
-    const placeholder = document.getElementById('avatarPlaceholder');
+    // Аватар
     if (tgUserData.photo_url) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${tgUserData.photo_url})`;
         avatar.style.backgroundSize = 'cover';
     } else {
         placeholder.style.display = 'flex';
+        avatar.style.backgroundImage = '';
     }
+}
+
+// Кнопка для теста вне Telegram
+function addTestDataButton() {
+    const testBtn = document.createElement('button');
+    testBtn.textContent = "Тестовые данные";
+    testBtn.style.position = 'fixed';
+    testBtn.style.bottom = '70px';
+    testBtn.style.right = '10px';
+    testBtn.style.zIndex = '1000';
+    testBtn.style.padding = '8px 12px';
+    testBtn.style.background = 'var(--primary)';
+    testBtn.style.color = 'white';
+    testBtn.style.borderRadius = '20px';
+    testBtn.style.border = 'none';
     
-    // Можно добавить другие данные:
-    // document.getElementById('openedCases').textContent = ...
-    // document.getElementById('bestPrize').textContent = ...
+    testBtn.onclick = () => {
+        tgUserData = {
+            first_name: "Тестовый",
+            last_name: "Пользователь",
+            username: "test_user",
+            photo_url: "https://via.placeholder.com/150"
+        };
+        updateProfileData();
+        testBtn.remove();
+    };
+    
+    document.body.appendChild(testBtn);
 }
 
 // Инициализация темы
@@ -507,18 +533,15 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Обновленная функция инициализации
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-    initTelegramWebApp(); // Первая инициализация
+    initTelegramWebApp(); // Первая инициализация!
     initTheme();
     initRoulette();
+    initDepositModal();
     updateActiveBonuses();
+    openTab('cases');
     checkAvailableGiveaways();
     
-    // Равномерное распределение кейсов
-    const caseCards = document.querySelectorAll('.case-card');
-    caseCards.forEach(card => {
-        card.style.flex = '1 1 100%';
-        card.style.maxWidth = '100%';
-    });
+    setInterval(updateActiveBonuses, 60000);
 });
