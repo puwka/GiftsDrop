@@ -1,7 +1,6 @@
 // script.js
-import { initTelegramAuth, getTestUserData, formatUserData } from './auth.js';
+import { initTelegramAuth, getTestUserData, formatUserData } from 'js/auth.js';
 
-// Глобальные переменные
 let balance = 1000;
 let canSpin = true;
 let activeBonuses = [];
@@ -48,9 +47,30 @@ async function initApp() {
     // 1. Авторизация
     try {
         const authResult = initTelegramAuth();
-        currentUser = authResult 
-            ? formatUserData(authResult.data)
-            : formatUserData(getTestUserData());
+        
+        if (authResult) {
+            // Режим Telegram - используем реальные данные
+            currentUser = formatUserData(authResult.data);
+            console.log('Authenticated as:', currentUser);
+            
+            // Можно добавить дополнительные данные из Telegram
+            const webApp = authResult.webAppInstance;
+            if (webApp) {
+                document.body.classList.add('telegram-theme');
+                webApp.setHeaderColor('#8a2be2');
+                webApp.enableClosingConfirmation();
+            }
+        } else {
+            // Тестовый режим
+            currentUser = formatUserData(getTestUserData());
+            console.log('Using test user:', currentUser);
+            
+            // Добавляем предупреждение в интерфейс
+            const warning = document.createElement('div');
+            warning.className = 'test-warning';
+            warning.textContent = 'Режим тестирования: используются тестовые данные';
+            document.body.prepend(warning);
+        }
     } catch (e) {
         console.error('Auth error:', e);
         currentUser = formatUserData(getTestUserData());
@@ -110,16 +130,28 @@ function updateProfile() {
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
 
-    userName.textContent = `${currentUser.name} ${currentUser.username}`;
+    // Обновляем имя пользователя
+    userName.textContent = currentUser.name;
     
+    // Обновляем аватар
     if (currentUser.photo) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${currentUser.photo})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.style.backgroundPosition = 'center';
     } else {
         placeholder.style.display = 'flex';
         avatar.style.backgroundImage = 'none';
+        
+        // Генерируем инициалы для аватара
+        const initials = currentUser.name.split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase();
+        placeholder.textContent = initials;
     }
 
+    // Обновляем статистику
     updateUserStats();
 }
 
