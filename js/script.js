@@ -63,6 +63,12 @@ function initTelegramWebApp() {
         console.warn("Telegram WebApp API not found. Running in test mode.");
         addTestDataButton();
     }
+    
+    if (!tgUserData.id && window.Telegram?.WebApp?.initData) {
+        const initData = new URLSearchParams(Telegram.WebApp.initData);
+        const userJson = initData.get('user');
+        if (userJson) tgUserData = JSON.parse(userJson);
+    }
 }
 
 // Обновление данных профиля
