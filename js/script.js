@@ -10,7 +10,7 @@ let userXP = 0;
 let userLevel = 1;
 
 // Константы
-const API_URL = 'https://gifts-drop.vercel.app/';
+const API_URL = window.location.origin;
 const LEVELS = [
     { level: 1, xpRequired: 0, reward: 0, bonus: "Доступ к базовым кейсам" },
     { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
@@ -106,12 +106,13 @@ async function initApp() {
     initInterface();
 }
 
+// Обновите функцию handleTelegramAuth
 async function handleTelegramAuth() {
     const authResult = initTelegramAuth();
     if (!authResult) return null;
   
     try {
-      const response = await fetch(`${API_URL}/auth`, {
+      const response = await fetch(`${API_URL}/api/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -121,39 +122,55 @@ async function handleTelegramAuth() {
         })
       });
   
-      if (!response.ok) throw new Error('Auth failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Auth failed');
+      }
+      
       const data = await response.json();
+      console.log('Auth response:', data); // Добавьте логирование
       return formatUserData(data);
     } catch (e) {
       console.error('Auth API error:', e);
+      showToast(`Ошибка авторизации: ${e.message}`, 'error');
       return null;
     }
   }
-
+  
+  // Обновите функцию loadUserData
   async function loadUserData() {
+    if (!isTelegramApp || !currentUser) return;
+  
     try {
-        const response = await fetch(`${API_URL}/api/user`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'tg-webapp-data': Telegram.WebApp.initData
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            balance = data.balance || 1000;
-            userDeposits = data.deposits || 0;
-            activeBonuses = data.bonuses || [];
-            userXP = data.xp || 0;
-            userLevel = data.level || 1;
-            dailySpins = data.dailySpins || 1;
-            updateUI();
+      console.log('Loading user data...'); // Логирование
+      const response = await fetch(`${API_URL}/api/user`, {
+        headers: {
+          'tg-webapp-data': Telegram.WebApp.initData,
+          'Content-Type': 'application/json'
         }
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to load user data');
+      }
+  
+      const data = await response.json();
+      console.log('User data:', data); // Логирование
+  
+      balance = data.balance || 1000;
+      userDeposits = data.deposits || 0;
+      activeBonuses = data.bonuses || [];
+      userXP = data.xp || 0;
+      userLevel = data.level || 1;
+      dailySpins = data.dailySpins || 1;
+  
+      updateUI();
     } catch (e) {
-        console.error('Load data error:', e);
+      console.error('Load data error:', e);
+      showToast(`Ошибка загрузки данных: ${e.message}`, 'error');
     }
-}
+  }
 
 function showTestModeWarning() {
     currentUser = formatUserData(getTestUserData());
