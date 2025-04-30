@@ -3,7 +3,7 @@ let balance = 1000;
 let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
-let tgUserData = {};
+let tgUserData = null;
 
 // Промокоды
 const PROMO_CODES = {
@@ -40,53 +40,53 @@ const BONUS_TYPES = [
     }
 ];
 
+// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
 function initTelegramWebApp() {
-    // 1. Проверяем, что мы внутри Telegram WebApp
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+    // Проверяем наличие Telegram WebApp API
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
         console.log("Telegram WebApp detected");
-        
         const webApp = Telegram.WebApp;
         
-        // 2. Всегда расширяем на весь экран
-        webApp.expand();
+        // 1. Получаем данные пользователя
+        tgUserData = webApp.initDataUnsafe.user;
+        console.log("User data from Telegram:", tgUserData);
         
-        // 3. Получаем данные пользователя (новый надежный способ)
-        try {
-            const initData = new URLSearchParams(webApp.initData);
-            const userJson = initData.get('user');
-            
-            if (userJson) {
-                tgUserData = JSON.parse(userJson);
-                console.log("User data loaded:", tgUserData);
-            } else {
-                console.warn("No user data in initData");
-                tgUserData = getFallbackUserData();
-            }
-        } catch (e) {
-            console.error("Error parsing user data:", e);
-            tgUserData = getFallbackUserData();
+        // 2. Развертываем на весь экран
+        webApp.expand();
+        webApp.ready();
+        
+        // 3. Обновляем профиль
+        updateProfileView();
+        
+        // 4. Включаем кнопку "Поделиться"
+        if (webApp.isVersionAtLeast('6.1')) {
+            webApp.MainButton.setText("Поделиться профилем")
+                .onClick(() => webApp.shareProfile())
+                .show();
         }
     } else {
         console.warn("Not in Telegram WebApp. Using test data");
         tgUserData = getFallbackUserData();
+        updateProfileView();
+        addTestDataButton();
     }
-    
-    // 4. Обновляем интерфейс
-    updateProfileView();
 }
 
-// Запасные данные для теста
 function getFallbackUserData() {
     return {
-        first_name: "Телеграм",
+        first_name: "Тестовый",
         last_name: "Пользователь",
-        username: "tg_user",
+        username: "test_user",
         photo_url: "https://via.placeholder.com/150"
     };
 }
 
-// Обновляем интерфейс профиля
 function updateProfileView() {
+    if (!tgUserData) {
+        console.error("User data not loaded yet");
+        return;
+    }
+
     const userName = document.getElementById('userName');
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
@@ -110,6 +110,18 @@ function updateProfileView() {
         avatar.style.backgroundImage = '';
         avatar.style.backgroundColor = 'var(--primary)';
     }
+}
+
+function addTestDataButton() {
+    const testBtn = document.createElement('button');
+    testBtn.textContent = "Тестовые данные";
+    testBtn.className = 'test-data-btn';
+    testBtn.onclick = () => {
+        tgUserData = getFallbackUserData();
+        updateProfileView();
+        testBtn.remove();
+    };
+    document.body.appendChild(testBtn);
 }
 
 // Инициализация темы
@@ -526,15 +538,27 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Инициализация приложения
+// ====================== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ======================
 document.addEventListener('DOMContentLoaded', () => {
-    initTelegramWebApp(); // Первая инициализация!
+    // 1. Сначала загружаем Telegram WebApp
+    initTelegramWebApp();
+    
+    // 2. Затем инициализируем остальные компоненты
     initTheme();
     initRoulette();
     initDepositModal();
     updateActiveBonuses();
     openTab('cases');
     checkAvailableGiveaways();
+    
+    // 3. Проверяем через 1 секунду, загрузились ли данные
+    setTimeout(() => {
+        if (!tgUserData) {
+            console.error("Failed to load user data, using fallback");
+            tgUserData = getFallbackUserData();
+            updateProfileView();
+        }
+    }, 1000);
     
     setInterval(updateActiveBonuses, 60000);
 });
