@@ -1,36 +1,43 @@
 // auth.js
 export function initTelegramAuth() {
-    // Проверяем, что находимся в Telegram WebApp
+    // Проверяем, что мы в Telegram WebApp
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        const webApp = Telegram.WebApp;
-        
         try {
+            const webApp = Telegram.WebApp;
+            
             // Инициализируем WebApp
             webApp.expand();
             webApp.ready();
             
-            // Проверяем, есть ли данные пользователя
+            // Если есть данные пользователя - возвращаем их
             if (webApp.initDataUnsafe?.user) {
+                console.log('Real Telegram user detected');
                 return {
                     platform: 'telegram',
                     data: webApp.initDataUnsafe.user,
                     webAppInstance: webApp
                 };
             }
+            
+            console.log('No Telegram user data available');
+            return null;
         } catch (e) {
             console.error('Telegram auth error:', e);
+            return null;
         }
     }
+    console.log('Not in Telegram environment');
     return null;
 }
 
 export function getTestUserData() {
     return {
-        id: Math.floor(Math.random() * 100000),
+        id: 0,
         first_name: "Тестовый",
         last_name: "Пользователь",
         username: "test_user",
-        photo_url: ""
+        photo_url: "",
+        language_code: "ru"
     };
 }
 
@@ -41,6 +48,7 @@ export function formatUserData(userData) {
         id: userData.id || 0,
         name: [userData.first_name, userData.last_name].filter(Boolean).join(' '),
         username: userData.username ? `@${userData.username}` : '',
-        photo: userData.photo_url || ''
+        photo: userData.photo_url || '',
+        language: userData.language_code || 'ru'
     };
 }

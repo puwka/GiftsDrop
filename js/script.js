@@ -43,14 +43,32 @@ const BONUS_TYPES = [
     }
 ];
 
-// Инициализация приложения
-function initApp() {
+async function initApp() {
     // 1. Авторизация
     try {
-        const authResult = initTelegramAuth();
-        currentUser = authResult 
-            ? formatUserData(authResult.data)
-            : formatUserData(getTestUserData());
+        const authResult = await initTelegramAuth();
+        
+        if (authResult && authResult.data) {
+            // Режим Telegram - используем реальные данные
+            currentUser = formatUserData(authResult.data);
+            console.log('Authenticated as real user:', currentUser);
+            
+            // Настройка WebApp
+            if (authResult.webAppInstance) {
+                authResult.webAppInstance.setHeaderColor('#8a2be2');
+                authResult.webAppInstance.enableClosingConfirmation();
+            }
+        } else {
+            // Тестовый режим
+            currentUser = formatUserData(getTestUserData());
+            console.log('Using test user:', currentUser);
+            
+            // Добавляем предупреждение в интерфейс
+            const warning = document.createElement('div');
+            warning.className = 'test-warning';
+            warning.textContent = 'Режим тестирования: используются тестовые данные';
+            document.body.prepend(warning);
+        }
     } catch (e) {
         console.error('Auth error:', e);
         currentUser = formatUserData(getTestUserData());
@@ -131,7 +149,6 @@ function updateProfile() {
         placeholder.textContent = initials;
     }
 
-    // Обновляем статистику
     updateUserStats();
 }
 
@@ -522,9 +539,7 @@ function openCase(caseType) {
     showToast(`Кейс "${caseType}" открыт!`, "success");
 }
 
-// Запуск приложения
-document.addEventListener('DOMContentLoaded', initApp);
-
+// Экспорт функций для HTML
 window.initApp = initApp;
 window.openTab = openTab;
 window.toggleTheme = toggleTheme;
@@ -537,3 +552,6 @@ window.processStarsDeposit = processStarsDeposit;
 window.openDepositModal = openDepositModal;
 window.closeDepositModal = closeDepositModal;
 window.openCase = openCase;
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', initApp);

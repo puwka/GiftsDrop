@@ -1021,21 +1021,20 @@ input[type="number"]::-webkit-inner-spin-button {
     overflow: hidden;
 }
 
-#avatarPlaceholder {
-    z-index: 2;
-    font-weight: bold;
-}
-
-/* Для тестирования вне Telegram */
 .test-warning {
-    background: var(--warning);
+    background: #ffa502;
     color: white;
-    padding: 0.5rem;
+    padding: 8px;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 14px;
     position: sticky;
     top: 0;
     z-index: 1000;
+}
+
+#avatarPlaceholder {
+    font-weight: bold;
+    color: white;
 }
 
 .telegram-theme {
