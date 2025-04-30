@@ -8,63 +8,178 @@ let tgUserData = {
     photo_url: ""
 };
 
-// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
-function initTelegramWebApp() {
-    // Проверяем доступность Telegram WebApp API
+// Функция для загрузки данных пользователя из Telegram
+function loadTelegramUserData() {
+    // Проверяем, что мы внутри Telegram WebApp
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        console.log("Telegram WebApp API доступен");
-        
         const webApp = Telegram.WebApp;
         
         // Получаем данные пользователя
-        if (webApp.initDataUnsafe?.user) {
-            tgUserData = {
-                first_name: webApp.initDataUnsafe.user.first_name || "Гость",
-                last_name: webApp.initDataUnsafe.user.last_name || "",
-                username: webApp.initDataUnsafe.user.username || "",
-                photo_url: webApp.initDataUnsafe.user.photo_url || ""
-            };
-            console.log("Данные пользователя:", tgUserData);
-        }
+        const user = webApp.initDataUnsafe?.user;
         
-        // Развертываем на весь экран
-        webApp.expand();
-        webApp.ready();
-    } else {
-        console.log("Режим тестирования (вне Telegram)");
+        if (user) {
+            // Формируем объект с данными пользователя
+            const userData = {
+                id: user.id || 0,
+                firstName: user.first_name || 'Гость',
+                lastName: user.last_name || '',
+                username: user.username ? `@${user.username}` : '',
+                photoUrl: user.photo_url || '',
+                languageCode: user.language_code || 'ru'
+            };
+            
+            console.log('Данные пользователя Telegram:', userData);
+            return userData;
+        }
     }
     
-    // Всегда обновляем профиль
-    updateProfileView();
+    // Возвращаем данные по умолчанию, если не в Telegram
+    console.log('Режим тестирования (вне Telegram)');
+    return {
+        id: 0,
+        firstName: 'Гость',
+        lastName: '',
+        username: '',
+        photoUrl: '',
+        languageCode: 'ru'
+    };
 }
 
-// Обновление профиля
-function updateProfileView() {
-    const userName = document.getElementById('userName');
-    const avatar = document.getElementById('userAvatar');
-    const placeholder = document.getElementById('avatarPlaceholder');
+// Функция для обновления профиля на основе данных Telegram
+function updateProfileWithTelegramData() {
+    const userData = loadTelegramUserData();
     
-    // Устанавливаем имя
-    let displayName = "Гость";
-    if (tgUserData.first_name && tgUserData.last_name) {
-        displayName = `${tgUserData.first_name} ${tgUserData.last_name}`;
-    } else if (tgUserData.first_name) {
-        displayName = tgUserData.first_name;
-    } else if (tgUserData.username) {
-        displayName = `@${tgUserData.username}`;
+    // Получаем элементы DOM
+    const userNameElement = document.getElementById('userName');
+    const userAvatarElement = document.getElementById('userAvatar');
+    const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+    
+    // Формируем полное имя пользователя
+    let fullName = userData.firstName;
+    if (userData.lastName) {
+        fullName += ` ${userData.lastName}`;
     }
-    userName.textContent = displayName;
+    
+    // Устанавливаем имя пользователя
+    if (userData.username) {
+        userNameElement.textContent = `${fullName} (${userData.username})`;
+    } else {
+        userNameElement.textContent = fullName;
+    }
     
     // Устанавливаем аватар
-    if (tgUserData.photo_url) {
-        placeholder.style.display = 'none';
-        avatar.style.backgroundImage = `url(${tgUserData.photo_url})`;
-        avatar.style.backgroundSize = 'cover';
+    if (userData.photoUrl) {
+        // Скрываем placeholder и показываем аватар
+        avatarPlaceholder.style.display = 'none';
+        userAvatarElement.style.backgroundImage = `url(${userData.photoUrl})`;
+        userAvatarElement.style.backgroundSize = 'cover';
+        userAvatarElement.style.backgroundPosition = 'center';
     } else {
-        placeholder.style.display = 'flex';
-        avatar.style.backgroundImage = 'none';
-        avatar.style.backgroundColor = 'var(--primary)';
+        // Показываем placeholder, если нет аватара
+        avatarPlaceholder.style.display = 'flex';
+        userAvatarElement.style.backgroundImage = 'none';
+        userAvatarElement.style.backgroundColor = 'var(--primary)';
     }
+    
+    // Добавляем дополнительные данные, если нужно
+    const userLevelElement = document.querySelector('.profile-info .level');
+    if (userLevelElement) {
+        // Можно добавить логику определения уровня на основе id пользователя
+        // Например, четные ID - уровень 5, нечетные - уровень 3
+        userLevelElement.textContent = userData.id % 2 === 0 ? '5' : '3';
+    }
+    
+    // Обновляем статистику (можно добавить логику сохранения статистики)
+    updateUserStats();
+}
+
+// Функция для обновления статистики пользователя
+function updateUserStats() {
+    const userData = loadTelegramUserData();
+    
+    // Генерируем статистику на основе ID пользователя для демонстрации
+    const openedCasesElement = document.getElementById('openedCases');
+    const bestPrizeElement = document.getElementById('bestPrize');
+    
+    if (openedCasesElement) {
+        const baseCases = Math.abs(userData.id % 20); // От 0 до 19
+        openedCasesElement.textContent = baseCases + 3; // От 3 до 22
+    }
+    
+    if (bestPrizeElement) {
+        const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
+        const prizeIndex = Math.abs(userData.id % 4);
+        bestPrizeElement.textContent = prizes[prizeIndex];
+    }
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Инициализация Telegram WebApp
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        Telegram.WebApp.expand();
+        Telegram.WebApp.ready();
+    }
+    
+    // 2. Загрузка данных пользователя
+    updateProfileWithTelegramData();
+    
+    // 3. Добавляем кнопку для теста, если не в Telegram
+    if (typeof Telegram === 'undefined') {
+        addTestUserButton();
+    }
+});
+
+// Функция для добавления тестовой кнопки (вне Telegram)
+function addTestUserButton() {
+    const testBtn = document.createElement('button');
+    testBtn.className = 'test-data-btn';
+    testBtn.textContent = 'Тестовые данные';
+    testBtn.onclick = () => {
+        // Имитируем данные пользователя Telegram
+        const testUser = {
+            id: 123456789,
+            firstName: 'Иван',
+            lastName: 'Иванов',
+            username: 'ivanov',
+            photoUrl: 'https://via.placeholder.com/150',
+            languageCode: 'ru'
+        };
+        
+        // Сохраняем тестовые данные
+        window.tgUserData = testUser;
+        
+        // Обновляем профиль
+        updateProfileWithTelegramData();
+        
+        // Показываем уведомление
+        showToast('Тестовые данные загружены', 'success');
+    };
+    
+    document.body.appendChild(testBtn);
+}
+
+// Вспомогательная функция для показа уведомлений
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    
+    // Стили в зависимости от типа
+    const colors = {
+        'info': 'var(--primary)',
+        'success': 'var(--success)',
+        'error': 'var(--danger)'
+    };
+    
+    toast.style.backgroundColor = colors[type] || colors.info;
+    document.body.appendChild(toast);
+    
+    // Автоматическое скрытие
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // Инициализация темы
@@ -479,44 +594,4 @@ function showToast(message, type = 'info') {
         toast.classList.add('hidden');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
-}
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Инициализация Telegram WebApp (должна быть первой!)
-    initTelegramWebApp();
-    
-    // 2. Инициализация остальных компонентов
-    initTheme();
-    initRoulette();
-    initDepositModal();
-    updateActiveBonuses();
-    openTab('cases');
-    checkAvailableGiveaways();
-    
-    // 3. Периодическое обновление
-    setInterval(updateActiveBonuses, 60000);
-    
-    // 4. Добавляем кнопку для теста (только вне Telegram)
-    if (typeof Telegram === 'undefined') {
-        addTestButton();
-    }
-});
-
-// Кнопка для тестирования
-function addTestButton() {
-    const btn = document.createElement('button');
-    btn.textContent = "Тестовые данные";
-    btn.className = "test-btn";
-    btn.onclick = () => {
-        tgUserData = {
-            first_name: "Тестовый",
-            last_name: "Пользователь",
-            username: "test_user",
-            photo_url: "https://via.placeholder.com/150"
-        };
-        updateProfileView();
-        showToast("Тестовые данные загружены", "success");
-    };
-    document.body.appendChild(btn);
 }
