@@ -3,125 +3,57 @@ let balance = 1000;
 let canSpin = true;
 let activeBonuses = [];
 let userDeposits = 0;
-let tgUserData = null;
-
-// Промокоды
-const PROMO_CODES = {
-    "WELCOME": { amount: 100, used: false },
-    "GIFT100": { amount: 100, used: false },
-    "BONUS50": { amount: 50, used: false }
+let tgUserData = {
+    first_name: "Тестовый",
+    last_name: "Пользователь",
+    username: "test_user",
+    photo_url: ""
 };
 
-// Типы бонусов с вероятностями и иконками
-const BONUS_TYPES = [
-    { 
-        type: "deposit", 
-        probability: 45,
-        variants: [
-            { title: "+20% К ДЕПОЗИТУ", value: 0.2, icon: "fa-coins", duration: 24 },
-            { title: "+15% К ДЕПОЗИТУ", value: 0.15, icon: "fa-coins", duration: 12 }
-        ]
-    },
-    { 
-        type: "discount", 
-        probability: 35,
-        variants: [
-            { title: "-20% НА КЕЙСЫ", value: 0.2, icon: "fa-percentage", duration: 12 },
-            { title: "-15% НА КЕЙСЫ", value: 0.15, icon: "fa-percentage", duration: 6 }
-        ]
-    },
-    { 
-        type: "free", 
-        probability: 20,
-        variants: [
-            { title: "+2 ПОДАРКА", value: 2, icon: "fa-gift", duration: 0 },
-            { title: "+1 ПОДАРОК", value: 1, icon: "fa-gift", duration: 0 }
-        ]
-    }
-];
-
-// ====================== ТЕЛЕГРАМ ИНТЕГРАЦИЯ ======================
+// Инициализация Telegram WebApp (должна быть первой!)
 function initTelegramWebApp() {
-    // Проверяем наличие Telegram WebApp API
+    // 1. Проверяем, что мы внутри Telegram WebApp
     if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
         console.log("Telegram WebApp detected");
-        const webApp = Telegram.WebApp;
         
-        // 1. Получаем данные пользователя
-        tgUserData = webApp.initDataUnsafe.user;
-        console.log("User data from Telegram:", tgUserData);
+        // 2. Получаем реальные данные
+        tgUserData = {
+            ...window.Telegram.WebApp.initDataUnsafe.user,
+            photo_url: window.Telegram.WebApp.initDataUnsafe.user?.photo_url || ""
+        };
         
-        // 2. Развертываем на весь экран
-        webApp.expand();
-        webApp.ready();
+        console.log("Real user data:", tgUserData);
         
-        // 3. Обновляем профиль
-        updateProfileView();
-        
-        // 4. Включаем кнопку "Поделиться"
-        if (webApp.isVersionAtLeast('6.1')) {
-            webApp.MainButton.setText("Поделиться профилем")
-                .onClick(() => webApp.shareProfile())
-                .show();
-        }
+        // 3. Развертываем на весь экран
+        Telegram.WebApp.expand();
     } else {
-        console.warn("Not in Telegram WebApp. Using test data");
-        tgUserData = getFallbackUserData();
-        updateProfileView();
-        addTestDataButton();
+        console.warn("Not in Telegram. Using test data");
     }
+    
+    // 4. Обновляем профиль (в любом случае)
+    updateProfileView();
 }
 
-function getFallbackUserData() {
-    return {
-        first_name: "Тестовый",
-        last_name: "Пользователь",
-        username: "test_user",
-        photo_url: "https://via.placeholder.com/150"
-    };
-}
-
+// Обновление интерфейса профиля
 function updateProfileView() {
-    if (!tgUserData) {
-        console.error("User data not loaded yet");
-        return;
-    }
-
     const userName = document.getElementById('userName');
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
     
     // Устанавливаем имя
-    if (tgUserData.first_name || tgUserData.last_name) {
-        userName.textContent = `${tgUserData.first_name || ''} ${tgUserData.last_name || ''}`.trim();
-    } else if (tgUserData.username) {
-        userName.textContent = `@${tgUserData.username}`;
-    } else {
-        userName.textContent = "Гость";
-    }
+    userName.textContent = 
+        (tgUserData.first_name || tgUserData.last_name) 
+            ? `${tgUserData.first_name || ''} ${tgUserData.last_name || ''}`.trim()
+            : (tgUserData.username ? `@${tgUserData.username}` : "Гость");
     
     // Устанавливаем аватар
     if (tgUserData.photo_url) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${tgUserData.photo_url})`;
-        avatar.style.backgroundSize = 'cover';
     } else {
         placeholder.style.display = 'flex';
-        avatar.style.backgroundImage = '';
-        avatar.style.backgroundColor = 'var(--primary)';
+        avatar.style.backgroundImage = 'none';
     }
-}
-
-function addTestDataButton() {
-    const testBtn = document.createElement('button');
-    testBtn.textContent = "Тестовые данные";
-    testBtn.className = 'test-data-btn';
-    testBtn.onclick = () => {
-        tgUserData = getFallbackUserData();
-        updateProfileView();
-        testBtn.remove();
-    };
-    document.body.appendChild(testBtn);
 }
 
 // Инициализация темы
