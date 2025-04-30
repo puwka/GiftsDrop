@@ -7,6 +7,11 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
+console.log("Текущее окружение:", {
+    DATABASE_URL: process.env.DATABASE_URL,
+    PORT: process.env.PORT
+  });
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
