@@ -520,3 +520,20 @@ function showToast(message, type = 'info') {
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Инициализация Telegram WebApp (должна быть первой!)
+    initTelegramWebApp();
+    
+    // 2. Инициализация остальных компонентов
+    initTheme();
+    initRoulette();
+    initDepositModal();
+    updateActiveBonuses();
+    openTab('cases');
+    checkAvailableGiveaways();
+    
+    // 3. Периодическое обновление
+    setInterval(updateActiveBonuses, 60000);
+});
