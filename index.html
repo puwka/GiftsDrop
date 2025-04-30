@@ -164,7 +164,7 @@
                 <div class="stats-section">
                     <div class="stat-item">
                         <i class="fas fa-coins"></i>
-                        <span>Баланс: <strong class="balance-amount">1000</strong> 🪙</span>
+                        <span> Баланс: <strong class="balance-amount">1000</strong> 🪙</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-gift"></i>
@@ -173,16 +173,6 @@
                     <div class="stat-item">
                         <i class="fas fa-trophy"></i>
                         <span>Лучший приз: <strong id="bestPrize">Легендарный</strong></span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-chart-line"></i>
-                        <div class="level-container">
-                            <span id="levelText">Ур. 1</span>
-                            <div class="progress-bar">
-                                <div id="levelProgress" class="progress-fill"></div>
-                            </div>
-                            <span id="xpText">0/100 XP</span>
-                        </div>
                     </div>
                 </div>
                 
@@ -210,15 +200,15 @@
 
         <!-- Нижнее меню -->
         <nav class="bottom-nav">
-            <button class="nav-btn active" onclick="openTab('cases')">
+            <button class="nav-btn active" onclick="window.openTab('cases')">
                 <i class="fas fa-gift"></i>
                 <span>Кейсы</span>
             </button>
-            <button class="nav-btn" onclick="openTab('bonuses')">
+            <button class="nav-btn" onclick="window.openTab('bonuses')">
                 <i class="fas fa-sync-alt"></i>
                 <span>Бонусы</span>
             </button>
-            <button class="nav-btn" onclick="openTab('profile')">
+            <button class="nav-btn" onclick="window.openTab('profile')">
                 <i class="fas fa-user"></i>
                 <span>Профиль</span>
             </button>
@@ -300,7 +290,8 @@
     </div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" src="js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script type="module" src="./js/script.js"></script>
 </body>
 
 </html>
