@@ -166,6 +166,16 @@
                         <i class="fas fa-trophy"></i>
                         <span>Лучший приз: <strong id="bestPrize">Легендарный</strong></span>
                     </div>
+                    <div class="stat-item">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="level-container">
+                            <span id="levelText">Ур. 1</span>
+                            <div class="progress-bar">
+                                <div id="levelProgress" class="progress-fill"></div>
+                            </div>
+                            <span id="xpText">0/100 XP</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="theme-switch-container">
@@ -263,6 +273,20 @@
             
             <button class="modal-button secondary" onclick="closeDepositModal()">
                 ОТМЕНА
+            </button>
+        </div>
+    </div>
+
+    <div id="levelUpModal" class="modal hidden">
+        <div class="modal-content">
+            <h3><i class="fas fa-trophy"></i> ПОЗДРАВЛЯЕМ!</h3>
+            <div class="level-up-content">
+                <div class="level-text"></div>
+                <div class="reward-text"></div>
+                <div class="bonus-text"></div>
+            </div>
+            <button class="modal-button" onclick="closeLevelUpModal()">
+                ЗАКРЫТЬ
             </button>
         </div>
     </div>

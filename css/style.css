@@ -1042,3 +1042,43 @@ input[type="number"]::-webkit-inner-spin-button {
     --primary: #8a2be2;
     --primary-light: #9b4dff;
 }
+
+/* Стили для системы уровней */
+.level-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.progress-bar {
+    flex-grow: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* Модальное окно уровней */
+.level-up-content {
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.level-up-content div {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.level-text {
+    font-size: 1.5rem !important;
+    font-weight: bold;
+    color: var(--primary);
+}

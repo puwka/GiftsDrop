@@ -8,6 +8,19 @@ let activeBonuses = [];
 let userDeposits = 0;
 let currentUser = null;
 
+// Добавляем в script.js после глобальных переменных
+const LEVELS = [
+    { level: 1, xpRequired: 0, reward: 0, bonus: "Открытие кейсов" },
+    { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
+    { level: 3, xpRequired: 300, reward: 100, bonus: "Доступ к премиум кейсам" },
+    { level: 4, xpRequired: 600, reward: 200, bonus: "+1 спин в день" },
+    { level: 5, xpRequired: 1000, reward: 500, bonus: "Эксклюзивные бонусы" }
+];
+
+let userXP = 0;
+let userLevel = 1;
+let dailySpins = 1;
+
 // Промокоды
 const PROMO_CODES = {
     "WELCOME": { amount: 100, used: false },
@@ -87,6 +100,8 @@ function initApp() {
     initDepositModal();
     updateActiveBonuses();
     checkAvailableGiveaways();
+    loadUserProgress();
+    updateLevelSystem();
     
     // 3. Открываем стартовую вкладку
     openTab('cases', document.querySelector('.nav-btn'));
@@ -173,6 +188,125 @@ function updateUserStats() {
     }
 }
 
+// Добавляем новые функции
+function addXP(amount) {
+    if (amount <= 0) return;
+    
+    userXP += amount;
+    checkLevelUp();
+    saveUserProgress();
+    updateLevelSystem();
+    showToast(`+${amount} опыта!`, "success");
+}
+
+function checkLevelUp() {
+    const currentLevelData = LEVELS[userLevel - 1];
+    const nextLevelData = LEVELS[userLevel];
+    
+    if (nextLevelData && userXP >= nextLevelData.xpRequired) {
+        userLevel++;
+        balance += nextLevelData.reward;
+        
+        showLevelUpModal(nextLevelData);
+        applyLevelBonus(userLevel);
+        saveUserProgress();
+        updateLevelSystem();
+        
+        return true;
+    }
+    return false;
+}
+
+function applyLevelBonus(level) {
+    switch(level) {
+        case 2:
+            // +5% к выигрышам
+            break;
+        case 3:
+            // Разблокировать премиум кейсы
+            break;
+        case 4:
+            dailySpins++;
+            break;
+        case 5:
+            // Эксклюзивные бонусы
+            break;
+    }
+}
+
+function showLevelUpModal(levelData) {
+    const modal = document.getElementById('levelUpModal');
+    const levelText = modal.querySelector('.level-text');
+    const rewardText = modal.querySelector('.reward-text');
+    const bonusText = modal.querySelector('.bonus-text');
+    
+    levelText.textContent = `Уровень ${levelData.level}!`;
+    rewardText.textContent = `Награда: ${levelData.reward} 🪙`;
+    bonusText.textContent = `Бонус: ${levelData.bonus}`;
+    
+    modal.classList.remove('hidden');
+}
+
+function closeLevelUpModal() {
+    document.getElementById('levelUpModal').classList.add('hidden');
+}
+
+function updateLevelSystem() {
+    const currentLevelData = LEVELS[userLevel - 1];
+    const nextLevelData = LEVELS[userLevel] || currentLevelData;
+    
+    // Обновляем прогресс-бар
+    const progressBar = document.getElementById('levelProgress');
+    const xpText = document.getElementById('xpText');
+    const levelText = document.getElementById('levelText');
+    
+    const progress = nextLevelData 
+        ? (userXP - currentLevelData.xpRequired) / 
+          (nextLevelData.xpRequired - currentLevelData.xpRequired) * 100
+        : 100;
+    
+    progressBar.style.width = `${progress}%`;
+    xpText.textContent = `${userXP}/${nextLevelData.xpRequired} XP`;
+    levelText.textContent = `Ур. ${userLevel}`;
+}
+
+function saveUserProgress() {
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        Telegram.WebApp.CloudStorage.setItem('userProgress', JSON.stringify({
+            xp: userXP,
+            level: userLevel,
+            spins: dailySpins
+        }));
+    } else {
+        localStorage.setItem('userProgress', JSON.stringify({
+            xp: userXP,
+            level: userLevel,
+            spins: dailySpins
+        }));
+    }
+}
+
+function loadUserProgress() {
+    let data = null;
+    
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        data = Telegram.WebApp.CloudStorage.getItem('userProgress');
+    } else {
+        data = localStorage.getItem('userProgress');
+    }
+    
+    if (data) {
+        try {
+            const parsed = JSON.parse(data);
+            userXP = parsed.xp || 0;
+            userLevel = parsed.level || 1;
+            dailySpins = parsed.spins || 1;
+        } catch (e) {
+            console.error('Error loading progress:', e);
+        }
+    }
+}
+
 // Переключение вкладок
 function openTab(tabName, clickedElement) {
     // Скрыть все вкладки
@@ -239,6 +373,15 @@ function getRandomVariant(type) {
 
 // Прокрутка рулетки
 function spinRoulette() {
+    if (!canSpin || dailySpins <= 0) {
+        showToast("Нет доступных спинов", "error");
+        return;
+    }
+    
+    dailySpins--;
+    saveUserProgress();
+    updateLevelSystem();
+
     if (!canSpin) {
         showToast("Подождите, пока завершится текущий спин", "error");
         return;
@@ -531,6 +674,10 @@ function openCase(caseType) {
         case 'premium': price = 500; break;
         case 'legendary': price = 1000; break;
     }
+
+    const xpReward = caseType === 'mix' ? 10 : 
+                    caseType === 'premium' ? 25 : 50;
+    addXP(xpReward);
     
     if (balance < price) {
         showToast("Недостаточно средств", "error");
@@ -558,6 +705,7 @@ window.processStarsDeposit = processStarsDeposit;
 window.openDepositModal = openDepositModal;
 window.closeDepositModal = closeDepositModal;
 window.openCase = openCase;
+window.closeLevelUpModal = closeLevelUpModal;
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);
