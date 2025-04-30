@@ -40,47 +40,67 @@ const BONUS_TYPES = [
     }
 ];
 
-// Инициализация Telegram WebApp
 function initTelegramWebApp() {
-    if (window.Telegram?.WebApp) {
+    // 1. Проверяем, что мы внутри Telegram WebApp
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        console.log("Telegram WebApp detected");
+        
         const webApp = Telegram.WebApp;
         
-        // Включаем полноэкранный режим
+        // 2. Всегда расширяем на весь экран
         webApp.expand();
         
-        // Получаем данные пользователя
-        tgUserData = webApp.initDataUnsafe?.user || {};
-        console.log("Telegram User Data:", tgUserData);
-        
-        // Обновляем профиль
-        updateProfileData();
-        
-        // Для теста вне Telegram
-        if (!webApp.initData) {
-            addTestDataButton();
+        // 3. Получаем данные пользователя (новый надежный способ)
+        try {
+            const initData = new URLSearchParams(webApp.initData);
+            const userJson = initData.get('user');
+            
+            if (userJson) {
+                tgUserData = JSON.parse(userJson);
+                console.log("User data loaded:", tgUserData);
+            } else {
+                console.warn("No user data in initData");
+                tgUserData = getFallbackUserData();
+            }
+        } catch (e) {
+            console.error("Error parsing user data:", e);
+            tgUserData = getFallbackUserData();
         }
     } else {
-        console.warn("Telegram WebApp API not found. Running in test mode.");
-        addTestDataButton();
+        console.warn("Not in Telegram WebApp. Using test data");
+        tgUserData = getFallbackUserData();
     }
+    
+    // 4. Обновляем интерфейс
+    updateProfileView();
 }
 
-// Обновление данных профиля
-function updateProfileData() {
+// Запасные данные для теста
+function getFallbackUserData() {
+    return {
+        first_name: "Телеграм",
+        last_name: "Пользователь",
+        username: "tg_user",
+        photo_url: "https://via.placeholder.com/150"
+    };
+}
+
+// Обновляем интерфейс профиля
+function updateProfileView() {
     const userName = document.getElementById('userName');
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
     
-    // Имя пользователя
+    // Устанавливаем имя
     if (tgUserData.first_name || tgUserData.last_name) {
         userName.textContent = `${tgUserData.first_name || ''} ${tgUserData.last_name || ''}`.trim();
     } else if (tgUserData.username) {
         userName.textContent = `@${tgUserData.username}`;
     } else {
-        userName.textContent = "Аноним";
+        userName.textContent = "Гость";
     }
     
-    // Аватар
+    // Устанавливаем аватар
     if (tgUserData.photo_url) {
         placeholder.style.display = 'none';
         avatar.style.backgroundImage = `url(${tgUserData.photo_url})`;
@@ -88,35 +108,8 @@ function updateProfileData() {
     } else {
         placeholder.style.display = 'flex';
         avatar.style.backgroundImage = '';
+        avatar.style.backgroundColor = 'var(--primary)';
     }
-}
-
-// Кнопка для теста вне Telegram
-function addTestDataButton() {
-    const testBtn = document.createElement('button');
-    testBtn.textContent = "Тестовые данные";
-    testBtn.style.position = 'fixed';
-    testBtn.style.bottom = '70px';
-    testBtn.style.right = '10px';
-    testBtn.style.zIndex = '1000';
-    testBtn.style.padding = '8px 12px';
-    testBtn.style.background = 'var(--primary)';
-    testBtn.style.color = 'white';
-    testBtn.style.borderRadius = '20px';
-    testBtn.style.border = 'none';
-    
-    testBtn.onclick = () => {
-        tgUserData = {
-            first_name: "Тестовый",
-            last_name: "Пользователь",
-            username: "test_user",
-            photo_url: "https://via.placeholder.com/150"
-        };
-        updateProfileData();
-        testBtn.remove();
-    };
-    
-    document.body.appendChild(testBtn);
 }
 
 // Инициализация темы
