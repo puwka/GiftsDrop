@@ -49,26 +49,24 @@ function initTelegramWebApp() {
         console.log("Telegram WebApp API доступен");
         
         const webApp = Telegram.WebApp;
-        
-        // Получаем данные пользователя
         const user = webApp.initDataUnsafe?.user;
         
         if (user) {
-            console.log("Данные пользователя:", user);
+            console.log("Данные пользователя Telegram:", user);
             
             // Развертываем на весь экран
             webApp.expand();
             webApp.ready();
             
             // Обновляем профиль с реальными данными
-            updateTelegramProfile(user);
+            updateProfileWithTelegramData(user);
             return;
         }
     }
     
     console.log("Режим тестирования (вне Telegram)");
-    // Используем тестовые данные
-    updateTelegramProfile({
+    // Используем тестовые данные только если не в Telegram
+    updateProfileWithTelegramData({
         first_name: "Тестовый",
         last_name: "Пользователь",
         username: "test_user",
@@ -77,7 +75,7 @@ function initTelegramWebApp() {
 }
 
 // Обновление профиля с данными из Telegram
-function updateTelegramProfile(user) {
+function updateProfileWithTelegramData(user) {
     const userName = document.getElementById('userName');
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
@@ -105,6 +103,13 @@ function updateTelegramProfile(user) {
         avatar.style.backgroundColor = 'var(--primary)';
     }
     
+    // Обновляем уровень (примерная логика)
+    const levelElement = document.querySelector('.profile-info .level');
+    if (levelElement) {
+        const userId = user.id || 0;
+        levelElement.textContent = Math.max(1, Math.min(10, Math.floor(userId % 10) + 1));
+    }
+    
     // Обновляем статистику
     updateUserStats(user.id || 0);
 }
@@ -115,12 +120,12 @@ function updateUserStats(userId) {
     const bestPrize = document.getElementById('bestPrize');
     
     if (openedCases) {
-        openedCases.textContent = (Math.abs(userId % 20) + 5); // 5-24 кейса
+        openedCases.textContent = Math.max(0, Math.floor(userId % 20));
     }
     
     if (bestPrize) {
         const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-        bestPrize.textContent = prizes[Math.abs(userId % 4)];
+        bestPrize.textContent = prizes[Math.floor(userId % 4)] || 'Обычный';
     }
 }
 
@@ -561,7 +566,6 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Инициализация Telegram WebApp (должна быть первой!)
     initTelegramWebApp();
@@ -583,11 +587,12 @@ document.addEventListener('DOMContentLoaded', () => {
         testBtn.className = 'test-data-btn';
         testBtn.textContent = 'Тестовые данные';
         testBtn.onclick = () => {
-            updateTelegramProfile({
+            updateProfileWithTelegramData({
                 first_name: "Тестовый",
                 last_name: "Пользователь",
                 username: "test_user",
-                photo_url: "https://via.placeholder.com/150"
+                photo_url: "https://via.placeholder.com/150",
+                id: Math.floor(Math.random() * 100000)
             });
             showToast("Тестовые данные загружены", "success");
         };
