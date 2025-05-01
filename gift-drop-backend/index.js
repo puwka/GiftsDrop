@@ -24,8 +24,14 @@ app.get('/', (req, res) => {
 
 // Подключаем маршруты
 const usersRoutes = require('./routes/users');
+const casesRoutes = require('./routes/cases');
+const bonusesRoutes = require('./routes/bonuses');
+const transactionsRoutes = require('./routes/transactions');
 
 app.use('/api/users', usersRoutes);
+app.use('/api/cases', casesRoutes);
+app.use('/api/bonuses', bonusesRoutes);
+app.use('/api/transactions', transactionsRoutes);
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
