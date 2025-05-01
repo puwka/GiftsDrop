@@ -164,22 +164,37 @@ function updateThemeSwitch(theme) {
 // ==================== Tab Navigation ====================
 function openTab(tabName, clickedElement) {
     // Скрыть все вкладки
-    document.querySelectorAll('.tab-content').forEach(tab => {
+    const tabs = document.querySelectorAll('.tab-content');
+    if (!tabs.length) {
+        console.error('No tab-content elements found');
+        return;
+    }
+    
+    tabs.forEach(tab => {
         tab.classList.remove('active');
     });
     
     // Убрать активное состояние у всех кнопок
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    const buttons = document.querySelectorAll('.nav-btn');
+    buttons.forEach(btn => {
         btn.classList.remove('active');
     });
     
     // Показать выбранную вкладку
     const tab = document.getElementById(tabName);
-    if (tab) tab.classList.add('active');
+    if (tab) {
+        tab.classList.add('active');
+    } else {
+        console.error(`Tab with id ${tabName} not found`);
+    }
     
     // Активировать кнопку
     const button = clickedElement || document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
-    if (button) button.classList.add('active');
+    if (button) {
+        button.classList.add('active');
+    } else {
+        console.error(`Button for tab ${tabName} not found`);
+    }
 
     // Загружаем данные для вкладки профиля
     if (tabName === 'profile') {
@@ -189,10 +204,14 @@ function openTab(tabName, clickedElement) {
 
 async function loadProfileData() {
     try {
+        const container = document.getElementById('transactionsList');
+        container.innerHTML = '<div class="loading">Загрузка...</div>';
+        
         const transactions = await getTransactions();
         updateTransactionsList(transactions);
     } catch (error) {
         console.error('Failed to load profile data:', error);
+        showToast("Ошибка загрузки данных", "error");
     }
 }
 
@@ -340,7 +359,7 @@ async function initApp() {
         initTheme();
         
         // Открываем вкладку по умолчанию
-        openTab('cases');
+        setTimeout(() => openTab('cases'), 100);
         
     } catch (error) {
         console.error('Initialization error:', error);
