@@ -711,7 +711,7 @@ function checkAvailableGiveaways() {
         const button = card.querySelector('.giveaway-button');
         
         if (button) {
-            button.disabled = userDeposits < minAmount;
+            button.disabled = userDeposits < minDeposit;
         }
     });
 }
