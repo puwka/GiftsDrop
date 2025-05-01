@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 // Подключаем маршруты
-const usersRoutes = require('../gift-drop-backend/routes/users');
+const usersRoutes = require('../routes/users');
 
 app.use('/api/users', usersRoutes);
 
