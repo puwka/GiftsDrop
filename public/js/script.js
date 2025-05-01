@@ -570,25 +570,36 @@ function closeWinModal() {
 
 // ==================== Функции депозита ====================
 function initDepositModal() {
-    const tonInput = document.getElementById('tonAmount');
-    const starsInput = document.getElementById('starsAmount');
+    const giftcoinInput = document.getElementById('giftcoinAmount');
     
-    if (tonInput) {
-        tonInput.addEventListener('input', () => {
-            const ton = parseFloat(tonInput.value) || 0;
-            const giftcoin = Math.floor(ton * 200);
-            const giftcoinElement = document.getElementById('tonGiftcoin');
-            if (giftcoinElement) giftcoinElement.textContent = giftcoin;
+    if (giftcoinInput) {
+        giftcoinInput.addEventListener('input', function() {
+            const amount = parseInt(this.value) || 0;
+            document.getElementById('giftcoinPreview').textContent = amount;
         });
     }
+}
+
+async function processTestDeposit() {
+    const amountInput = document.getElementById('giftcoinAmount');
+    const amount = parseInt(amountInput.value);
     
-    if (starsInput) {
-        starsInput.addEventListener('input', () => {
-            const stars = parseInt(starsInput.value) || 0;
-            const giftcoinElement = document.getElementById('starsGiftcoin');
-            if (giftcoinElement) giftcoinElement.textContent = stars;
-        });
+    if (!amount || amount <= 0) {
+        showToast("Введите корректную сумму", "error");
+        return;
     }
+    
+    // Тестовое пополнение без API
+    balance += amount;
+    updateBalanceDisplay();
+    showToast(`Баланс пополнен на ${amount} GiftCoin`, "success");
+    closeDepositModal();
+}
+
+function updateBalanceDisplay() {
+    document.querySelectorAll('.balance-amount').forEach(el => {
+        el.textContent = balance;
+    });
 }
 
 function openDepositModal() {
@@ -903,28 +914,6 @@ function initUserLevel() {
 }
 
 // ==================== Вспомогательные функции ====================
-async function updateBalance(amount) {
-    try {
-        const newBalance = await updateUserBalance(amount);
-        if (newBalance !== null) {
-            balance = newBalance;
-            document.querySelectorAll('.balance-amount').forEach(el => {
-                el.textContent = balance;
-                
-                el.style.transform = 'scale(1.2)';
-                el.style.color = amount > 0 ? 'var(--success)' : 'var(--danger)';
-                setTimeout(() => {
-                    el.style.transform = 'scale(1)';
-                    el.style.color = '';
-                }, 300);
-            });
-        }
-    } catch (error) {
-        console.error('Failed to update balance:', error);
-        showToast('Ошибка обновления баланса', 'error');
-    }
-}
-
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -954,6 +943,7 @@ window.switchDepositTab = switchDepositTab;
 window.processTonDeposit = processTonDeposit;
 window.processStarsDeposit = processStarsDeposit;
 window.closeLevelUpModal = closeLevelUpModal;
+window.processTestDeposit = processTestDeposit;
 
 // ==================== Запуск приложения ====================
 document.addEventListener('DOMContentLoaded', function() {
