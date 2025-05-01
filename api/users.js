@@ -108,22 +108,26 @@ router.post('/auth', async (req, res) => {
     }
 });
 
-// Обновите роут для пополнения баланса
+// Обновленный роут для пополнения баланса
 router.post('/balance', async (req, res) => {
     try {
-        const { user_id, amount } = req.body;
+        const { user_id, amount, type = 'deposit', description = 'Пополнение баланса' } = req.body;
         
         if (!user_id || amount === undefined) {
             return res.status(400).json({ error: 'user_id and amount are required' });
+        }
+
+        if (typeof amount !== 'number' || amount <= 0) {
+            return res.status(400).json({ error: 'amount must be a positive number' });
         }
 
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
-            // Проверяем существование пользователя
+            // 1. Проверяем существование пользователя
             const userExists = await client.query(
-                'SELECT 1 FROM users WHERE id = $1',
+                'SELECT id FROM users WHERE id = $1',
                 [user_id]
             );
             
@@ -131,20 +135,37 @@ router.post('/balance', async (req, res) => {
                 return res.status(404).json({ error: 'User not found' });
             }
             
-            // Обновляем баланс
-            const result = await client.query(
+            // 2. Обновляем баланс пользователя
+            const balanceResult = await client.query(
                 `UPDATE user_balances 
-                 SET balance = balance + $1 
+                 SET balance = balance + $1,
+                     updated_at = NOW()
                  WHERE user_id = $2 
                  RETURNING balance`,
                 [amount, user_id]
+            );
+            
+            // 3. Записываем транзакцию
+            await client.query(
+                `INSERT INTO transactions 
+                 (user_id, amount, type, description, created_at)
+                 VALUES ($1, $2, $3, $4, NOW())`,
+                [user_id, amount, type, description]
+            );
+            
+            // 4. Получаем текущий уровень пользователя
+            const levelResult = await client.query(
+                `SELECT level, xp FROM user_levels WHERE user_id = $1`,
+                [user_id]
             );
             
             await client.query('COMMIT');
             
             return res.json({
                 success: true,
-                new_balance: result.rows[0].balance
+                new_balance: balanceResult.rows[0].balance,
+                level: levelResult.rows[0]?.level || 1,
+                xp: levelResult.rows[0]?.xp || 0
             });
             
         } catch (err) {
