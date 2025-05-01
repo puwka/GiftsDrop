@@ -106,75 +106,14 @@ router.post('/auth', async (req, res) => {
     }
 });
 
-// Обновление баланса
-router.post('/balance', async (req, res) => {
+// Добавьте в users.js
+router.get('/test', async (req, res) => {
     try {
-        const { user_id, amount } = req.body;
-        
-        if (!user_id || amount === undefined) {
-            return res.status(400).json({ error: 'user_id and amount are required' });
-        }
-
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            // Проверяем существование пользователя
-            const userExists = await client.query(
-                'SELECT 1 FROM users WHERE id = $1',
-                [user_id]
-            );
-            
-            if (userExists.rows.length === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            
-            // Обновляем баланс
-            const result = await client.query(
-                `UPDATE user_balances 
-                 SET balance = balance + $1 
-                 WHERE user_id = $2 
-                 RETURNING balance`,
-                [amount, user_id]
-            );
-            
-            // Записываем транзакцию
-            await client.query(
-                `INSERT INTO transactions 
-                 (user_id, amount, type, description, created_at) 
-                 VALUES ($1, $2, $3, $4, NOW())`,
-                [
-                    user_id,
-                    amount,
-                    amount > 0 ? 'deposit' : 'withdraw',
-                    amount > 0 ? 'Пополнение баланса' : 'Списание средств'
-                ]
-            );
-            
-            await client.query('COMMIT');
-            
-            res.json({
-                success: true,
-                new_balance: result.rows[0].balance
-            });
-            
-        } catch (err) {
-            await client.query('ROLLBACK');
-            console.error('Ошибка транзакции:', err);
-            res.status(500).json({ 
-                error: 'Transaction error',
-                details: err.message
-            });
-        } finally {
-            client.release();
-        }
+      const { rows } = await pool.query('SELECT NOW() as time');
+      res.json({ time: rows[0].time });
     } catch (err) {
-        console.error('Ошибка в /balance:', err.stack);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message
-        });
+      res.status(500).json({ error: err.message });
     }
-});
+  });
 
 module.exports = router;
