@@ -4,9 +4,7 @@ console.log("Используется DATABASE_URL:", process.env.DATABASE_URL);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false, // Отключите для локальной разработки
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000
+  ssl: { rejectUnauthorized: false } // Обязательно для внешних БД
 });
 
 // Тест подключения
