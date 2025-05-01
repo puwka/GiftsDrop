@@ -1,34 +1,29 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({
-    origin: ['https://gifts-drop.vercel.app', 'https://gift-drop.vercel.app'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(bodyParser.json());
 
-// Подключаем роуты
+// Роуты
 const usersRoutes = require('./routes/users');
 app.use('/api/users', usersRoutes);
 
-// Тестовый эндпоинт (убедитесь, что API работает)
+// Тестовый эндпоинт
 app.get('/api/test-connect', (req, res) => {
-    res.json({ status: "Сервер работает!" });
-  });
+  res.json({ status: "Сервер работает!" });
+});
 
-// Обработка 404 (если роут не найден)
+// Обработка 404
 app.use((req, res) => {
-  res.status(404).json({ error: "Эндпоинт не найден" });
+  res.status(404).json({ error: "Not Found" });
 });
 
-// Запуск сервера
-app.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
-});
+// ⚠️ Удалите app.listen()! 
+// Экспортируем app для Vercel
+module.exports = app;
