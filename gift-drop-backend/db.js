@@ -1,22 +1,36 @@
 const { Pool } = require('pg');
+const { URL } = require('url');
+
+// Парсинг URL для проверки
+const dbUrl = new URL(process.env.DATABASE_URL);
+console.log('Parsed DB connection details:', {
+  user: dbUrl.username,
+  host: dbUrl.hostname,
+  port: dbUrl.port,
+  database: dbUrl.pathname.slice(1)
+});
 
 const pool = new Pool({
-  user: 'postgres.rsdhnpcnxgzqvihqqfdp',
-  host: 'aws-0-eu-north-1.pooler.supabase.com',
-  database: 'postgres',
-  password: process.env.DB_PASSWORD || '[Korol228]',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
-    // Добавьте дополнительные параметры SSL при необходимости
+    // Дополнительные настройки для Supabase
+    ca: process.env.DB_SSL_CA // Добавьте при необходимости
   },
-  // Явно укажите используемый метод аутентификации
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
 });
 
-// Проверка подключения при старте
-pool.on('connect', () => console.log('Connected to database'));
-pool.on('error', (err) => console.error('Database error:', err));
+// Расширенная диагностика подключения
+pool.on('connect', (client) => {
+  console.log('New client connection established');
+  client.query('SELECT NOW()')
+    .then(res => console.log('Connection test successful:', res.rows[0]))
+    .catch(err => console.error('Connection test failed:', err));
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
+});
 
 module.exports = { pool };
