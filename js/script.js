@@ -1,16 +1,25 @@
 // ==================== Функции из auth.js ====================
 async function initTelegramAuth() {
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        try {
+    console.log('Initializing Telegram auth...');
+    
+    try {
+        // Проверяем, что Telegram WebApp доступен
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
             const webApp = Telegram.WebApp;
+            
+            // Инициализируем WebApp
             webApp.expand();
             webApp.ready();
             
+            console.log('Telegram WebApp initialized:', webApp);
+            
+            // Проверяем данные пользователя
             if (webApp.initDataUnsafe?.user) {
                 const userData = webApp.initDataUnsafe.user;
+                console.log('Telegram user data:', userData);
                 
-                // Отправляем данные на сервер
-                const response = await authenticateUser({
+                // Отправляем данные на сервер для аутентификации
+                const authResponse = await authenticateUser({
                     telegram_id: userData.id,
                     username: userData.username,
                     first_name: userData.first_name,
@@ -19,26 +28,29 @@ async function initTelegramAuth() {
                     language_code: userData.language_code
                 });
                 
-                if (response.success) {
-                    // Обновляем данные пользователя из ответа сервера
-                    currentUser = formatUserData(response.user);
-                    balance = response.balance;
-                    userLevel = response.level;
-                    userXP = response.xp;
-                    
+                if (authResponse.success) {
+                    console.log('User authenticated successfully:', authResponse.user);
                     return {
                         platform: 'telegram',
                         data: userData,
-                        webAppInstance: webApp
+                        webAppInstance: webApp,
+                        authData: authResponse
                     };
+                } else {
+                    console.error('Authentication failed:', authResponse.error);
                 }
+            } else {
+                console.warn('No user data in Telegram WebApp');
             }
-            return null;
-        } catch (e) {
-            console.error('Telegram auth error:', e);
-            return null;
+        } else {
+            console.warn('Telegram WebApp not available');
         }
+    } catch (e) {
+        console.error('Telegram auth error:', e);
     }
+    
+    // Если не удалось аутентифицировать через Telegram, используем тестовые данные
+    console.log('Falling back to test mode');
     return null;
 }
 
@@ -53,19 +65,15 @@ async function authenticateUser(userData) {
         });
         
         if (!response.ok) {
-            throw new Error('Authentication failed');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         return await response.json();
     } catch (error) {
-        console.error('Authentication error:', error);
-        // Возвращаем тестовые данные в случае ошибки
+        console.error('Authentication request failed:', error);
         return {
             success: false,
-            user: getTestUserData(),
-            balance: 1000,
-            level: 1,
-            xp: 0
+            error: 'Connection error'
         };
     }
 }
@@ -153,25 +161,38 @@ const BONUS_TYPES = [
 ];
 
 // ==================== Основные функции ====================
-function initApp() {
+async function initApp() {
     console.log('Initializing app...');
     
     try {
-        const authResult = initTelegramAuth();
+        // Пытаемся аутентифицировать через Telegram
+        const authResult = await initTelegramAuth();
         
-        if (authResult && authResult.data) {
-            currentUser = formatUserData(authResult.data);
+        if (authResult && authResult.authData) {
+            // Успешная аутентификация через Telegram
+            currentUser = formatUserData(authResult.authData.user);
+            balance = authResult.authData.balance;
+            userLevel = authResult.authData.level;
+            userXP = authResult.authData.xp;
+            
             console.log('Authenticated as Telegram user:', currentUser);
             
+            // Настраиваем WebApp
             if (authResult.webAppInstance) {
                 try {
                     authResult.webAppInstance.setHeaderColor('#8a2be2');
                     authResult.webAppInstance.enableClosingConfirmation();
+                    authResult.webAppInstance.MainButton.setText('Gift Drop');
                 } catch (e) {
                     console.log('WebApp settings error:', e);
                 }
             }
+            
+            // Убираем тестовое предупреждение, если оно есть
+            const testWarning = document.querySelector('.test-warning');
+            if (testWarning) testWarning.remove();
         } else {
+            // Режим тестирования
             currentUser = formatUserData(getTestUserData());
             console.log('Using test user:', currentUser);
             
@@ -193,10 +214,7 @@ function initApp() {
         initUserLevel();
         loadUserProgress();
         
-        // Инициализация обработчиков событий
         initEventListeners();
-        
-        // Открываем стартовую вкладку
         openTab('cases');
         
         console.log('App initialized successfully');
