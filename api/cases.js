@@ -1,16 +1,17 @@
-// Добавьте эти маршруты в ваш usersRoutes или создайте новый файл cases.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('./db');
-// Получить все кейсы
+const { pool } = require('./db'); // Предполагая, что у вас есть файл db.js с настройками пула
+
+// Замените все db.query на pool.query
 router.get('/cases', async (req, res) => {
     try {
-        const cases = await db.query('SELECT * FROM cases ORDER BY price');
+        const cases = await pool.query('SELECT * FROM cases ORDER BY price');
         res.json(cases.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+// ... остальной код с заменой db.query на pool.query
 
 // Получить предметы в кейсе
 router.get('/cases/:id/items', async (req, res) => {
@@ -101,3 +102,5 @@ function weightedRandom(items, isDemo = false) {
     
     return adjustedItems[adjustedItems.length - 1];
 }
+
+module.exports = router;
