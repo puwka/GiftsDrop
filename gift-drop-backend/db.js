@@ -1,16 +1,17 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: 'postgres',
+  host: 'db.rsdbnpenxgzqvihqqfdp.supabase.co',
+  database: 'postgres',
+  password: 'Korol228',
+  port: 5432,
   ssl: {
+    require: true,
     rejectUnauthorized: false
   },
-  // Добавьте эти параметры:
-  application_name: 'gifts-drop-app',
-  connectionTimeoutMillis: 5000,
-  query_timeout: 5000,
-  // Явно укажите метод аутентификации:
-  sslmode: 'require'
+  // Явно указываем метод аутентификации
+  authMethods: ['scram-sha-256']
 });
 
 // Тест подключения с простым запросом
