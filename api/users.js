@@ -79,13 +79,15 @@ router.post('/auth', async (req, res) => {
             
             await client.query('COMMIT');
             
-            res.json({
+            const response = {
                 success: true,
-                user: userData.rows[0],
-                balance: balanceData.rows[0].balance,
-                level: levelData.rows[0].level,
-                xp: levelData.rows[0].xp
-            });
+                user: userData.rows[0] || null,
+                balance: (balanceData.rows[0] && balanceData.rows[0].balance) || 0,
+                level: (levelData.rows[0] && levelData.rows[0].level) || 1,
+                xp: (levelData.rows[0] && levelData.rows[0].xp) || 0
+            };
+            
+            res.json(response);
             
         } catch (err) {
             await client.query('ROLLBACK');
