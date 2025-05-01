@@ -215,6 +215,15 @@ router.get('/transactions/:user_id', async (req, res) => {
     }
 });
 
+router.get('/cases', async (req, res) => {
+    try {
+        const cases = await pool.query('SELECT * FROM cases ORDER BY price');
+        res.json(cases.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
 
 // Добавьте в users.js
