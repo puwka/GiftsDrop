@@ -1,10 +1,9 @@
 const { Pool } = require('pg');
 
-// Конфигурация для Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Обязательно для Supabase
+    rejectUnauthorized: false // Важно для Supabase
   },
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
@@ -13,9 +12,6 @@ const pool = new Pool({
 // Тест подключения
 pool.query('SELECT NOW()')
   .then(res => console.log("✅ PostgreSQL подключён:", res.rows[0].now))
-  .catch(err => {
-    console.error("❌ Ошибка подключения:", err);
-    console.log("Используемый DATABASE_URL:", process.env.DATABASE_URL); // Для отладки
-  });
+  .catch(err => console.error("❌ Ошибка подключения:", err));
 
 module.exports = { pool };
