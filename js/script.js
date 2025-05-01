@@ -116,7 +116,7 @@ let dailySpins = 1;
 // Определяем API_URL в зависимости от хоста
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000' 
-    : 'https://gifts-drop.vercel.app';
+    : 'https://gifts-drop.vercel.app/';
 
 // Уровни
 const LEVELS = [
