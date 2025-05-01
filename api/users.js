@@ -1,7 +1,7 @@
 // users.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../gift-drop-backend/db');
+const { pool } = require('./db');
 
 // Получение или создание пользователя
 router.post('/auth', async (req, res) => {
