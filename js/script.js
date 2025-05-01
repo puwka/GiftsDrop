@@ -1,3 +1,62 @@
+// ==================== API Functions ====================
+async function apiRequest(endpoint, method = 'GET', data = null) {
+    try {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_URL}/api${endpoint}`, options);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
+async function authenticateUser(userData) {
+    try {
+        const response = await apiRequest('/users/auth', 'POST', {
+            telegram_id: userData.id,
+            username: userData.username,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            photo_url: userData.photo,
+            language_code: userData.language
+        });
+        
+        return response;
+    } catch (error) {
+        console.error('Authentication failed:', error);
+        return null;
+    }
+}
+
+async function updateUserBalance(amount) {
+    try {
+        const response = await apiRequest('/users/balance', 'POST', {
+            user_id: currentUser.id,
+            amount: amount
+        });
+        
+        return response.new_balance;
+    } catch (error) {
+        console.error('Balance update failed:', error);
+        return null;
+    }
+}
+
 // ==================== Функции из auth.js ====================
 function initTelegramAuth() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
@@ -105,7 +164,7 @@ const BONUS_TYPES = [
 ];
 
 // ==================== Основные функции ====================
-function initApp() {
+async function initApp() {
     console.log('Initializing app...');
     
     try {
@@ -114,6 +173,14 @@ function initApp() {
         if (authResult && authResult.data) {
             currentUser = formatUserData(authResult.data);
             console.log('Authenticated as Telegram user:', currentUser);
+            
+            // Аутентифицируем пользователя на сервере
+            const authResponse = await authenticateUser(currentUser);
+            if (authResponse) {
+                balance = authResponse.balance;
+                userLevel = authResponse.level;
+                userXP = authResponse.xp;
+            }
             
             if (authResult.webAppInstance) {
                 try {
@@ -135,7 +202,7 @@ function initApp() {
             }
         }
 
-        // Инициализация интерфейса
+        // Остальной код инициализации...
         updateProfile();
         initTheme();
         initRoulette();
@@ -145,10 +212,7 @@ function initApp() {
         initUserLevel();
         loadUserProgress();
         
-        // Инициализация обработчиков событий
         initEventListeners();
-        
-        // Открываем стартовую вкладку
         openTab('cases');
         
         console.log('App initialized successfully');
@@ -837,18 +901,26 @@ function initUserLevel() {
 }
 
 // ==================== Вспомогательные функции ====================
-function updateBalance(amount) {
-    balance += amount;
-    document.querySelectorAll('.balance-amount').forEach(el => {
-        el.textContent = balance;
-        
-        el.style.transform = 'scale(1.2)';
-        el.style.color = amount > 0 ? 'var(--success)' : 'var(--danger)';
-        setTimeout(() => {
-            el.style.transform = 'scale(1)';
-            el.style.color = '';
-        }, 300);
-    });
+async function updateBalance(amount) {
+    try {
+        const newBalance = await updateUserBalance(amount);
+        if (newBalance !== null) {
+            balance = newBalance;
+            document.querySelectorAll('.balance-amount').forEach(el => {
+                el.textContent = balance;
+                
+                el.style.transform = 'scale(1.2)';
+                el.style.color = amount > 0 ? 'var(--success)' : 'var(--danger)';
+                setTimeout(() => {
+                    el.style.transform = 'scale(1)';
+                    el.style.color = '';
+                }, 300);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to update balance:', error);
+        showToast('Ошибка обновления баланса', 'error');
+    }
 }
 
 function showToast(message, type = 'info') {
