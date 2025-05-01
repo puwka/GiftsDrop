@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 
-console.log('Connecting to database at:', process.env.DATABASE_URL);
+console.log('Database host:', new URL(process.env.DATABASE_URL).hostname);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -9,9 +9,9 @@ const pool = new Pool({
   }
 });
 
-// Проверка подключения
+// Тестовый запрос для проверки подключения
 pool.query('SELECT NOW()')
-  .then(() => console.log('Database connection successful'))
-  .catch(err => console.error('Database connection error:', err));
+  .then(res => console.log('Database connection successful:', res.rows[0]))
+  .catch(err => console.error('Database connection failed:', err));
 
 module.exports = { pool };
