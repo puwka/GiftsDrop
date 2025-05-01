@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "test.js",
+      "src": "index.js",
       "use": "@vercel/node",
       "config": { 
         "suppressResponse": false,
