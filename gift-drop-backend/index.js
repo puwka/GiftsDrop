@@ -1,8 +1,7 @@
 require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-const { Pool } = require('pg');
+const bodyParser = require('body-parser');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,37 +10,21 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Database connection
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-// Routes
-app.get('/', (req, res) => {
-    res.send('Gift Drop Backend API');
-});
-
-// Подключаем маршруты
+// Подключаем роуты
 const usersRoutes = require('./routes/users');
-const casesRoutes = require('./routes/cases');
-const bonusesRoutes = require('./routes/bonuses');
-const transactionsRoutes = require('./routes/transactions');
-
 app.use('/api/users', usersRoutes);
-app.use('/api/cases', casesRoutes);
-app.use('/api/bonuses', bonusesRoutes);
-app.use('/api/transactions', transactionsRoutes);
 
-// Обработка ошибок
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
+// Тестовый эндпоинт (убедитесь, что API работает)
+app.get('/api/test', (req, res) => {
+  res.json({ status: "API работает!" });
 });
 
-// Start server
+// Обработка 404 (если роут не найден)
+app.use((req, res) => {
+  res.status(404).json({ error: "Эндпоинт не найден" });
+});
+
+// Запуск сервера
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  console.log(`Сервер запущен на порту ${port}`);
 });
-
-module.exports = app;
