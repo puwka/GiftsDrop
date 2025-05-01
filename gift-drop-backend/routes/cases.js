@@ -4,137 +4,131 @@ const { pool } = require('../db');
 
 // Открытие кейса
 router.post('/open', async (req, res) => {
+    const { userId, caseType, price } = req.body;
+    
+    if (!userId || !caseType) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
     try {
-        const { user_id, case_type } = req.body;
-        
-        // Определяем стоимость кейса
-        let casePrice = 0;
-        switch (case_type) {
-            case 'mix': casePrice = 0; break;
-            case 'premium': casePrice = 500; break;
-            case 'legendary': casePrice = 1000; break;
-            default: return res.status(400).json({ msg: 'Invalid case type' });
-        }
-        
-        // Проверяем баланс пользователя
-        const balanceResult = await pool.query(
-            'SELECT balance FROM user_balances WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (balanceResult.rows.length === 0) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        
-        const currentBalance = balanceResult.rows[0].balance;
-        
-        if (currentBalance < casePrice) {
-            return res.status(400).json({ msg: 'Not enough balance' });
-        }
-        
-        // Генерируем приз (упрощенная логика)
-        let prizeValue, prizeDescription;
-        if (case_type === 'mix') {
-            prizeValue = Math.floor(Math.random() * 50) + 10;
-            prizeDescription = 'Common prize';
-        } else if (case_type === 'premium') {
-            prizeValue = Math.floor(Math.random() * 200) + 50;
-            prizeDescription = 'Premium prize';
-        } else {
-            prizeValue = Math.floor(Math.random() * 500) + 200;
-            prizeDescription = 'Legendary prize';
-        }
-        
-        // Обновляем баланс пользователя (если кейс не бесплатный)
-        if (casePrice > 0) {
-            await pool.query(
-                'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
-                [casePrice, user_id]
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // 1. Проверяем баланс пользователя
+            const balanceResult = await client.query(
+                'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
+                [userId]
             );
-        }
-        
-        // Добавляем приз к балансу
-        await pool.query(
-            'UPDATE user_balances SET balance = balance + $1 WHERE user_id = $2',
-            [prizeValue, user_id]
-        );
-        
-        // Записываем открытие кейса
-        const openedCase = await pool.query(
-            'INSERT INTO opened_cases (user_id, case_type, prize_value, prize_description) VALUES ($1, $2, $3, $4) RETURNING *',
-            [user_id, case_type, prizeValue, prizeDescription]
-        );
-        
-        // Добавляем XP пользователю
-        let xpReward = 0;
-        switch (case_type) {
-            case 'mix': xpReward = 10; break;
-            case 'premium': xpReward = 25; break;
-            case 'legendary': xpReward = 50; break;
-        }
-        
-        await pool.query(
-            'UPDATE user_levels SET xp = xp + $1 WHERE user_id = $2',
-            [xpReward, user_id]
-        );
-        
-        // Проверяем, повысился ли уровень
-        const levelResult = await pool.query(
-            'SELECT level, xp FROM user_levels WHERE user_id = $1',
-            [user_id]
-        );
-        
-        const { level, xp } = levelResult.rows[0];
-        let leveledUp = false;
-        let newLevel = level;
-        
-        // Простая логика повышения уровня (100 XP на уровень)
-        if (xp >= level * 100) {
-            newLevel = level + 1;
-            await pool.query(
-                'UPDATE user_levels SET level = $1 WHERE user_id = $2',
-                [newLevel, user_id]
+            
+            if (balanceResult.rows.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            const currentBalance = balanceResult.rows[0].balance;
+            
+            if (currentBalance < price) {
+                return res.status(400).json({ error: 'Insufficient funds' });
+            }
+            
+            // 2. Вычитаем стоимость кейса
+            const newBalance = currentBalance - price;
+            await client.query(
+                'UPDATE user_balances SET balance = $1 WHERE user_id = $2',
+                [newBalance, userId]
             );
-            leveledUp = true;
+            
+            // 3. Генерируем приз (здесь должна быть ваша логика определения приза)
+            const prizeAmount = calculatePrize(caseType);
+            const prizeDescription = getPrizeDescription(prizeAmount);
+            
+            // 4. Добавляем приз на баланс
+            await client.query(
+                'UPDATE user_balances SET balance = balance + $1 WHERE user_id = $2',
+                [prizeAmount, userId]
+            );
+            
+            // 5. Добавляем XP пользователю
+            const xpToAdd = 10; // Например, 10 XP за открытие кейса
+            await client.query(
+                'UPDATE user_levels SET xp = xp + $1 WHERE user_id = $2',
+                [xpToAdd, userId]
+            );
+            
+            // 6. Проверяем, повысился ли уровень
+            const levelResult = await client.query(
+                'SELECT level, xp FROM user_levels WHERE user_id = $1',
+                [userId]
+            );
+            
+            const { level, xp } = levelResult.rows[0];
+            const nextLevel = LEVELS.find(l => l.level === level + 1);
+            let leveledUp = false;
+            
+            if (nextLevel && xp >= nextLevel.xpRequired) {
+                await client.query(
+                    'UPDATE user_levels SET level = level + 1 WHERE user_id = $1',
+                    [userId]
+                );
+                leveledUp = true;
+            }
+            
+            // 7. Записываем транзакцию
+            await client.query(
+                `INSERT INTO case_transactions 
+                (user_id, case_type, price, prize_amount, prize_description)
+                VALUES ($1, $2, $3, $4, $5)`,
+                [userId, caseType, price, prizeAmount, prizeDescription]
+            );
+            
+            await client.query('COMMIT');
+            
+            res.json({
+                success: true,
+                new_balance: newBalance + prizeAmount,
+                prize_description: prizeDescription,
+                leveled_up: leveledUp
+            });
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error('Transaction error:', err);
+            throw err;
+        } finally {
+            client.release();
         }
-        
-        // Получаем обновленный баланс
-        const updatedBalance = await pool.query(
-            'SELECT balance FROM user_balances WHERE user_id = $1',
-            [user_id]
-        );
-        
-        res.json({
-            case: openedCase.rows[0],
-            prize_value: prizeValue,
-            prize_description: prizeDescription,
-            new_balance: updatedBalance.rows[0].balance,
-            xp_gained: xpReward,
-            current_level: newLevel,
-            current_xp: xp,
-            leveled_up: leveledUp
-        });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error opening case:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
     }
 });
 
-// История открытых кейсов
-router.get('/history/:user_id', async (req, res) => {
-    try {
-        const { user_id } = req.params;
-        
-        const history = await pool.query(
-            'SELECT * FROM opened_cases WHERE user_id = $1 ORDER BY opened_at DESC LIMIT 20',
-            [user_id]
-        );
-        
-        res.json(history.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+function calculatePrize(caseType) {
+    // Ваша логика расчета приза в зависимости от типа кейса
+    switch (caseType) {
+        case 'mix': return Math.floor(Math.random() * 200) + 50;
+        case 'premium': return Math.floor(Math.random() * 500) + 200;
+        case 'legendary': return Math.floor(Math.random() * 1000) + 500;
+        default: return 0;
     }
-});
+}
+
+function getPrizeDescription(amount) {
+    if (amount < 100) return `Обычный приз (${amount} 🪙)`;
+    if (amount < 300) return `Редкий приз (${amount} 🪙)`;
+    if (amount < 700) return `Эпический приз (${amount} 🪙)`;
+    return `Легендарный приз (${amount} 🪙)`;
+}
+
+const LEVELS = [
+    { level: 1, xpRequired: 0 },
+    { level: 2, xpRequired: 100 },
+    { level: 3, xpRequired: 300 },
+    { level: 4, xpRequired: 600 },
+    { level: 5, xpRequired: 1000 }
+];
 
 module.exports = router;

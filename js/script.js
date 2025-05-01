@@ -1,5 +1,5 @@
 // ==================== Функции из auth.js ====================
-function initTelegramAuth() {
+async function initTelegramAuth() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         try {
             const webApp = Telegram.WebApp;
@@ -7,11 +7,31 @@ function initTelegramAuth() {
             webApp.ready();
             
             if (webApp.initDataUnsafe?.user) {
-                return {
-                    platform: 'telegram',
-                    data: webApp.initDataUnsafe.user,
-                    webAppInstance: webApp
-                };
+                const userData = webApp.initDataUnsafe.user;
+                
+                // Отправляем данные на сервер
+                const response = await authenticateUser({
+                    telegram_id: userData.id,
+                    username: userData.username,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    photo_url: userData.photo_url,
+                    language_code: userData.language_code
+                });
+                
+                if (response.success) {
+                    // Обновляем данные пользователя из ответа сервера
+                    currentUser = formatUserData(response.user);
+                    balance = response.balance;
+                    userLevel = response.level;
+                    userXP = response.xp;
+                    
+                    return {
+                        platform: 'telegram',
+                        data: userData,
+                        webAppInstance: webApp
+                    };
+                }
             }
             return null;
         } catch (e) {
@@ -20,6 +40,34 @@ function initTelegramAuth() {
         }
     }
     return null;
+}
+
+async function authenticateUser(userData) {
+    try {
+        const response = await fetch(`${API_URL}/api/users/auth`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Authentication failed');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Authentication error:', error);
+        // Возвращаем тестовые данные в случае ошибки
+        return {
+            success: false,
+            user: getTestUserData(),
+            balance: 1000,
+            level: 1,
+            xp: 0
+        };
+    }
 }
 
 function getTestUserData() {
@@ -298,24 +346,30 @@ async function openCase(caseType) {
             return;
         }
         
-        // Здесь должна быть реальная логика запроса к API
-        // Временно используем mock-данные
-        const mockResponse = {
-            success: true,
-            new_balance: balance - price + 200, // Пример выигрыша
-            prize_description: "Редкий приз (200 🪙)",
-            leveled_up: false
-        };
+        // Реальный запрос к API
+        const response = await fetch(`${API_URL}/api/cases/open`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: currentUser.id,
+                caseType: caseType,
+                price: price
+            })
+        });
         
-        if (mockResponse.success) {
-            updateBalance(mockResponse.new_balance - balance);
-            showToast(`Кейс "${caseType}" открыт! Получено: ${mockResponse.prize_description}`, "success");
+        const result = await response.json();
+        
+        if (result.success) {
+            updateBalance(result.new_balance - balance);
+            showToast(`Кейс "${caseType}" открыт! Получено: ${result.prize_description}`, "success");
             
-            if (mockResponse.leveled_up) {
+            if (result.leveled_up) {
                 showLevelUpModal(userLevel + 1);
             }
         } else {
-            showToast("Ошибка при открытии кейса", "error");
+            showToast(result.error || "Ошибка при открытии кейса", "error");
         }
     } catch (error) {
         console.error('Error opening case:', error);

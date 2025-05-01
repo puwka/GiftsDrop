@@ -7,11 +7,6 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
-console.log("Текущее окружение:", {
-    DATABASE_URL: process.env.DATABASE_URL,
-    PORT: process.env.PORT
-  });
-
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -27,7 +22,6 @@ app.get('/', (req, res) => {
     res.send('Gift Drop Backend API');
 });
 
-// API routes will be added here
 // Подключаем маршруты
 const usersRoutes = require('./routes/users');
 const casesRoutes = require('./routes/cases');
@@ -38,6 +32,12 @@ app.use('/api/users', usersRoutes);
 app.use('/api/cases', casesRoutes);
 app.use('/api/bonuses', bonusesRoutes);
 app.use('/api/transactions', transactionsRoutes);
+
+// Обработка ошибок
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
 
 // Start server
 app.listen(port, () => {
