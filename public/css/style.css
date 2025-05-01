@@ -1128,3 +1128,35 @@ input[type="number"]::-webkit-inner-spin-button {
     text-align: right;
 }
 
+/* Добавьте в ваш файл стилей */
+.deposit-tab {
+    padding: 10px 15px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 5px;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.deposit-tab.active {
+    background: #8a2be2;
+    color: white;
+}
+
+.deposit-tab-content {
+    display: none;
+    padding: 15px 0;
+}
+
+.deposit-tab-content.active {
+    display: block;
+}
+
+#testAmount {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}

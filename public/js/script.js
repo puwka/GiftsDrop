@@ -580,8 +580,9 @@ function initDepositModal() {
     }
 }
 
+// ==================== Функции депозита ====================
 async function processTestDeposit() {
-    const amountInput = document.getElementById('giftcoinAmount');
+    const amountInput = document.getElementById('testAmount');
     const amount = parseInt(amountInput.value);
     
     if (!amount || amount <= 0) {
@@ -589,16 +590,43 @@ async function processTestDeposit() {
         return;
     }
     
-    // Тестовое пополнение без API
-    balance += amount;
-    updateBalanceDisplay();
-    showToast(`Баланс пополнен на ${amount} GiftCoin`, "success");
-    closeDepositModal();
+    try {
+        // Отправляем запрос на бэкенд
+        const response = await apiRequest('/users/balance', 'POST', {
+            user_id: currentUser.id,
+            amount: amount,
+            is_test: true // Добавляем флаг тестового пополнения
+        });
+        
+        if (response.success) {
+            balance = response.new_balance;
+            updateBalanceDisplay();
+            showToast(`Баланс пополнен на ${amount} GiftCoin`, "success");
+            closeDepositModal();
+        } else {
+            showToast(response.error || "Ошибка пополнения", "error");
+        }
+    } catch (error) {
+        console.error('Deposit error:', error);
+        showToast("Ошибка соединения", "error");
+    }
 }
 
+// Обновите функцию updateBalanceDisplay для анимации
 function updateBalanceDisplay() {
     document.querySelectorAll('.balance-amount').forEach(el => {
-        el.textContent = balance;
+        const oldValue = parseInt(el.textContent) || 0;
+        const diff = balance - oldValue;
+        
+        // Анимация изменения баланса
+        el.style.transform = 'scale(1.1)';
+        el.style.color = diff > 0 ? '#4CAF50' : '#F44336';
+        
+        setTimeout(() => {
+            el.textContent = balance;
+            el.style.transform = 'scale(1)';
+            el.style.color = '';
+        }, 300);
     });
 }
 

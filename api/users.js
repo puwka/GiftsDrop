@@ -86,7 +86,7 @@ router.post('/auth', async (req, res) => {
                 level: (levelData.rows[0] && levelData.rows[0].level) || 1,
                 xp: (levelData.rows[0] && levelData.rows[0].xp) || 0
             };
-            
+
             res.json(response);
             
         } catch (err) {
@@ -101,6 +101,69 @@ router.post('/auth', async (req, res) => {
         }
     } catch (err) {
         console.error('Ошибка в /auth:', err.stack);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
+    }
+});
+
+// Обновите роут для пополнения баланса
+router.post('/balance', async (req, res) => {
+    try {
+        const { user_id, amount, is_test } = req.body;
+        
+        if (!user_id || amount === undefined) {
+            return res.status(400).json({ error: 'user_id and amount are required' });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Проверяем существование пользователя
+            const userExists = await client.query(
+                'SELECT 1 FROM users WHERE id = $1',
+                [user_id]
+            );
+            
+            if (userExists.rows.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            // Для тестового пополнения не проверяем лимиты
+            if (is_test) {
+                const result = await client.query(
+                    `UPDATE user_balances 
+                     SET balance = balance + $1 
+                     WHERE user_id = $2 
+                     RETURNING balance`,
+                    [amount, user_id]
+                );
+                
+                await client.query('COMMIT');
+                
+                return res.json({
+                    success: true,
+                    new_balance: result.rows[0].balance
+                });
+            }
+            
+            // Оригинальная логика для реальных пополнений
+            // ... (оставьте ваш существующий код)
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error('Ошибка транзакции:', err);
+            res.status(500).json({ 
+                error: 'Transaction error',
+                details: err.message
+            });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Ошибка в /balance:', err.stack);
         res.status(500).json({ 
             error: 'Internal server error',
             details: err.message

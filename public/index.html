@@ -220,9 +220,11 @@
         <div class="modal-content">
             <h3><i class="fas fa-coins"></i> ПОПОЛНЕНИЕ БАЛАНСА</h3>
             
+            <!-- Вставьте этот код в модальное окно депозита (depositModal) -->
             <div class="deposit-tabs">
-                <button class="deposit-tab active" onclick="switchDepositTab('ton')">TON</button>
+                <button class="deposit-tab" onclick="switchDepositTab('ton')">TON</button>
                 <button class="deposit-tab" onclick="switchDepositTab('stars')">Звезды</button>
+                <button class="deposit-tab active" onclick="switchDepositTab('test')">Тест</button>
             </div>
             
             <div class="deposit-tab-content ton active">
@@ -266,6 +268,17 @@
                 </div>
                 <button class="modal-button" onclick="processStarsDeposit()">
                     <i class="fas fa-star"></i> Пополнить звездами
+                </button>
+            </div>
+
+            <!-- Добавьте эту вкладку после других deposit-tab-content -->
+            <div class="deposit-tab-content test active">
+                <div class="input-group">
+                    <label for="testAmount">Сумма GiftCoin:</label>
+                    <input type="number" id="testAmount" min="1" placeholder="Введите сумму">
+                </div>
+                <button class="modal-button" onclick="processTestDeposit()">
+                    <i class="fas fa-coins"></i> Пополнить баланс
                 </button>
             </div>
             
