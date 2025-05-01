@@ -111,7 +111,7 @@ router.post('/auth', async (req, res) => {
 // Обновите роут для пополнения баланса
 router.post('/balance', async (req, res) => {
     try {
-        const { user_id, amount, is_test } = req.body;
+        const { user_id, amount } = req.body;
         
         if (!user_id || amount === undefined) {
             return res.status(400).json({ error: 'user_id and amount are required' });
@@ -131,26 +131,21 @@ router.post('/balance', async (req, res) => {
                 return res.status(404).json({ error: 'User not found' });
             }
             
-            // Для тестового пополнения не проверяем лимиты
-            if (is_test) {
-                const result = await client.query(
-                    `UPDATE user_balances 
-                     SET balance = balance + $1 
-                     WHERE user_id = $2 
-                     RETURNING balance`,
-                    [amount, user_id]
-                );
-                
-                await client.query('COMMIT');
-                
-                return res.json({
-                    success: true,
-                    new_balance: result.rows[0].balance
-                });
-            }
+            // Обновляем баланс
+            const result = await client.query(
+                `UPDATE user_balances 
+                 SET balance = balance + $1 
+                 WHERE user_id = $2 
+                 RETURNING balance`,
+                [amount, user_id]
+            );
             
-            // Оригинальная логика для реальных пополнений
-            // ... (оставьте ваш существующий код)
+            await client.query('COMMIT');
+            
+            return res.json({
+                success: true,
+                new_balance: result.rows[0].balance
+            });
             
         } catch (err) {
             await client.query('ROLLBACK');

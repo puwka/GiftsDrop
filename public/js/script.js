@@ -248,6 +248,17 @@ function initEventListeners() {
     document.querySelector('.modal-button.secondary')?.addEventListener('click', closeDepositModal);
     document.getElementById('levelUpModal')?.querySelector('.modal-button')
         .addEventListener('click', closeLevelUpModal);
+
+    // Добавим в initEventListeners()
+    document.getElementById('tonAmount')?.addEventListener('input', function() {
+        const amount = parseFloat(this.value) || 0;
+        document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
+    });
+
+    document.getElementById('starsAmount')?.addEventListener('input', function() {
+        const amount = parseInt(this.value) || 0;
+        document.getElementById('starsGiftcoin').textContent = amount;
+    });
 }
 
 function updateProfile() {
@@ -666,23 +677,26 @@ async function processTonDeposit() {
     }
     
     try {
-        // Здесь должен быть реальный запрос к API
-        // Временно используем mock-данные
-        const mockResponse = {
-            success: true,
-            new_balance: balance + tonAmount * 200,
-            bonus_received: promoCode === "WELCOME" ? 100 : 0
-        };
+        // Рассчитываем сумму в GiftCoin (1 TON = 200 GiftCoin)
+        const giftcoinAmount = Math.floor(tonAmount * 200);
         
-        if (mockResponse.success) {
-            updateBalance(mockResponse.new_balance - balance);
-            userDeposits += tonAmount * 200;
+        // Отправляем запрос на сервер
+        const response = await apiRequest('/users/balance', 'POST', {
+            user_id: currentUser.id,
+            amount: giftcoinAmount
+        });
+        
+        if (response.success) {
+            balance = response.new_balance;
+            updateBalanceDisplay();
+            userDeposits += giftcoinAmount;
             
-            if (mockResponse.bonus_received > 0) {
-                showToast(`Промокод применен! +${mockResponse.bonus_received} GiftCoin`, "success");
+            if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
+                PROMO_CODES[promoCode].used = true;
+                showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
             }
             
-            showToast(`Баланс пополнен на ${tonAmount * 200} GiftCoin`, "success");
+            showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
             closeDepositModal();
             checkAvailableGiveaways();
         } else {
@@ -704,20 +718,20 @@ async function processStarsDeposit() {
     }
     
     try {
-        // Здесь должен быть реальный запрос к API
-        // Временно используем mock-данные
-        const mockResponse = {
-            success: true,
-            new_balance: balance + starsAmount,
-            bonus_received: promoCode === "WELCOME" ? 100 : 0
-        };
+        // Отправляем запрос на сервер (1 звезда = 1 GiftCoin)
+        const response = await apiRequest('/users/balance', 'POST', {
+            user_id: currentUser.id,
+            amount: starsAmount
+        });
         
-        if (mockResponse.success) {
-            updateBalance(mockResponse.new_balance - balance);
+        if (response.success) {
+            balance = response.new_balance;
+            updateBalanceDisplay();
             userDeposits += starsAmount;
             
-            if (mockResponse.bonus_received > 0) {
-                showToast(`Промокод применен! +${mockResponse.bonus_received} GiftCoin`, "success");
+            if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
+                PROMO_CODES[promoCode].used = true;
+                showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
             }
             
             showToast(`Баланс пополнен на ${starsAmount} GiftCoin`, "success");
