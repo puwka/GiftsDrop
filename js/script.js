@@ -60,6 +60,8 @@ async function updateUserBalance(amount) {
 // ==================== Функции из auth.js ====================
 function initTelegramAuth() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        const webApp = Telegram.WebApp;
+        console.log('Данные из Telegram:', webApp.initDataUnsafe?.user);
         try {
             const webApp = Telegram.WebApp;
             webApp.expand();

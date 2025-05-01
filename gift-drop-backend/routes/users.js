@@ -6,6 +6,13 @@ const { pool } = require('../db');
 // Получение или создание пользователя
 router.post('/auth', async (req, res) => {
     console.log('Получены данные:', req.body);
+    console.log('Получен запрос на /auth. Headers:', req.headers);
+    console.log('Тело запроса:', req.body); // Важно: убедитесь, что тело парсится
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('Пустое тело запроса');
+        return res.status(400).json({ error: 'Тело запроса отсутствует или пустое' });
+    }
     
     try {
         if (!req.body.telegram_id) {
