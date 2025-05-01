@@ -1,17 +1,22 @@
 const { Pool } = require('pg');
 
-console.log('Database host:', new URL(process.env.DATABASE_URL).hostname);
-
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: 'postgres.rsdhnpcnxgzqvihqqfdp',
+  host: 'aws-0-eu-north-1.pooler.supabase.com',
+  database: 'postgres',
+  password: process.env.DB_PASSWORD || '[Korol228]',
+  port: 5432,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+    // Добавьте дополнительные параметры SSL при необходимости
+  },
+  // Явно укажите используемый метод аутентификации
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
 });
 
-// Тестовый запрос для проверки подключения
-pool.query('SELECT NOW()')
-  .then(res => console.log('Database connection successful:', res.rows[0]))
-  .catch(err => console.error('Database connection failed:', err));
+// Проверка подключения при старте
+pool.on('connect', () => console.log('Connected to database'));
+pool.on('error', (err) => console.error('Database error:', err));
 
 module.exports = { pool };
