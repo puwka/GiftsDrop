@@ -1,4 +1,8 @@
 // ==================== API Functions ====================
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000' 
+    : 'https://gifts-drop.vercel.app';
+
 async function apiRequest(endpoint, method = 'GET', data = null) {
     try {
         const options = {
@@ -15,7 +19,8 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         const response = await fetch(`${API_URL}/api${endpoint}`, options);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
         }
 
         return await response.json();
@@ -24,6 +29,12 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         throw error;
     }
 }
+
+// ==================== User Management ====================
+let currentUser = null;
+let balance = 0;
+let userLevel = 1;
+let userXP = 0;
 
 async function authenticateUser(userData) {
     try {
@@ -36,14 +47,21 @@ async function authenticateUser(userData) {
             language_code: userData.language
         });
         
-        return response;
+        if (response.success) {
+            currentUser = response.user;
+            balance = response.balance || 0;
+            userLevel = response.level || 1;
+            userXP = response.xp || 0;
+            return true;
+        }
+        return false;
     } catch (error) {
         console.error('Authentication failed:', error);
-        return null;
+        return false;
     }
 }
 
-async function updateUserBalance(amount, type = 'deposit', description = 'Пополнение баланса') {
+async function updateBalance(amount, type = 'deposit', description = '') {
     try {
         const response = await apiRequest('/users/balance', 'POST', {
             user_id: currentUser.id,
@@ -60,211 +78,25 @@ async function updateUserBalance(amount, type = 'deposit', description = 'Поп
         return false;
     } catch (error) {
         console.error('Balance update failed:', error);
+        showToast(error.message || "Ошибка обновления баланса", "error");
         return false;
     }
 }
 
-// ==================== Функции из auth.js ====================
-function initTelegramAuth() {
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        const webApp = Telegram.WebApp;
-        console.log('Данные из Telegram:', webApp.initDataUnsafe?.user);
-        try {
-            const webApp = Telegram.WebApp;
-            webApp.expand();
-            webApp.ready();
-            
-            if (webApp.initDataUnsafe?.user) {
-                return {
-                    platform: 'telegram',
-                    data: webApp.initDataUnsafe.user,
-                    webAppInstance: webApp
-                };
-            }
-            return null;
-        } catch (e) {
-            console.error('Telegram auth error:', e);
-            return null;
-        }
-    }
-    return null;
-}
-
-function getTestUserData() {
-    return {
-        id: Math.floor(Math.random() * 1000000),
-        first_name: "Тестовый",
-        last_name: "Пользователь",
-        username: "test_user",
-        photo_url: "",
-        language_code: "ru"
-    };
-}
-
-function formatUserData(userData) {
-    if (!userData) return null;
-    return {
-        id: userData.id || 0,
-        name: [userData.first_name, userData.last_name].filter(Boolean).join(' '),
-        username: userData.username ? `@${userData.username}` : '',
-        photo: userData.photo_url || '',
-        language: userData.language_code || 'ru'
-    };
-}
-
-// ==================== Глобальные переменные ====================
-let balance = 1000;
-let canSpin = true;
-let activeBonuses = [];
-let userDeposits = 0;
-let currentUser = null;
-let dailySpins = 1;
-
-// Определяем API_URL в зависимости от хоста
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000' 
-    : 'https://gifts-drop.vercel.app';
-
-// Уровни
-const LEVELS = [
-    { level: 1, xpRequired: 0, reward: 0, bonus: "Доступ к базовым кейсам" },
-    { level: 2, xpRequired: 100, reward: 50, bonus: "+5% к выигрышам" },
-    { level: 3, xpRequired: 300, reward: 100, bonus: "Доступ к премиум кейсам" },
-    { level: 4, xpRequired: 600, reward: 200, bonus: "+1 дополнительный спин" },
-    { level: 5, xpRequired: 1000, reward: 500, bonus: "Эксклюзивные бонусы" }
-];
-
-let userXP = 0;
-let userLevel = 1;
-
-// Промокоды
-const PROMO_CODES = {
-    "WELCOME": { amount: 100, used: false },
-    "GIFT100": { amount: 100, used: false },
-    "BONUS50": { amount: 50, used: false }
-};
-
-// Типы бонусов
-const BONUS_TYPES = [
-    { 
-        type: "deposit", 
-        probability: 45,
-        variants: [
-            { title: "+20% К ДЕПОЗИТУ", value: 0.2, icon: "fa-coins", duration: 24 },
-            { title: "+15% К ДЕПОЗИТУ", value: 0.15, icon: "fa-coins", duration: 12 }
-        ]
-    },
-    { 
-        type: "discount", 
-        probability: 35,
-        variants: [
-            { title: "-20% НА КЕЙСЫ", value: 0.2, icon: "fa-percentage", duration: 12 },
-            { title: "-15% НА КЕЙСЫ", value: 0.15, icon: "fa-percentage", duration: 6 }
-        ]
-    },
-    { 
-        type: "free", 
-        probability: 20,
-        variants: [
-            { title: "+2 ПОДАРКА", value: 2, icon: "fa-gift", duration: 0 },
-            { title: "+1 ПОДАРОК", value: 1, icon: "fa-gift", duration: 0 }
-        ]
-    }
-];
-
-// ==================== Основные функции ====================
-async function initApp() {
-    console.log('Initializing app...');
-    
+async function getTransactions() {
     try {
-        const authResult = initTelegramAuth();
-        
-        if (authResult && authResult.data) {
-            currentUser = formatUserData(authResult.data);
-            console.log('Authenticated as Telegram user:', currentUser);
-            
-            // Аутентифицируем пользователя на сервере
-            const authResponse = await authenticateUser(currentUser);
-            if (authResponse) {
-                balance = authResponse.balance;
-                userLevel = authResponse.level;
-                userXP = authResponse.xp;
-            }
-            
-            if (authResult.webAppInstance) {
-                try {
-                    authResult.webAppInstance.setHeaderColor('#8a2be2');
-                    authResult.webAppInstance.enableClosingConfirmation();
-                } catch (e) {
-                    console.log('WebApp settings error:', e);
-                }
-            }
-        } else {
-            currentUser = formatUserData(getTestUserData());
-            console.log('Using test user:', currentUser);
-            
-            if (!document.querySelector('.test-warning')) {
-                const warning = document.createElement('div');
-                warning.className = 'test-warning';
-                warning.textContent = 'Режим тестирования: используются тестовые данные';
-                document.body.prepend(warning);
-            }
-        }
-
-        // Остальной код инициализации...
-        updateProfile();
-        initTheme();
-        initRoulette();
-        initDepositModal();
-        updateActiveBonuses();
-        checkAvailableGiveaways();
-        initUserLevel();
-        loadUserProgress();
-        
-        initEventListeners();
-        openTab('cases');
-        
-        console.log('App initialized successfully');
-    } catch (e) {
-        console.error('Initialization error:', e);
-        showToast('Произошла ошибка при инициализации приложения', 'error');
+        const response = await apiRequest(`/users/transactions/${currentUser.id}`);
+        return response.transactions || [];
+    } catch (error) {
+        console.error('Failed to get transactions:', error);
+        return [];
     }
 }
 
-function initEventListeners() {
-    // Навигация
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            openTab(tabName, this);
-        });
-    });
-    
-    // Кейсы
-    document.querySelectorAll('.case-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const caseType = this.getAttribute('data-case-type');
-            openCase(caseType);
-        });
-    });
-    
-    // Кнопка пополнения
-    document.querySelector('.deposit-btn')?.addEventListener('click', openDepositModal);
-    
-    // Кнопки в модалках
-    document.querySelector('.modal-button.secondary')?.addEventListener('click', closeDepositModal);
-    document.getElementById('levelUpModal')?.querySelector('.modal-button')
-        .addEventListener('click', closeLevelUpModal);
-
-    // Добавим в initEventListeners()
-    document.getElementById('tonAmount')?.addEventListener('input', function() {
-        const amount = parseFloat(this.value) || 0;
-        document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
-    });
-
-    document.getElementById('starsAmount')?.addEventListener('input', function() {
-        const amount = parseInt(this.value) || 0;
-        document.getElementById('starsGiftcoin').textContent = amount;
+// ==================== UI Functions ====================
+function updateBalanceDisplay() {
+    document.querySelectorAll('.balance-amount').forEach(el => {
+        el.textContent = balance;
     });
 }
 
@@ -275,43 +107,30 @@ function updateProfile() {
     const avatar = document.getElementById('userAvatar');
     const placeholder = document.getElementById('avatarPlaceholder');
 
-    if (userName) userName.textContent = currentUser.name;
+    if (userName) userName.textContent = currentUser.name || currentUser.first_name;
     
     if (avatar && placeholder) {
-        if (currentUser.photo) {
+        if (currentUser.photo_url) {
             placeholder.style.display = 'none';
-            avatar.style.backgroundImage = `url(${currentUser.photo})`;
+            avatar.style.backgroundImage = `url(${currentUser.photo_url})`;
             avatar.style.backgroundSize = 'cover';
             avatar.style.backgroundPosition = 'center';
         } else {
             placeholder.style.display = 'flex';
             avatar.style.backgroundImage = 'none';
             
-            const initials = currentUser.name.split(' ')
-                .map(n => n[0])
-                .join('')
-                .toUpperCase();
-            placeholder.textContent = initials;
+            const initials = (currentUser.first_name?.[0] || '') + (currentUser.last_name?.[0] || '');
+            placeholder.textContent = initials.toUpperCase();
         }
     }
-
-    updateUserStats();
 }
 
-function updateUserStats() {
-    const openedCases = document.getElementById('openedCases');
-    const bestPrize = document.getElementById('bestPrize');
-    
-    if (openedCases) {
-        openedCases.textContent = Math.abs(currentUser.id % 20);
-    }
-    
-    if (bestPrize) {
-        const prizes = ['Обычный', 'Редкий', 'Эпический', 'Легендарный'];
-        bestPrize.textContent = prizes[Math.floor(currentUser.id % 4)];
-    }
+function updateLevelDisplay() {
+    document.getElementById('userLevel').textContent = userLevel;
+    document.getElementById('xpDisplay').textContent = `${userXP}/100 XP`; // Упрощенная версия
 }
 
+// ==================== Theme Management ====================
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -342,7 +161,7 @@ function updateThemeSwitch(theme) {
     }
 }
 
-// ==================== Функции кейсов ====================
+// ==================== Tab Navigation ====================
 function openTab(tabName, clickedElement) {
     // Скрыть все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -361,244 +180,56 @@ function openTab(tabName, clickedElement) {
     // Активировать кнопку
     const button = clickedElement || document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
     if (button) button.classList.add('active');
+
+    // Загружаем данные для вкладки профиля
+    if (tabName === 'profile') {
+        loadProfileData();
+    }
 }
 
-async function openCase(caseType) {
+async function loadProfileData() {
     try {
-        console.log(`Opening ${caseType} case...`);
-        
-        let price = 0;
-        switch (caseType) {
-            case 'mix': price = 0; break;
-            case 'premium': price = 500; break;
-            case 'legendary': price = 1000; break;
-            default: 
-                showToast("Неизвестный тип кейса", "error");
-                return;
-        }
-        
-        if (balance < price) {
-            showToast("Недостаточно средств", "error");
-            return;
-        }
-        
-        // Здесь должна быть реальная логика запроса к API
-        // Временно используем mock-данные
-        const mockResponse = {
-            success: true,
-            new_balance: balance - price + 200, // Пример выигрыша
-            prize_description: "Редкий приз (200 🪙)",
-            leveled_up: false
-        };
-        
-        if (mockResponse.success) {
-            updateBalance(mockResponse.new_balance - balance);
-            showToast(`Кейс "${caseType}" открыт! Получено: ${mockResponse.prize_description}`, "success");
-            
-            if (mockResponse.leveled_up) {
-                showLevelUpModal(userLevel + 1);
-            }
-        } else {
-            showToast("Ошибка при открытии кейса", "error");
-        }
+        const transactions = await getTransactions();
+        updateTransactionsList(transactions);
     } catch (error) {
-        console.error('Error opening case:', error);
-        showToast("Ошибка соединения", "error");
+        console.error('Failed to load profile data:', error);
     }
 }
 
-// ==================== Функции рулетки ====================
-function initRoulette() {
-    const track = document.getElementById('rouletteTrack');
-    if (!track) return;
-    
-    track.innerHTML = '';
-    
-    for (let i = 0; i < 20; i++) {
-        const type = getRandomBonusType();
-        const bonus = getRandomVariant(type);
-        
-        const item = document.createElement('div');
-        item.className = `roulette-item ${type}`;
-        item.innerHTML = `<i class="fas ${bonus.icon}"></i>`;
-        item.dataset.type = type;
-        item.dataset.title = bonus.title;
-        item.dataset.value = bonus.value;
-        item.dataset.duration = bonus.duration;
-        
-        track.appendChild(item);
-    }
-}
-
-function getRandomBonusType() {
-    const random = Math.random() * 100;
-    let cumulative = 0;
-    
-    for (const type of BONUS_TYPES) {
-        cumulative += type.probability;
-        if (random <= cumulative) return type.type;
-    }
-    
-    return 'deposit';
-}
-
-function getRandomVariant(type) {
-    const bonusType = BONUS_TYPES.find(t => t.type === type);
-    return bonusType.variants[Math.floor(Math.random() * bonusType.variants.length)];
-}
-
-function spinRoulette() {
-    if (!canSpin || dailySpins <= 0) {
-        showToast("Нет доступных спинов", "error");
-        return;
-    }
-
-    addXP(15);
-    
-    dailySpins--;
-    saveUserProgress();
-    updateLevelSystem();
-
-    if (!canSpin) {
-        showToast("Подождите, пока завершится текущий спин", "error");
-        return;
-    }
-    
-    if (balance < 100) {
-        showToast("Недостаточно средств для спина", "error");
-        return;
-    }
-    
-    updateBalance(-100);
-    canSpin = false;
-    const spinButton = document.querySelector('.spin-button');
-    if (spinButton) spinButton.disabled = true;
-    
-    const track = document.getElementById('rouletteTrack');
-    const items = document.querySelectorAll('.roulette-item');
-    
-    const targetType = getRandomBonusType();
-    const targetItems = Array.from(items).filter(item => item.dataset.type === targetType);
-    const targetItem = targetItems[Math.floor(Math.random() * targetItems.length)];
-    const itemIndex = Array.from(items).indexOf(targetItem);
-    
-    const itemWidth = 110;
-    const stopPosition = -(itemIndex * itemWidth) + (window.innerWidth / 2 - itemWidth / 2);
-    
-    if (track) {
-        track.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
-        track.style.transform = `translateX(${stopPosition}px)`;
-    }
-    
-    setTimeout(() => {
-        const wonBonus = {
-            title: targetItem.dataset.title,
-            type: targetItem.dataset.type,
-            value: parseFloat(targetItem.dataset.value),
-            duration: parseInt(targetItem.dataset.duration),
-            icon: targetItem.querySelector('i').className
-        };
-        
-        activateBonus(wonBonus);
-        showWinModal(wonBonus);
-        
-        setTimeout(() => {
-            if (track) {
-                track.style.transition = 'none';
-                initRoulette();
-            }
-            canSpin = true;
-            if (spinButton) spinButton.disabled = false;
-        }, 500);
-    }, 3000);
-}
-
-// ==================== Функции бонусов ====================
-function activateBonus(bonus) {
-    if (bonus.type === 'free') {
-        showToast(`Вы получили ${bonus.value} подарка!`, "success");
-    }
-    
-    if (bonus.duration > 0) {
-        bonus.endTime = Date.now() + bonus.duration * 3600000;
-        activeBonuses.push(bonus);
-        updateActiveBonuses();
-    }
-}
-
-function updateActiveBonuses() {
-    const now = Date.now();
-    activeBonuses = activeBonuses.filter(b => b.endTime > now);
-    
-    const container = document.getElementById('activeBonusesList');
+function updateTransactionsList(transactions) {
+    const container = document.getElementById('transactionsList');
     if (!container) return;
-    
-    if (activeBonuses.length === 0) {
+
+    if (transactions.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <p>Нет активных бонусов</p>
+                <i class="fas fa-exchange-alt"></i>
+                <p>Нет транзакций</p>
             </div>
         `;
         return;
     }
-    
-    container.innerHTML = '';
-    activeBonuses.forEach(bonus => {
-        const hoursLeft = Math.ceil((bonus.endTime - now) / 3600000);
-        
-        const bonusElement = document.createElement('div');
-        bonusElement.className = 'bonus-item';
-        bonusElement.innerHTML = `
-            <div class="bonus-icon ${bonus.type}">
-                <i class="${bonus.icon}"></i>
+
+    container.innerHTML = transactions.map(tx => `
+        <div class="transaction-item ${tx.type}">
+            <div class="transaction-icon">
+                <i class="fas ${
+                    tx.type === 'deposit' ? 'fa-coins' : 
+                    tx.type === 'bonus' ? 'fa-gift' : 'fa-exchange-alt'
+                }"></i>
             </div>
-            <div class="bonus-info">
-                <div>${bonus.title}</div>
-                <div class="bonus-timer">Истекает через ${hoursLeft}ч</div>
+            <div class="transaction-info">
+                <div class="transaction-description">${tx.description || tx.type}</div>
+                <div class="transaction-date">${new Date(tx.created_at).toLocaleString()}</div>
             </div>
-        `;
-        
-        container.appendChild(bonusElement);
-    });
+            <div class="transaction-amount ${tx.amount >= 0 ? 'positive' : 'negative'}">
+                ${tx.amount >= 0 ? '+' : ''}${tx.amount} 🪙
+            </div>
+        </div>
+    `).join('');
 }
 
-function showWinModal(bonus) {
-    const modal = document.getElementById('winModal');
-    if (!modal) return;
-    
-    const icon = document.getElementById('winIcon');
-    const title = document.getElementById('winTitle');
-    const desc = document.getElementById('winDescription');
-    
-    if (icon) {
-        icon.className = `win-icon ${bonus.type}`;
-        icon.innerHTML = `<i class="${bonus.icon}"></i>`;
-    }
-    if (title) title.textContent = "ПОЗДРАВЛЯЕМ!";
-    if (desc) desc.textContent = bonus.title;
-    
-    modal.classList.remove('hidden');
-}
-
-function closeWinModal() {
-    const modal = document.getElementById('winModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-// ==================== Функции депозита ====================
-function initDepositModal() {
-    const giftcoinInput = document.getElementById('giftcoinAmount');
-    
-    if (giftcoinInput) {
-        giftcoinInput.addEventListener('input', function() {
-            const amount = parseInt(this.value) || 0;
-            document.getElementById('giftcoinPreview').textContent = amount;
-        });
-    }
-}
-
-// ==================== Функции депозита ====================
+// ==================== Deposit Functions ====================
 function openDepositModal() {
     const modal = document.getElementById('depositModal');
     if (modal) modal.classList.remove('hidden');
@@ -625,296 +256,48 @@ function switchDepositTab(tabName) {
     if (content) content.classList.add('active');
 }
 
-// Обновленные функции пополнения
 async function processTonDeposit() {
     const tonAmount = parseFloat(document.getElementById('tonAmount').value);
-    const promoCode = document.getElementById('tonPromoCode').value.toUpperCase();
     
     if (!tonAmount || tonAmount < 0.5) {
         showToast("Минимальная сумма пополнения - 0.5 TON", "error");
         return;
     }
     
-    try {
-        const giftcoinAmount = Math.floor(tonAmount * 200);
-        const success = await updateUserBalance(
-            giftcoinAmount,
-            'deposit',
-            `Пополнение через TON (${tonAmount} TON)`
-        );
-        
-        if (success) {
-            userDeposits += giftcoinAmount;
-            
-            if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
-                PROMO_CODES[promoCode].used = true;
-                await updateUserBalance(
-                    PROMO_CODES[promoCode].amount,
-                    'bonus',
-                    `Бонус по промокоду ${promoCode}`
-                );
-                showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
-            }
-            
-            showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
-            closeDepositModal();
-            checkAvailableGiveaways();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast("Ошибка соединения", "error");
+    const giftcoinAmount = Math.floor(tonAmount * 200);
+    const success = await updateBalance(
+        giftcoinAmount,
+        'deposit',
+        `Пополнение через TON (${tonAmount} TON)`
+    );
+    
+    if (success) {
+        showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
+        closeDepositModal();
     }
 }
 
 async function processStarsDeposit() {
     const starsAmount = parseInt(document.getElementById('starsAmount').value);
-    const promoCode = document.getElementById('starsPromoCode').value.toUpperCase();
     
     if (!starsAmount || starsAmount < 25) {
         showToast("Минимальное количество звезд - 25", "error");
         return;
     }
     
-    try {
-        const success = await updateUserBalance(
-            starsAmount,
-            'deposit',
-            'Пополнение звездами'
-        );
-        
-        if (success) {
-            userDeposits += starsAmount;
-            
-            if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
-                PROMO_CODES[promoCode].used = true;
-                await updateUserBalance(
-                    PROMO_CODES[promoCode].amount,
-                    'bonus',
-                    `Бонус по промокоду ${promoCode}`
-                );
-                showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
-            }
-            
-            showToast(`Баланс пополнен на ${starsAmount} GiftCoin`, "success");
-            closeDepositModal();
-            checkAvailableGiveaways();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast("Ошибка соединения", "error");
+    const success = await updateBalance(
+        starsAmount,
+        'deposit',
+        'Пополнение звездами'
+    );
+    
+    if (success) {
+        showToast(`Баланс пополнен на ${starsAmount} GiftCoin`, "success");
+        closeDepositModal();
     }
 }
 
-// ==================== Функции розыгрышей ====================
-function joinGiveaway(minAmount) {
-    if (userDeposits >= minAmount) {
-        showToast(`Вы участвуете в розыгрыше!`, 'success');
-    } else {
-        showToast(`Пополните баланс на ${minAmount} 🪙 для участия`, 'error');
-        openDepositModal();
-    }
-}
-
-function checkAvailableGiveaways() {
-    const giveawayCards = document.querySelectorAll('.giveaway-card');
-    
-    giveawayCards.forEach(card => {
-        const minDeposit = parseInt(card.dataset.minDeposit);
-        const button = card.querySelector('.giveaway-button');
-        
-        if (button) {
-            button.disabled = userDeposits < minAmount;
-        }
-    });
-}
-
-// ==================== Функции уровней ====================
-function calculateXPForLevel(level) {
-    if (level <= 1) return 0;
-    return LEVELS[level - 1]?.xpRequired || 0;
-}
-
-function initLevelSystem() {
-    userLevel = 1;
-    userXP = 0;
-    updateLevelDisplay();
-}
-
-function addXP(amount) {
-    if (amount <= 0) return;
-    
-    userXP += amount;
-    
-    let leveledUp = false;
-    while (userLevel < LEVELS.length && userXP >= LEVELS[userLevel].xpRequired) {
-        userLevel++;
-        leveledUp = true;
-    }
-    
-    if (leveledUp) {
-        showLevelUpModal(LEVELS[userLevel - 1]);
-        applyLevelBonus(userLevel);
-    }
-    
-    updateLevelDisplay();
-    saveProgress();
-}
-
-function applyLevelBonus(level) {
-    switch(level) {
-        case 2:
-            // +5% к выигрышам
-            break;
-        case 3:
-            // Разблокировать премиум кейсы
-            break;
-        case 4:
-            dailySpins++;
-            break;
-        case 5:
-            // Эксклюзивные бонусы
-            break;
-    }
-}
-
-function showLevelUpModal(levelData) {
-    const modal = document.getElementById('levelUpModal');
-    if (!modal) return;
-    
-    const levelText = modal.querySelector('.level-text');
-    const rewardText = modal.querySelector('.reward-text');
-    const bonusText = modal.querySelector('.bonus-text');
-    
-    if (levelText) levelText.textContent = `Уровень ${levelData.level}!`;
-    if (rewardText) rewardText.textContent = `Награда: ${levelData.reward} 🪙`;
-    if (bonusText) bonusText.textContent = `Бонус: ${levelData.bonus}`;
-    
-    modal.classList.remove('hidden');
-}
-
-function closeLevelUpModal() {
-    const modal = document.getElementById('levelUpModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-function updateLevelSystem() {
-    const currentLevelData = LEVELS[userLevel - 1];
-    const nextLevelData = LEVELS[userLevel] || currentLevelData;
-    
-    const levelElement = document.getElementById('userLevel');
-    if (levelElement) {
-        levelElement.textContent = userLevel;
-    }
-    
-    const progress = nextLevelData 
-        ? (userXP - currentLevelData.xpRequired) / 
-          (nextLevelData.xpRequired - currentLevelData.xpRequired) * 100
-        : 100;
-    
-    const progressBar = document.getElementById('levelProgress');
-    if (progressBar) progressBar.style.width = `${progress}%`;
-    
-    const xpText = document.getElementById('xpText');
-    if (xpText) xpText.textContent = `${userXP}/${nextLevelData.xpRequired} XP`;
-}
-
-function updateLevelDisplay() {
-    const currentLevel = LEVELS[userLevel - 1];
-    const nextLevel = LEVELS[userLevel] || currentLevel;
-    
-    const levelElement = document.getElementById('userLevel');
-    if (levelElement) levelElement.textContent = userLevel;
-    
-    const progressPercent = nextLevel 
-        ? ((userXP - currentLevel.xpRequired) / 
-          (nextLevel.xpRequired - currentLevel.xpRequired)) * 100
-        : 100;
-    
-    const progressBar = document.getElementById('levelProgress');
-    if (progressBar) progressBar.style.width = `${progressPercent}%`;
-    
-    const xpDisplay = document.getElementById('xpDisplay');
-    if (xpDisplay) xpDisplay.textContent = `${userXP}/${nextLevel.xpRequired} XP`;
-}
-
-function saveUserProgress() {
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        Telegram.WebApp.CloudStorage.setItem('userProgress', JSON.stringify({
-            xp: userXP,
-            level: userLevel,
-            spins: dailySpins
-        }));
-    } else {
-        localStorage.setItem('userProgress', JSON.stringify({
-            xp: userXP,
-            level: userLevel,
-            spins: dailySpins
-        }));
-    }
-}
-
-function saveProgress() {
-    const progressData = {
-        level: userLevel,
-        xp: userXP
-    };
-    
-    localStorage.setItem('userProgress', JSON.stringify(progressData));
-}
-
-function loadUserProgress() {
-    const levelElement = document.getElementById('userLevel');
-    const uiLevel = levelElement ? parseInt(levelElement.textContent) : 1;
-    
-    let data = null;
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        data = Telegram.WebApp.CloudStorage.getItem('userProgress');
-    } else {
-        data = localStorage.getItem('userProgress');
-    }
-    
-    if (data) {
-        try {
-            const parsed = JSON.parse(data);
-            userLevel = Math.max(parsed.level || 1, uiLevel);
-            userXP = Math.max(parsed.xp || 0, calculateXPForLevel(userLevel));
-            dailySpins = parsed.spins || 1;
-        } catch (e) {
-            console.error('Error loading progress:', e);
-            userLevel = uiLevel;
-            userXP = calculateXPForLevel(userLevel);
-        }
-    } else {
-        userLevel = uiLevel;
-        userXP = calculateXPForLevel(userLevel);
-    }
-}
-
-function loadProgress() {
-    const savedData = localStorage.getItem('userProgress');
-    if (savedData) {
-        try {
-            const { level, xp } = JSON.parse(savedData);
-            userLevel = Math.min(level, LEVELS.length);
-            userXP = Math.max(xp, LEVELS[userLevel - 1].xpRequired);
-        } catch (e) {
-            console.error("Ошибка загрузки прогресса:", e);
-        }
-    }
-    updateLevelDisplay();
-}
-
-function initUserLevel() {
-    const levelElement = document.getElementById('userLevel');
-    if (levelElement) {
-        const currentLevel = parseInt(levelElement.textContent) || 1;
-        userLevel = currentLevel;
-        userXP = calculateXPForLevel(currentLevel);
-        updateLevelSystem();
-    }
-}
-
-// ==================== Вспомогательные функции ====================
+// ==================== Notification System ====================
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -931,30 +314,122 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// ==================== Глобальное подключение функций ====================
+// ==================== Initialization ====================
+async function initApp() {
+    try {
+        // Инициализация Telegram WebApp
+        const authResult = initTelegramAuth();
+        
+        if (authResult?.data) {
+            const authSuccess = await authenticateUser(authResult.data);
+            if (!authSuccess) {
+                showToast("Ошибка авторизации", "error");
+                return;
+            }
+        } else {
+            // Режим тестирования
+            currentUser = getTestUserData();
+            balance = 1000;
+            showToast("Режим тестирования", "warning");
+        }
+
+        // Инициализация интерфейса
+        updateProfile();
+        updateBalanceDisplay();
+        updateLevelDisplay();
+        initTheme();
+        
+        // Открываем вкладку по умолчанию
+        openTab('cases');
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showToast("Ошибка инициализации", "error");
+    }
+}
+
+// ==================== Telegram Auth Helpers ====================
+function initTelegramAuth() {
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        try {
+            const webApp = Telegram.WebApp;
+            webApp.expand();
+            webApp.ready();
+            
+            if (webApp.initDataUnsafe?.user) {
+                return {
+                    data: webApp.initDataUnsafe.user,
+                    webAppInstance: webApp
+                };
+            }
+        } catch (e) {
+            console.error('Telegram auth error:', e);
+        }
+    }
+    return null;
+}
+
+function getTestUserData() {
+    return {
+        id: 999999,
+        first_name: "Тестовый",
+        last_name: "Пользователь",
+        username: "test_user",
+        photo_url: "",
+        language_code: "ru",
+        name: "Тестовый Пользователь"
+    };
+}
+
+// ==================== Event Listeners ====================
+function initEventListeners() {
+    // Навигация
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            openTab(tabName, this);
+        });
+    });
+    
+    // Кнопка пополнения
+    document.querySelector('.deposit-btn')?.addEventListener('click', openDepositModal);
+    
+    // Кнопки в модалках
+    document.querySelector('.modal-button.secondary')?.addEventListener('click', closeDepositModal);
+    
+    // Переключение вкладок депозита
+    document.querySelectorAll('.deposit-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            switchDepositTab(tabName);
+        });
+    });
+    
+    // Обработчики пополнения
+    document.getElementById('depositTonBtn')?.addEventListener('click', processTonDeposit);
+    document.getElementById('depositStarsBtn')?.addEventListener('click', processStarsDeposit);
+    
+    // Переключатель темы
+    document.querySelector('.theme-switch-btn')?.addEventListener('click', toggleTheme);
+    
+    // Автоматический расчет суммы при вводе
+    document.getElementById('tonAmount')?.addEventListener('input', function() {
+        const amount = parseFloat(this.value) || 0;
+        document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
+    });
+}
+
+// ==================== Global Functions ====================
 window.openTab = openTab;
-window.openCase = openCase;
 window.openDepositModal = openDepositModal;
 window.closeDepositModal = closeDepositModal;
 window.toggleTheme = toggleTheme;
-window.spinRoulette = spinRoulette;
-window.closeWinModal = closeWinModal;
-window.joinGiveaway = joinGiveaway;
 window.switchDepositTab = switchDepositTab;
 window.processTonDeposit = processTonDeposit;
 window.processStarsDeposit = processStarsDeposit;
-window.closeLevelUpModal = closeLevelUpModal;
-window.processTestDeposit = processTestDeposit;
 
-// ==================== Запуск приложения ====================
+// ==================== Start Application ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Дополнительная проверка DOM
-    if (!document.getElementById('userName') || 
-        !document.getElementById('rouletteTrack') || 
-        !document.querySelector('.bottom-nav')) {
-        console.error('Critical DOM elements are missing!');
-        return;
-    }
-    
+    initEventListeners();
     initApp();
 });

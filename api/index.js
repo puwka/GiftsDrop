@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 const usersRoutes = require('./users');
 app.use('/api/users', usersRoutes);
 app.use('/api/balance', usersRoutes);
+app.use('/transactions/:user_id', usersRoutes);
 
 // Тестовый эндпоинт
 app.get('/api/test-connect', (req, res) => {
