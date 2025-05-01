@@ -18,6 +18,14 @@
     {
       "src": "/(.*)",
       "dest": "public/index.html"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "public/js/$1"
     }
   ]
 }
