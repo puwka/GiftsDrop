@@ -19,9 +19,9 @@ const usersRoutes = require('./routes/users');
 app.use('/api/users', usersRoutes);
 
 // Тестовый эндпоинт (убедитесь, что API работает)
-app.get('/api/test', (req, res) => {
-  res.json({ status: "API работает!" });
-});
+app.get('/api/test-connect', (req, res) => {
+    res.json({ status: "Сервер работает!" });
+  });
 
 // Обработка 404 (если роут не найден)
 app.use((req, res) => {
