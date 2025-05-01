@@ -163,37 +163,34 @@ function updateThemeSwitch(theme) {
 
 // ==================== Tab Navigation ====================
 function openTab(tabName, clickedElement) {
-    // Скрыть все вкладки
-    const tabs = document.querySelectorAll('.tab-content');
-    if (!tabs.length) {
-        console.error('No tab-content elements found');
+    // Проверяем, что tabName существует
+    if (!tabName) {
+        console.error('Tab name is undefined');
         return;
     }
-    
-    tabs.forEach(tab => {
+
+    // Скрыть все вкладки
+    document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
     // Убрать активное состояние у всех кнопок
-    const buttons = document.querySelectorAll('.nav-btn');
-    buttons.forEach(btn => {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
     // Показать выбранную вкладку
     const tab = document.getElementById(tabName);
-    if (tab) {
-        tab.classList.add('active');
-    } else {
+    if (!tab) {
         console.error(`Tab with id ${tabName} not found`);
+        return;
     }
+    tab.classList.add('active');
     
     // Активировать кнопку
     const button = clickedElement || document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
     if (button) {
         button.classList.add('active');
-    } else {
-        console.error(`Button for tab ${tabName} not found`);
     }
 
     // Загружаем данные для вкладки профиля
@@ -359,7 +356,9 @@ async function initApp() {
         initTheme();
         
         // Открываем вкладку по умолчанию
-        setTimeout(() => openTab('cases'), 100);
+        setTimeout(() => {
+            openTab('cases');
+        }, 0);
         
     } catch (error) {
         console.error('Initialization error:', error);
