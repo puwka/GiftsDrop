@@ -12,13 +12,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Подключаем роуты
 const usersRoutes = require('./users');
-const casesRoutes = require('./cases');
 app.use('/api/users', usersRoutes);
 app.use('/api/balance', usersRoutes);
 app.use('/transactions/:user_id', usersRoutes);
-app.use('/api/cases', casesRoutes);
-app.use('/api//cases/:id/items', casesRoutes);
-app.use('/api/cases/:id/open', casesRoutes);
 
 // Тестовый эндпоинт
 app.get('/api/test-connect', (req, res) => {
