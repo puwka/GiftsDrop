@@ -108,7 +108,7 @@ router.post('/auth', async (req, res) => {
     }
 });
 
-// Обновленный роут для пополнения баланса
+// Эндпоинт для работы с балансом
 router.post('/balance', async (req, res) => {
     try {
         const { user_id, amount, type = 'deposit', description = 'Пополнение баланса' } = req.body;
@@ -117,8 +117,8 @@ router.post('/balance', async (req, res) => {
             return res.status(400).json({ error: 'user_id and amount are required' });
         }
 
-        if (typeof amount !== 'number' || amount <= 0) {
-            return res.status(400).json({ error: 'amount must be a positive number' });
+        if (typeof amount !== 'number') {
+            return res.status(400).json({ error: 'amount must be a number' });
         }
 
         const client = await pool.connect();
@@ -135,15 +135,28 @@ router.post('/balance', async (req, res) => {
                 return res.status(404).json({ error: 'User not found' });
             }
             
-            // 2. Обновляем баланс пользователя
-            const balanceResult = await client.query(
-                `UPDATE user_balances 
-                 SET balance = balance + $1,
-                     updated_at = NOW()
-                 WHERE user_id = $2 
-                 RETURNING balance`,
-                [amount, user_id]
+            // 2. Получаем текущий баланс
+            const currentBalance = await client.query(
+                'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
+                [user_id]
             );
+            
+            let newBalance;
+            if (currentBalance.rows.length === 0) {
+                // Если записи о балансе нет - создаем
+                newBalance = amount;
+                await client.query(
+                    'INSERT INTO user_balances (user_id, balance, updated_at) VALUES ($1, $2, NOW())',
+                    [user_id, newBalance]
+                );
+            } else {
+                // Если запись есть - обновляем
+                newBalance = currentBalance.rows[0].balance + amount;
+                await client.query(
+                    'UPDATE user_balances SET balance = $1, updated_at = NOW() WHERE user_id = $2',
+                    [newBalance, user_id]
+                );
+            }
             
             // 3. Записываем транзакцию
             await client.query(
@@ -153,19 +166,11 @@ router.post('/balance', async (req, res) => {
                 [user_id, amount, type, description]
             );
             
-            // 4. Получаем текущий уровень пользователя
-            const levelResult = await client.query(
-                `SELECT level, xp FROM user_levels WHERE user_id = $1`,
-                [user_id]
-            );
-            
             await client.query('COMMIT');
             
             return res.json({
                 success: true,
-                new_balance: balanceResult.rows[0].balance,
-                level: levelResult.rows[0]?.level || 1,
-                xp: levelResult.rows[0]?.xp || 0
+                new_balance: newBalance
             });
             
         } catch (err) {
@@ -186,6 +191,31 @@ router.post('/balance', async (req, res) => {
         });
     }
 });
+
+// Эндпоинт для получения истории транзакций
+router.get('/transactions/:user_id', async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        
+        const { rows } = await pool.query(
+            'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+            [user_id]
+        );
+        
+        res.json({
+            success: true,
+            transactions: rows
+        });
+    } catch (err) {
+        console.error('Ошибка при получении транзакций:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
+    }
+});
+
+module.exports = router;
 
 // Добавьте в users.js
 router.get('/test', async (req, res) => {

@@ -43,17 +43,24 @@ async function authenticateUser(userData) {
     }
 }
 
-async function updateUserBalance(amount) {
+async function updateUserBalance(amount, type = 'deposit', description = 'Пополнение баланса') {
     try {
         const response = await apiRequest('/users/balance', 'POST', {
             user_id: currentUser.id,
-            amount: amount
+            amount: amount,
+            type: type,
+            description: description
         });
         
-        return response.new_balance;
+        if (response.success) {
+            balance = response.new_balance;
+            updateBalanceDisplay();
+            return true;
+        }
+        return false;
     } catch (error) {
         console.error('Balance update failed:', error);
-        return null;
+        return false;
     }
 }
 
@@ -592,55 +599,6 @@ function initDepositModal() {
 }
 
 // ==================== Функции депозита ====================
-async function processTestDeposit() {
-    const amountInput = document.getElementById('testAmount');
-    const amount = parseInt(amountInput.value);
-    
-    if (!amount || amount <= 0) {
-        showToast("Введите корректную сумму", "error");
-        return;
-    }
-    
-    try {
-        // Отправляем запрос на бэкенд
-        const response = await apiRequest('/users/balance', 'POST', {
-            user_id: currentUser.id,
-            amount: amount,
-            is_test: true // Добавляем флаг тестового пополнения
-        });
-        
-        if (response.success) {
-            balance = response.new_balance;
-            updateBalanceDisplay();
-            showToast(`Баланс пополнен на ${amount} GiftCoin`, "success");
-            closeDepositModal();
-        } else {
-            showToast(response.error || "Ошибка пополнения", "error");
-        }
-    } catch (error) {
-        console.error('Deposit error:', error);
-        showToast("Ошибка соединения", "error");
-    }
-}
-
-// Обновите функцию updateBalanceDisplay для анимации
-function updateBalanceDisplay() {
-    document.querySelectorAll('.balance-amount').forEach(el => {
-        const oldValue = parseInt(el.textContent) || 0;
-        const diff = balance - oldValue;
-        
-        // Анимация изменения баланса
-        el.style.transform = 'scale(1.1)';
-        el.style.color = diff > 0 ? '#4CAF50' : '#F44336';
-        
-        setTimeout(() => {
-            el.textContent = balance;
-            el.style.transform = 'scale(1)';
-            el.style.color = '';
-        }, 300);
-    });
-}
-
 function openDepositModal() {
     const modal = document.getElementById('depositModal');
     if (modal) modal.classList.remove('hidden');
@@ -667,6 +625,7 @@ function switchDepositTab(tabName) {
     if (content) content.classList.add('active');
 }
 
+// Обновленные функции пополнения
 async function processTonDeposit() {
     const tonAmount = parseFloat(document.getElementById('tonAmount').value);
     const promoCode = document.getElementById('tonPromoCode').value.toUpperCase();
@@ -677,30 +636,29 @@ async function processTonDeposit() {
     }
     
     try {
-        // Рассчитываем сумму в GiftCoin (1 TON = 200 GiftCoin)
         const giftcoinAmount = Math.floor(tonAmount * 200);
+        const success = await updateUserBalance(
+            giftcoinAmount,
+            'deposit',
+            `Пополнение через TON (${tonAmount} TON)`
+        );
         
-        // Отправляем запрос на сервер
-        const response = await apiRequest('/users/balance', 'POST', {
-            user_id: currentUser.id,
-            amount: giftcoinAmount
-        });
-        
-        if (response.success) {
-            balance = response.new_balance;
-            updateBalanceDisplay();
+        if (success) {
             userDeposits += giftcoinAmount;
             
             if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
                 PROMO_CODES[promoCode].used = true;
+                await updateUserBalance(
+                    PROMO_CODES[promoCode].amount,
+                    'bonus',
+                    `Бонус по промокоду ${promoCode}`
+                );
                 showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
             }
             
             showToast(`Баланс пополнен на ${giftcoinAmount} GiftCoin`, "success");
             closeDepositModal();
             checkAvailableGiveaways();
-        } else {
-            showToast("Ошибка при пополнении", "error");
         }
     } catch (error) {
         console.error('Error:', error);
@@ -718,27 +676,28 @@ async function processStarsDeposit() {
     }
     
     try {
-        // Отправляем запрос на сервер (1 звезда = 1 GiftCoin)
-        const response = await apiRequest('/users/balance', 'POST', {
-            user_id: currentUser.id,
-            amount: starsAmount
-        });
+        const success = await updateUserBalance(
+            starsAmount,
+            'deposit',
+            'Пополнение звездами'
+        );
         
-        if (response.success) {
-            balance = response.new_balance;
-            updateBalanceDisplay();
+        if (success) {
             userDeposits += starsAmount;
             
             if (promoCode && PROMO_CODES[promoCode] && !PROMO_CODES[promoCode].used) {
                 PROMO_CODES[promoCode].used = true;
+                await updateUserBalance(
+                    PROMO_CODES[promoCode].amount,
+                    'bonus',
+                    `Бонус по промокоду ${promoCode}`
+                );
                 showToast(`Промокод применен! +${PROMO_CODES[promoCode].amount} GiftCoin`, "success");
             }
             
             showToast(`Баланс пополнен на ${starsAmount} GiftCoin`, "success");
             closeDepositModal();
             checkAvailableGiveaways();
-        } else {
-            showToast("Ошибка при пополнении", "error");
         }
     } catch (error) {
         console.error('Error:', error);
