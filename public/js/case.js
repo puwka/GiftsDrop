@@ -383,6 +383,88 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// case.js (измененные функции)
+
+// Инициализация пользователя
+async function initUser() {
+    try {
+        // Проверяем, авторизован ли пользователь через Telegram
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp.initDataUnsafe?.user) {
+            const userData = Telegram.WebApp.initDataUnsafe.user;
+            
+            // Сначала аутентифицируем пользователя
+            const authResponse = await apiRequest('/users/auth', 'POST', {
+                telegram_id: userData.id,
+                username: userData.username,
+                first_name: userData.first_name,
+                last_name: userData.last_name,
+                photo_url: userData.photo_url,
+                language_code: userData.language_code
+            });
+            
+            if (authResponse.success) {
+                currentUser = authResponse.user;
+                balance = authResponse.balance || 0;
+                updateBalanceDisplay();
+            }
+        } else {
+            // Режим тестирования - создаем тестового пользователя через API
+            const testUser = getTestUserData();
+            const authResponse = await apiRequest('/users/auth', 'POST', {
+                telegram_id: testUser.id,
+                username: testUser.username,
+                first_name: testUser.first_name,
+                last_name: testUser.last_name
+            });
+            
+            if (authResponse.success) {
+                currentUser = authResponse.user;
+                balance = authResponse.balance || 1000;
+                updateBalanceDisplay();
+                showToast("Режим тестирования", "warning");
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing user:', error);
+        showToast("Ошибка загрузки данных пользователя", "error");
+    }
+}
+
+// Функция API запроса с улучшенной обработкой ошибок
+async function apiRequest(endpoint, method = 'GET', data = null) {
+    try {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_URL}/api${endpoint}`, options);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const errorMsg = errorData?.error || `HTTP error! status: ${response.status}`;
+            
+            // Специальная обработка для 404 ошибки
+            if (response.status === 404) {
+                throw new Error('User not found. Please authenticate first.');
+            }
+            
+            throw new Error(errorMsg);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
 // Добавляем стили для toast, если их нет
 if (!document.querySelector('style#toast-styles')) {
     const style = document.createElement('style');

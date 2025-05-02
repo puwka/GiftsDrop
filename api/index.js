@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -13,10 +14,6 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Подключаем роуты
 const usersRoutes = require('./users');
 app.use('/api/users', usersRoutes);
-app.use('/api/balance', usersRoutes);
-app.use('/transactions/:user_id', usersRoutes);
-app.use('/case/:case_id', usersRoutes);
-app.use('/open-case', usersRoutes);
 
 // Тестовый эндпоинт
 app.get('/api/test-connect', (req, res) => {
