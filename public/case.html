@@ -10,63 +10,81 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="case-container">
-        <header class="case-header">
-            <button class="back-btn" onclick="window.history.back()">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h1 id="caseTitle">Открытие кейса</h1>
-            <div class="case-balance">
-                <span class="balance-amount">1000</span>
-                <span class="balance-icon">🪙</span>
+    <div class="app-container">
+        <!-- Шапка как в index.html -->
+        <header class="app-header">
+            <div class="header-content">
+                <button class="back-btn" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 id="caseTitle">Открытие кейса</h1>
+                <div class="user-balance">
+                    <span class="balance-amount">1000</span>
+                    <span class="balance-icon">🪙</span>
+                </div>
             </div>
         </header>
 
-        <main class="case-main">
-            <!-- Основная анимация кейса -->
-            <div class="case-animation-container">
-                <div class="case-animation" id="caseAnimation">
-                    <div class="case-top"></div>
-                    <div class="case-bottom">
-                        <div class="case-reward" id="caseReward"></div>
+        <main class="app-main">
+            <div class="case-container">
+                <!-- Анимация с горизонтальным прокрутом -->
+                <div class="case-scroll-container">
+                    <div class="case-track" id="caseTrack">
+                        <!-- Будет заполняться динамически -->
                     </div>
                 </div>
-            </div>
 
-            <!-- Управление количеством кейсов -->
-            <div class="case-controls">
-                <div class="case-counter">
-                    <button class="count-btn minus" onclick="changeCaseCount(-1)">-</button>
-                    <span id="caseCount">1</span>
-                    <button class="count-btn plus" onclick="changeCaseCount(1)">+</button>
+                <!-- Управление количеством кейсов -->
+                <div class="case-controls">
+                    <div class="case-counter">
+                        <button class="count-btn minus" onclick="changeCaseCount(-1)">-</button>
+                        <span id="caseCount">1</span>
+                        <button class="count-btn plus" onclick="changeCaseCount(1)">+</button>
+                    </div>
+                    <button class="quick-toggle" id="quickToggle" onclick="toggleQuickMode()">
+                        <i class="fas fa-bolt"></i> Быстрое открытие
+                    </button>
                 </div>
-                <button class="quick-toggle" id="quickToggle" onclick="toggleQuickMode()">
-                    <i class="fas fa-bolt"></i> Быстрое открытие
-                </button>
-            </div>
 
-            <!-- Кнопки действий -->
-            <div class="case-actions">
-                <button class="action-btn demo" onclick="openCases(false)">
-                    <i class="fas fa-eye"></i> Демо
-                </button>
-                <button class="action-btn open" onclick="openCases(true)">
-                    <i class="fas fa-gift"></i> Открыть (<span id="totalPrice">0</span> 🪙)
-                </button>
-            </div>
+                <!-- Кнопки действий -->
+                <div class="case-actions">
+                    <button class="action-btn demo" onclick="openCases(false)">
+                        <i class="fas fa-eye"></i> Демо
+                    </button>
+                    <button class="action-btn open" onclick="openCases(true)">
+                        <i class="fas fa-gift"></i> Открыть (<span id="totalPrice">0</span> 🪙)
+                    </button>
+                </div>
 
-            <!-- Результаты открытия -->
-            <div class="case-results-container">
-                <h3><i class="fas fa-trophy"></i> ВАШИ ВЫИГРЫШИ</h3>
-                <div class="case-results" id="caseResults"></div>
-            </div>
+                <!-- Результаты открытия -->
+                <div class="case-results-container">
+                    <h3><i class="fas fa-trophy"></i> ВАШИ ВЫИГРЫШИ</h3>
+                    <div class="case-results" id="caseResults"></div>
+                </div>
 
-            <!-- Возможные предметы -->
-            <div class="possible-items">
-                <h3><i class="fas fa-list"></i> ВОЗМОЖНЫЕ ПРЕДМЕТЫ</h3>
-                <div class="items-grid" id="itemsGrid"></div>
+                <!-- Возможные предметы -->
+                <div class="possible-items">
+                    <h3><i class="fas fa-list"></i> ВОЗМОЖНЫЕ ПРЕДМЕТЫ</h3>
+                    <div class="items-grid" id="itemsGrid"></div>
+                </div>
             </div>
         </main>
+
+        <!-- Нижнее меню -->
+        <nav class="bottom-nav">
+            <button class="nav-btn" data-tab="cases" onclick="window.location.href='index.html'">
+                <i class="fas fa-gift"></i>
+                <span>Кейсы</span>
+            </button>
+            <button class="nav-btn" data-tab="bonuses" onclick="window.location.href='index.html#bonuses'">
+                <i class="fas fa-sync-alt"></i>
+                <span>Бонусы</span>
+            </button>
+            <button class="nav-btn" data-tab="profile" onclick="window.location.href='index.html#profile'">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+        </nav>
     </div>
 
     <script src="js/case.js"></script>

@@ -1,39 +1,60 @@
 /* Основные стили страницы */
-.case-container {
+.app-container {
     max-width: 100%;
     min-height: 100vh;
     background: var(--bg-color);
     color: var(--text-color);
-    padding-bottom: 20px;
 }
 
-.case-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
+/* Шапка как в index.html */
+.app-header {
     background: var(--header-bg);
     color: white;
+    padding: 1.5rem 1rem;
+    text-align: center;
     position: relative;
+    z-index: 1;
+}
+
+.app-header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(138,43,226,0.2) 0%, transparent 100%);
+    z-index: -1;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 90%;
+    margin: 0 auto;
 }
 
 .back-btn {
-    background: none;
+    background: rgba(255,255,255,0.2);
     border: none;
     color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 8px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
 .back-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.3);
 }
 
-.case-balance {
-    background: rgba(255, 255, 255, 0.2);
+.user-balance {
+    background: rgba(255,255,255,0.2);
     padding: 0.5rem 1rem;
     border-radius: 25px;
     display: flex;
@@ -43,55 +64,60 @@
     backdrop-filter: blur(5px);
 }
 
-/* Анимация кейса */
-.case-animation-container {
-    margin: 2rem auto;
-    max-width: 500px;
-    height: 200px;
-    position: relative;
-    perspective: 1000px;
+/* Контейнер для горизонтального прокрута */
+.case-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    padding: 2rem 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
 }
 
-.case-animation {
-    position: relative;
-    height: 100%;
+.case-scroll-container::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.case-track {
     display: flex;
-    justify-content: center;
+    gap: 20px;
+    padding: 0 20px;
+    transition: transform 0.5s ease-out;
+}
+
+.case-item {
+    min-width: 200px;
+    height: 250px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: all 0.3s;
 }
 
 .case-top {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
     height: 60px;
     background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-    border-radius: 10px 10px 0 0;
-    transform-origin: bottom center;
-    z-index: 2;
-    box-shadow: 0 5px 15px var(--shadow-color);
-}
-
-.case-bottom {
-    position: absolute;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
-    height: 100px;
-    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-    border-radius: 0 0 10px 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1;
-    box-shadow: 0 5px 15px var(--shadow-color);
+    font-size: 1.5rem;
+    color: white;
+}
+
+.case-bottom {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
 }
 
 .case-reward {
     font-size: 2rem;
-    animation: bounceIn 0.5s;
+    text-align: center;
 }
 
 /* Управление */
@@ -344,8 +370,8 @@
 
 /* Анимации */
 @keyframes openHorizontal {
-    0% { transform: translateX(-50%) rotateX(0deg); }
-    100% { transform: translateX(-50%) rotateX(-180deg); }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
 
 @keyframes bounceIn {
@@ -357,6 +383,20 @@
 @keyframes slideIn {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* Темная тема */
+[data-theme="dark"] .case-item {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .result-item {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .item-card {
+    background: var(--card-bg);
 }
 
 /* Адаптивность */
@@ -373,5 +413,10 @@
     .case-counter {
         width: 100%;
         justify-content: center;
+    }
+    
+    .case-item {
+        min-width: 180px;
+        height: 220px;
     }
 }

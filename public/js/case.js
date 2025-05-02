@@ -13,6 +13,7 @@ let isOpening = false;
 
 // Инициализация страницы
 document.addEventListener('DOMContentLoaded', async () => {
+    initTheme();
     await initUser();
     const caseId = getCaseIdFromUrl();
     if (caseId) {
@@ -21,6 +22,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         redirectToMain();
     }
 });
+
+// Инициализация темы
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+}
 
 // Инициализация пользователя
 async function initUser() {
@@ -104,7 +111,7 @@ async function loadCase(caseId) {
 }
 
 function showLoading(show) {
-    const container = document.querySelector('.case-main');
+    const container = document.querySelector('.app-main');
     if (show) {
         const loader = document.createElement('div');
         loader.className = 'loading-overlay';
@@ -127,11 +134,39 @@ function setupPage() {
     
     document.getElementById('caseTitle').textContent = `Открытие: ${currentCase.name}`;
     updateTotalPrice();
+    setupCaseTrack();
     setupPossibleItems();
 }
 
 function updateTotalPrice() {
     document.getElementById('totalPrice').textContent = currentCase.price * caseCount;
+}
+
+// Настраиваем трек с кейсами для горизонтального прокрута
+function setupCaseTrack() {
+    const caseTrack = document.getElementById('caseTrack');
+    caseTrack.innerHTML = '';
+    
+    for (let i = 0; i < caseCount; i++) {
+        const caseItem = document.createElement('div');
+        caseItem.className = 'case-item';
+        caseItem.innerHTML = `
+            <div class="case-top">
+                <i class="fas fa-gift"></i>
+            </div>
+            <div class="case-bottom">
+                <div class="case-reward"></div>
+            </div>
+        `;
+        caseTrack.appendChild(caseItem);
+    }
+    
+    // Центрируем трек
+    setTimeout(() => {
+        const trackWidth = caseTrack.scrollWidth;
+        const containerWidth = caseTrack.parentElement.offsetWidth;
+        caseTrack.style.transform = `translateX(${(containerWidth - trackWidth) / 2}px)`;
+    }, 100);
 }
 
 // Настраиваем список возможных предметов
@@ -161,6 +196,7 @@ function changeCaseCount(change) {
         caseCount = newCount;
         document.getElementById('caseCount').textContent = caseCount;
         updateTotalPrice();
+        setupCaseTrack();
     }
 }
 
@@ -225,28 +261,44 @@ function hasLegendaryItems(items) {
     return items.some(item => item.rarity.toLowerCase() === 'legendary');
 }
 
-// Анимация открытия
+// Анимация открытия с горизонтальным прокрутом
 async function animateCaseOpening(wonItems) {
-    const caseTop = document.querySelector('.case-top');
-    const caseReward = document.getElementById('caseReward');
+    const caseTrack = document.getElementById('caseTrack');
+    const caseItems = document.querySelectorAll('.case-item');
     
-    // Сбрасываем анимацию
-    caseTop.style.animation = 'none';
-    caseReward.style.animation = 'none';
-    void caseTop.offsetWidth; // Trigger reflow
-    void caseReward.offsetWidth;
+    // Анимация открытия каждого кейса
+    for (let i = 0; i < caseItems.length; i++) {
+        const caseItem = caseItems[i];
+        const caseTop = caseItem.querySelector('.case-top');
+        const caseReward = caseItem.querySelector('.case-reward');
+        
+        // Анимация открытия крышки
+        caseTop.style.transform = 'rotateX(-180deg)';
+        caseTop.style.transition = 'transform 0.5s ease-out';
+        
+        // Показываем выигрыш
+        await sleep(500);
+        caseReward.innerHTML = getItemContent(wonItems[i]);
+        caseReward.style.animation = 'bounceIn 0.5s';
+        
+        // Прокручиваем к следующему кейсу, если это не последний
+        if (i < caseItems.length - 1 && !isQuickMode) {
+            caseTrack.scrollTo({
+                left: caseItem.offsetLeft + caseItem.offsetWidth,
+                behavior: 'smooth'
+            });
+            await sleep(1000);
+        }
+    }
     
-    // Очищаем предыдущий результат
-    caseReward.innerHTML = '';
-    
-    // Анимация открытия
-    caseTop.style.animation = 'openHorizontal 1s forwards';
-    await sleep(1000);
-    
-    // Показываем выигрыш
-    caseReward.innerHTML = getItemContent(wonItems[0]);
-    caseReward.style.animation = 'bounceIn 0.5s';
-    await sleep(500);
+    // Прокручиваем обратно к началу
+    if (!isQuickMode) {
+        await sleep(500);
+        caseTrack.scrollTo({
+            left: 0,
+            behavior: 'smooth'
+        });
+    }
 }
 
 // Показываем результаты
