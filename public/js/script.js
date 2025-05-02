@@ -430,47 +430,28 @@ function updateOpenButtons() {
 }
 
 async function openCase() {
-    if (!currentUser || !currentCase) {
-        showToast("Ошибка авторизации или кейса", "error");
-        return;
-    }
-
+    if (!currentUser || !currentCase) return;
+    
     try {
-        const openBtn = document.getElementById('openCaseBtn');
-        const quickBtn = document.getElementById('quickOpenBtn');
-        
-        // Блокируем кнопки на время запроса
-        openBtn.disabled = true;
-        quickBtn.disabled = true;
-        
-        showLoading(true);
-        
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
             count: selectedCount,
             is_demo: isDemoMode
         });
-
+        
         if (response.success) {
-            console.log('Case opened:', response.items);
             showCaseResults(response.items);
             
             if (!isDemoMode) {
                 balance -= response.totalCost;
                 updateBalanceDisplay();
-                showToast(`Успешно открыто ${selectedCount} кейсов`, "success");
+                showToast(`Открыто ${selectedCount} кейсов`, "success");
             }
         }
     } catch (error) {
         console.error('Failed to open case:', error);
         showToast(error.message || "Ошибка открытия кейса", "error");
-    } finally {
-        const openBtn = document.getElementById('openCaseBtn');
-        const quickBtn = document.getElementById('quickOpenBtn');
-        openBtn.disabled = false;
-        quickBtn.disabled = false;
-        showLoading(false);
     }
 }
 
