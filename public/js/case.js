@@ -29,40 +29,6 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
-// Инициализация пользователя
-async function initUser() {
-    try {
-        // Проверяем, авторизован ли пользователь через Telegram
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp.initDataUnsafe?.user) {
-            const userData = Telegram.WebApp.initDataUnsafe.user;
-            currentUser = {
-                id: userData.id,
-                first_name: userData.first_name,
-                last_name: userData.last_name,
-                username: userData.username,
-                photo_url: userData.photo_url,
-                language_code: userData.language_code
-            };
-            
-            // Загружаем баланс пользователя
-            const response = await apiRequest(`/users/transactions/${userData.id}`);
-            if (response.success) {
-                balance = response.balance || 0;
-                updateBalanceDisplay();
-            }
-        } else {
-            // Режим тестирования
-            currentUser = getTestUserData();
-            balance = 1000;
-            updateBalanceDisplay();
-            showToast("Режим тестирования", "warning");
-        }
-    } catch (error) {
-        console.error('Error initializing user:', error);
-        showToast("Ошибка загрузки данных пользователя", "error");
-    }
-}
-
 function updateBalanceDisplay() {
     document.querySelectorAll('.balance-amount').forEach(el => {
         el.textContent = balance;
