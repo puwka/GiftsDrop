@@ -341,20 +341,21 @@ let isDemoMode = false;
 
 async function loadCasePage(caseId) {
     try {
-        showLoading(true);
-        
+        console.log(`Загрузка кейса ID: ${caseId}`); // Логирование
         const response = await apiRequest(`/users/case/${caseId}`);
+        console.log('Ответ сервера:', response); // Логируем ответ
+        
         if (!response.success) throw new Error(response.error || 'Case not found');
         
         currentCase = response.case;
-        renderCasePage();
+        caseItems = response.items || [];
+        console.log('Получено предметов:', caseItems.length); // Логирование
         
+        renderCasePage();
     } catch (error) {
-        console.error('Failed to load case:', error);
-        showToast(error.message || "Ошибка загрузки кейса", "error");
+        console.error('Ошибка загрузки кейса:', error);
+        showToast("Ошибка загрузки кейса", "error");
         setTimeout(() => window.location.href = 'index.html', 2000);
-    } finally {
-        showLoading(false);
     }
 }
 
@@ -366,22 +367,37 @@ function showLoading(show) {
 function renderCasePage() {
     if (!currentCase) return;
     
+    console.log('Рендеринг кейса:', currentCase); // Логирование
+    
+    // Обновляем основную информацию о кейсе
     document.getElementById('caseName').textContent = currentCase.name;
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
+    // Рендерим предметы
     const itemsContainer = document.getElementById('caseItemsTrack');
+    if (!itemsContainer) {
+        console.error('Контейнер для предметов не найден!');
+        return;
+    }
+    
     itemsContainer.innerHTML = caseItems.map(item => `
         <div class="case-item" data-rarity="${item.rarity}">
-            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')"></div>
+            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+                ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
+            </div>
             <div class="item-info">
-                <h4>${item.name}</h4>
-                <p class="item-rarity ${item.rarity}">${getRarityName(item.rarity)}</p>
-                <p class="item-chance">Шанс: ${(item.adjusted_chance || item.drop_chance)}%</p>
+                <h4>${item.name || 'Неизвестный предмет'}</h4>
+                <p class="item-rarity ${item.rarity || 'common'}">
+                    ${getRarityName(item.rarity)}
+                </p>
+                <p class="item-chance">
+                    ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
+                </p>
             </div>
         </div>
     `).join('');
     
-    updateOpenButtons();
+    console.log('Предметы отрендерены'); // Логирование
 }
 
 function getRarityName(rarity) {
@@ -417,7 +433,7 @@ async function openCase() {
     if (!currentUser || !currentCase) return;
     
     try {
-        const response = await apiRequest('/open-case', 'POST', {
+        const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
             count: selectedCount,
