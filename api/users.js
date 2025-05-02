@@ -259,143 +259,140 @@ router.get('/case/:id', async (req, res) => {
 });
 
 router.post('/open-case', async (req, res) => {
+    const { user_id, case_id, count = 1, is_demo = false } = req.body;
+    
+    console.log('Open case request:', req.body); // Логирование запроса
+
+    if (!user_id || !case_id) {
+        console.error('Missing required fields');
+        return res.status(400).json({ error: 'user_id and case_id are required' });
+    }
+
+    const client = await pool.connect();
     try {
-        const { user_id, case_id, count = 1, is_demo = false } = req.body;
-        
-        if (!user_id || !case_id) {
-            return res.status(400).json({ error: 'user_id and case_id are required' });
+        await client.query('BEGIN');
+
+        // 1. Проверяем существование пользователя и кейса
+        const [user, caseData] = await Promise.all([
+            client.query('SELECT id FROM users WHERE id = $1', [user_id]),
+            client.query('SELECT * FROM cases WHERE id = $1', [case_id])
+        ]);
+
+        if (user.rows.length === 0) {
+            console.error('User not found');
+            return res.status(404).json({ error: 'User not found' });
         }
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            // 1. Проверяем существование пользователя и кейса
-            const [userCheck, caseCheck] = await Promise.all([
-                client.query('SELECT id FROM users WHERE id = $1', [user_id]),
-                client.query('SELECT * FROM cases WHERE id = $1', [case_id])
-            ]);
-            
-            if (userCheck.rows.length === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            
-            if (caseCheck.rows.length === 0) {
-                return res.status(404).json({ error: 'Case not found' });
-            }
-            
-            const caseData = caseCheck.rows[0];
-            
-            // 2. Для реального открытия проверяем баланс
-            if (!is_demo) {
-                const balanceCheck = await client.query(
-                    'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
-                    [user_id]
-                );
-                
-                const currentBalance = balanceCheck.rows[0]?.balance || 0;
-                const totalCost = caseData.price * count;
-                
-                if (currentBalance < totalCost) {
-                    return res.status(400).json({ error: 'Not enough balance' });
-                }
-                
-                // Списание средств
-                await client.query(
-                    'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
-                    [totalCost, user_id]
-                );
-                
-                // Запись транзакции
-                await client.query(
-                    `INSERT INTO transactions 
-                     (user_id, amount, type, description, created_at)
-                     VALUES ($1, $2, 'case', $3, NOW())`,
-                    [user_id, -totalCost, `Открытие кейса ${caseData.name} x${count}`]
-                );
-            }
-            
-            // 3. Получаем предметы кейса с учетом шансов
-            const items = await client.query(
-                `SELECT i.*, ci.adjusted_chance 
-                 FROM cases_items ci
-                 JOIN items i ON ci.item_id = i.id
-                 WHERE ci.case_id = $1`,
-                [case_id]
+        if (caseData.rows.length === 0) {
+            console.error('Case not found');
+            return res.status(404).json({ error: 'Case not found' });
+        }
+
+        const caseInfo = caseData.rows[0];
+        const totalCost = caseInfo.price * count;
+
+        // 2. Для реального открытия проверяем баланс
+        if (!is_demo) {
+            const balanceResult = await client.query(
+                'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
+                [user_id]
             );
             
-            if (items.rows.length === 0) {
-                return res.status(400).json({ error: 'Case is empty' });
+            const currentBalance = balanceResult.rows[0]?.balance || 0;
+            
+            if (currentBalance < totalCost) {
+                console.error('Not enough balance');
+                return res.status(400).json({ error: 'Not enough balance' });
             }
-            
-            // 4. Выбираем случайные предметы
-            const wonItems = [];
-            for (let i = 0; i < count; i++) {
-                // Для демо-режима подкручиваем шансы (увеличиваем шансы на редкие предметы)
-                const totalChance = items.rows.reduce((sum, item) => {
-                    const baseChance = parseFloat(is_demo && item.rarity === 'legendary' ? 
-                        item.drop_chance * 3 : 
-                        item.drop_chance);
-                    return sum + (item.adjusted_chance || baseChance);
-                }, 0);
-                
-                let random = Math.random() * totalChance;
-                let selectedItem = null;
-                
-                for (const item of items.rows) {
-                    const chance = parseFloat(is_demo && item.rarity === 'legendary' ? 
-                        item.drop_chance * 3 : 
-                        item.adjusted_chance || item.drop_chance);
-                    
-                    if (random <= chance) {
-                        selectedItem = item;
-                        break;
-                    }
-                    random -= chance;
-                }
-                
-                // Если по какой-то причине предмет не выбран, берем первый
-                if (!selectedItem) {
-                    selectedItem = items.rows[0];
-                }
-                
-                wonItems.push(selectedItem);
-                
-                // Записываем открытие (только для реальных открытий)
-                if (!is_demo) {
-                    await client.query(
-                        `INSERT INTO cases_openings 
-                         (user_id, case_id, item_id, is_demo, opened_at)
-                         VALUES ($1, $2, $3, $4, NOW())`,
-                        [user_id, case_id, selectedItem.id, is_demo]
-                    );
-                }
-            }
-            
-            await client.query('COMMIT');
-            
-            return res.json({
-                success: true,
-                items: wonItems,
-                totalCost: is_demo ? 0 : caseData.price * count
-            });
-            
-        } catch (err) {
-            await client.query('ROLLBACK');
-            console.error('Ошибка транзакции:', err);
-            res.status(500).json({ 
-                error: 'Transaction error',
-                details: err.message
-            });
-        } finally {
-            client.release();
+
+            // Списание средств
+            await client.query(
+                'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
+                [totalCost, user_id]
+            );
+
+            // Запись транзакции
+            await client.query(
+                `INSERT INTO transactions 
+                 (user_id, amount, type, description, created_at)
+                 VALUES ($1, $2, 'case', $3, NOW())`,
+                [user_id, -totalCost, `Открытие кейса ${caseInfo.name} x${count}`]
+            );
         }
+
+        // 3. Получаем предметы кейса
+        const itemsResult = await client.query(
+            `SELECT i.*, ci.adjusted_chance 
+             FROM cases_items ci
+             JOIN items i ON ci.item_id = i.id
+             WHERE ci.case_id = $1`,
+            [case_id]
+        );
+
+        if (itemsResult.rows.length === 0) {
+            console.error('No items in case');
+            return res.status(400).json({ error: 'Case is empty' });
+        }
+
+        const items = itemsResult.rows;
+        const wonItems = [];
+
+        // 4. Выбираем случайные предметы
+        for (let i = 0; i < count; i++) {
+            const totalChance = items.reduce((sum, item) => {
+                const chance = parseFloat(is_demo && item.rarity === 'legendary' ? 
+                    (item.adjusted_chance || item.drop_chance) * 3 : 
+                    (item.adjusted_chance || item.drop_chance));
+                return sum + (isNaN(chance) ? 0 : chance);
+            }, 0);
+
+            let random = Math.random() * totalChance;
+            let selectedItem = null;
+
+            for (const item of items) {
+                const chance = parseFloat(is_demo && item.rarity === 'legendary' ? 
+                    (item.adjusted_chance || item.drop_chance) * 3 : 
+                    (item.adjusted_chance || item.drop_chance));
+                
+                if (random <= (chance || 0)) {
+                    selectedItem = item;
+                    break;
+                }
+                random -= (chance || 0);
+            }
+
+            if (!selectedItem) selectedItem = items[0];
+            wonItems.push(selectedItem);
+
+            // Записываем открытие (только для реальных открытий)
+            if (!is_demo) {
+                await client.query(
+                    `INSERT INTO cases_openings 
+                     (user_id, case_id, item_id, is_demo, opened_at)
+                     VALUES ($1, $2, $3, $4, NOW())`,
+                    [user_id, case_id, selectedItem.id, is_demo]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        
+        console.log('Case opened successfully', { items: wonItems });
+        return res.json({
+            success: true,
+            items: wonItems,
+            totalCost: is_demo ? 0 : totalCost
+        });
+
     } catch (err) {
-        console.error('Ошибка в /open-case:', err.stack);
-        res.status(500).json({ 
-            error: 'Internal server error',
+        await client.query('ROLLBACK');
+        console.error('Transaction error:', err);
+        return res.status(500).json({ 
+            error: 'Transaction error',
             details: err.message
         });
+    } finally {
+        client.release();
     }
 });
 
