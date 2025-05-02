@@ -89,6 +89,26 @@
         </div>
     </div>
 
+    <!-- Добавить перед закрывающим тегом body в case.html -->
+    <div id="winModal" class="modal hidden">
+        <div class="modal-content">
+            <h3><i class="fas fa-trophy"></i> ПОЗДРАВЛЯЕМ!</h3>
+            
+            <div id="wonItemContainer" class="won-item-container">
+                <!-- Здесь будет отображаться выигранный предмет -->
+            </div>
+            
+            <div class="win-actions">
+                <button id="keepItemBtn" class="modal-button primary">
+                    <i class="fas fa-check"></i> ОСТАВИТЬ
+                </button>
+                <button id="sellItemBtn" class="modal-button secondary">
+                    <i class="fas fa-coins"></i> ПРОДАТЬ ЗА <span id="sellPrice">0</span> 🪙
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="js/script.js"></script>
     <script>

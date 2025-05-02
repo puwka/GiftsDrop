@@ -1510,6 +1510,114 @@ input[type="number"]::-webkit-inner-spin-button {
     padding: 1.5rem;
 }
 
+/* Добавить в конец style.css */
+.won-item-container {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.won-item {
+    display: inline-block;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 2px solid;
+    max-width: 80%;
+    animation: bounceIn 0.5s;
+}
+
+.won-item[data-rarity="common"] {
+    border-color: #95a5a6;
+}
+
+.won-item[data-rarity="rare"] {
+    border-color: #3498db;
+}
+
+.won-item[data-rarity="epic"] {
+    border-color: #9b59b6;
+}
+
+.won-item[data-rarity="legendary"] {
+    border-color: #f1c40f;
+    animation: pulse 2s infinite;
+}
+
+.won-item .item-image {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--primary);
+    background-color: rgba(138, 43, 226, 0.1);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.won-item .item-image img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+}
+
+.won-item .item-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.won-item .item-rarity {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.won-item .item-rarity.common {
+    color: #95a5a6;
+}
+
+.won-item .item-rarity.rare {
+    color: #3498db;
+}
+
+.won-item .item-rarity.epic {
+    color: #9b59b6;
+}
+
+.won-item .item-rarity.legendary {
+    color: #f1c40f;
+}
+
+.won-item .item-price {
+    font-size: 1rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.win-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.win-actions .modal-button {
+    flex: 1;
+}
+
+@keyframes scrollAnimation {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.roulette-animation {
+    animation: scrollAnimation 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }

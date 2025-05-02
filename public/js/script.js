@@ -35,6 +35,7 @@ let currentUser = null;
 let balance = 0;
 let userLevel = 1;
 let userXP = 0;
+let wonItem = null;
 
 async function authenticateUser(userData) {
     try {
@@ -428,7 +429,7 @@ function updateOpenButtons() {
     document.getElementById('openCount').textContent = selectedCount;
     document.getElementById('totalCost').textContent = isDemoMode ? 0 : currentCase.price * selectedCount;
 }
-
+// Обновим функцию openCase()
 async function openCase() {
     if (!currentUser || !currentCase) {
         showToast("Ошибка: данные не загружены", "error");
@@ -441,6 +442,15 @@ async function openCase() {
     try {
         showLoading(true);
         
+        // Запускаем анимацию прокрутки
+        const itemsTrack = document.getElementById('caseItemsTrack');
+        if (itemsTrack) {
+            itemsTrack.classList.add('roulette-animation');
+        }
+
+        // Ждем завершения анимации перед запросом к серверу
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -451,13 +461,15 @@ async function openCase() {
             throw new Error(response.error || 'Не удалось открыть кейс');
         }
         
-        // Показываем выигранный предмет
-        showCaseResult(response.item);
+        // Сохраняем выигранный предмет
+        wonItem = response.item;
+        
+        // Показываем модальное окно с результатом
+        showWinModal(wonItem);
         
         if (!isDemoMode) {
             balance -= response.price;
             updateBalanceDisplay();
-            showToast("Кейс успешно открыт!", "success");
         }
     } catch (error) {
         console.error('Open case error:', error);
@@ -466,6 +478,75 @@ async function openCase() {
         showLoading(false);
         const button = document.getElementById('openCaseBtn');
         if (button) button.disabled = false;
+        
+        // Сбрасываем анимацию
+        const itemsTrack = document.getElementById('caseItemsTrack');
+        if (itemsTrack) {
+            itemsTrack.classList.remove('roulette-animation');
+        }
+    }
+}
+
+// Новая функция для показа модального окна с выигрышем
+function showWinModal(item) {
+    const modal = document.getElementById('winModal');
+    const container = document.getElementById('wonItemContainer');
+    const sellPriceElement = document.getElementById('sellPrice');
+    
+    if (!modal || !container || !sellPriceElement) return;
+    
+    const rarityClass = item.rarity || 'common';
+    const rarityName = getRarityName(item.rarity);
+    const sellPrice = Math.floor((item.price || 0) * 0.7); // 70% от цены
+    
+    container.innerHTML = `
+        <div class="won-item" data-rarity="${rarityClass}">
+            <div class="item-image">
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" loading="lazy">` : 
+                    `<i class="fas fa-gift"></i>`}
+            </div>
+            <div class="item-info">
+                <h4 class="item-name">${item.name || 'Неизвестный предмет'}</h4>
+                <p class="item-rarity ${rarityClass}">${rarityName}</p>
+                ${item.price ? `<p class="item-price">Цена: ${item.price} 🪙</p>` : ''}
+            </div>
+        </div>
+    `;
+    
+    sellPriceElement.textContent = sellPrice;
+    modal.classList.remove('hidden');
+}
+
+// Функции для обработки действий с предметом
+async function keepItem() {
+    const modal = document.getElementById('winModal');
+    if (modal) modal.classList.add('hidden');
+    
+    showToast("Предмет добавлен в вашу коллекцию", "success");
+    // Здесь можно добавить логику сохранения предмета у пользователя
+}
+
+async function sellItem() {
+    const modal = document.getElementById('winModal');
+    if (!modal || !wonItem) return;
+    
+    const sellPrice = Math.floor((wonItem.price || 0) * 0.7); // 70% от цены
+    
+    try {
+        const success = await updateBalance(
+            sellPrice,
+            'sell',
+            `Продажа предмета: ${wonItem.name}`
+        );
+        
+        if (success) {
+            showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
+            modal.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Sell item error:', error);
+        showToast("Ошибка при продаже предмета", "error");
     }
 }
 
@@ -643,6 +724,19 @@ function initEventListeners() {
         document.getElementById('caseOpenSection').classList.remove('hidden');
         document.getElementById('caseResultSection').classList.add('hidden');
     });
+
+    document.getElementById('keepItemBtn')?.addEventListener('click', keepItem);
+    document.getElementById('sellItemBtn')?.addEventListener('click', sellItem);
+    
+    // Сброс анимации при закрытии модального окна
+    document.getElementById('winModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            const itemsTrack = document.getElementById('caseItemsTrack');
+            if (itemsTrack) {
+                itemsTrack.classList.remove('roulette-animation');
+            }
+        }
+    });
 }
 
 // ==================== Global Functions ====================
@@ -653,6 +747,8 @@ window.toggleTheme = toggleTheme;
 window.switchDepositTab = switchDepositTab;
 window.processTonDeposit = processTonDeposit;
 window.processStarsDeposit = processStarsDeposit;
+window.keepItem = keepItem;
+window.sellItem = sellItem;
 
 // ==================== Start Application ====================
 document.addEventListener('DOMContentLoaded', function() {
