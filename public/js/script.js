@@ -445,18 +445,12 @@ async function openCase() {
         // Запускаем анимацию прокрутки
         const itemsTrack = document.getElementById('caseItemsTrack');
         if (itemsTrack) {
-            // Дублируем предметы для бесшовной анимации
-            itemsTrack.innerHTML = itemsTrack.innerHTML + itemsTrack.innerHTML;
             itemsTrack.classList.add('roulette-animation');
-            
-            // Сбрасываем анимацию для перезапуска
-            void itemsTrack.offsetWidth;
         }
 
-        // Ждем 7 секунд быстрой прокрутки
-        await new Promise(resolve => setTimeout(resolve, 7000));
+        // Ждем завершения анимации перед запросом к серверу
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Запрашиваем результат у сервера во время замедления
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -470,11 +464,8 @@ async function openCase() {
         // Сохраняем выигранный предмет
         wonItem = response.item;
         
-        // Ждем оставшиеся 3 секунды замедления
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Останавливаем на выигранном предмете (упрощенная логика)
-        stopOnWonItem(wonItem);
+        // Показываем модальное окно с результатом
+        showWinModal(wonItem);
         
         if (!isDemoMode) {
             balance -= response.price;
@@ -487,37 +478,13 @@ async function openCase() {
         showLoading(false);
         const button = document.getElementById('openCaseBtn');
         if (button) button.disabled = false;
+        
+        // Сбрасываем анимацию
+        const itemsTrack = document.getElementById('caseItemsTrack');
+        if (itemsTrack) {
+            itemsTrack.classList.remove('roulette-animation');
+        }
     }
-}
-
-// Новая функция для остановки на выигранном предмете
-function stopOnWonItem(item) {
-    const itemsTrack = document.getElementById('caseItemsTrack');
-    if (!itemsTrack) return;
-    
-    // Находим индекс выигранного предмета
-    const items = Array.from(document.querySelectorAll('.case-item'));
-    const itemIndex = items.findIndex(el => 
-        el.querySelector('h4')?.textContent === item.name);
-    
-    if (itemIndex === -1) return;
-    
-    // Сбрасываем анимацию
-    itemsTrack.classList.remove('roulette-animation');
-    
-    // Рассчитываем позицию для центрирования выигранного предмета
-    const containerWidth = itemsTrack.parentElement.offsetWidth;
-    const itemWidth = 140; // Ширина одного предмета
-    const itemOffset = itemIndex * (itemWidth + 15); // 15 - margin-right
-    
-    // Центрируем выигранный предмет
-    itemsTrack.style.transform = `translateX(-${itemOffset - containerWidth/2 + itemWidth/2}px)`;
-    itemsTrack.style.transition = 'transform 0.5s ease-out';
-    
-    // Показываем модальное окно после небольшой задержки
-    setTimeout(() => {
-        showWinModal(item);
-    }, 500);
 }
 
 // Новая функция для показа модального окна с выигрышем
@@ -752,18 +719,10 @@ function initEventListeners() {
     document.getElementById('decreaseCount')?.addEventListener('click', () => changeCount(-1));
     document.getElementById('backToCaseBtn')?.addEventListener('click', backToCase);
 
-    document.getElementById('backToCaseBtn')?.addEventListener('click', function() {
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        if (itemsTrack) {
-            itemsTrack.style.transition = 'none';
-            itemsTrack.style.transform = 'translateX(0)';
-            // Удаляем дубликаты предметов
-            const items = Array.from(document.querySelectorAll('.case-item'));
-            itemsTrack.innerHTML = '';
-            items.slice(0, items.length/2).forEach(item => {
-                itemsTrack.appendChild(item.cloneNode(true));
-            });
-        }
+    // В initEventListeners() добавьте:
+    document.getElementById('backToCaseBtn')?.addEventListener('click', () => {
+        document.getElementById('caseOpenSection').classList.remove('hidden');
+        document.getElementById('caseResultSection').classList.add('hidden');
     });
 
     document.getElementById('keepItemBtn')?.addEventListener('click', keepItem);
