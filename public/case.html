@@ -89,22 +89,25 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="js/script.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const caseId = urlParams.get('id');
-            
-            if (!caseId) {
-                showToast("Кейс не найден", "error");
-                setTimeout(() => window.location.href = 'index.html', 2000);
-                return;
-            }
-            
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // Инициализация приложения
                 await initApp();
+                
+                // Получаем ID кейса из URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const caseId = urlParams.get('id');
+                
+                if (!caseId) {
+                    throw new Error('ID кейса не указан');
+                }
+                
+                // Загружаем данные кейса
                 await loadCasePage(caseId);
+                
             } catch (error) {
-                console.error("Initialization error:", error);
-                showToast("Ошибка загрузки", "error");
+                console.error('Ошибка инициализации:', error);
+                showToast(error.message || "Ошибка загрузки", "error");
                 setTimeout(() => window.location.href = 'index.html', 2000);
             }
         });
