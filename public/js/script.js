@@ -126,8 +126,11 @@ function updateProfile() {
 }
 
 function updateLevelDisplay() {
-    document.getElementById('userLevel').textContent = userLevel;
-    document.getElementById('xpDisplay').textContent = `${userXP}/100 XP`; // Упрощенная версия
+    const levelElement = document.getElementById('userLevel');
+    const xpElement = document.getElementById('xpDisplay');
+    
+    if (levelElement) levelElement.textContent = userLevel;
+    if (xpElement) xpElement.textContent = `${userXP}/100 XP`;
 }
 
 // ==================== Theme Management ====================
@@ -338,20 +341,26 @@ let isDemoMode = false;
 
 async function loadCasePage(caseId) {
     try {
+        showLoading(true);
+        
         const response = await apiRequest(`/case/${caseId}`);
-        if (response.success) {
-            currentCase = response.case;
-            caseItems = response.items;
-            renderCasePage();
-        } else {
-            showToast("Ошибка загрузки кейса", "error");
-            window.location.href = 'index.html';
-        }
+        if (!response.success) throw new Error(response.error || 'Case not found');
+        
+        currentCase = response.case;
+        renderCasePage();
+        
     } catch (error) {
         console.error('Failed to load case:', error);
-        showToast("Ошибка загрузки кейса", "error");
-        window.location.href = 'index.html';
+        showToast(error.message || "Ошибка загрузки кейса", "error");
+        setTimeout(() => window.location.href = 'index.html', 2000);
+    } finally {
+        showLoading(false);
     }
+}
+
+function showLoading(show) {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = show ? 'block' : 'none';
 }
 
 function renderCasePage() {

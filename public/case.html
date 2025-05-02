@@ -80,24 +80,33 @@
         </main>
     </div>
 
+    <div id="loader" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+        <div style="background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 10px;">
+            <i class="fas fa-spinner fa-spin"></i> Загрузка...
+        </div>
+    </div>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="js/script.js"></script>
     <script>
-        // Получаем ID кейса из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const caseId = urlParams.get('id');
-        
-        // Инициализируем приложение
-        document.addEventListener('DOMContentLoaded', function() {
-            initEventListeners();
-            initApp().then(() => {
-                if (caseId) {
-                    loadCasePage(caseId);
-                } else {
-                    showToast("Кейс не найден", "error");
-                    window.location.href = 'index.html';
-                }
-            });
+        document.addEventListener('DOMContentLoaded', async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const caseId = urlParams.get('id');
+            
+            if (!caseId) {
+                showToast("Кейс не найден", "error");
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
+            }
+            
+            try {
+                await initApp();
+                await loadCasePage(caseId);
+            } catch (error) {
+                console.error("Initialization error:", error);
+                showToast("Ошибка загрузки", "error");
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            }
         });
     </script>
 </body>

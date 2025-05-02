@@ -234,36 +234,16 @@ router.get('/cases', async (req, res) => {
 router.get('/case/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { rows } = await pool.query('SELECT * FROM cases WHERE id = $1', [id]);
         
-        const caseData = await pool.query(
-            'SELECT * FROM cases WHERE id = $1',
-            [id]
-        );
-        
-        if (caseData.rows.length === 0) {
+        if (rows.length === 0) {
             return res.status(404).json({ error: 'Case not found' });
         }
         
-        const items = await pool.query(
-            `SELECT i.*, ci.adjusted_chance 
-             FROM cases_items ci
-             JOIN items i ON ci.item_id = i.id
-             WHERE ci.case_id = $1`,
-            [id]
-        );
-        
-        res.json({
-            success: true,
-            case: caseData.rows[0],
-            items: items.rows
-        });
-        
+        res.json({ success: true, case: rows[0] });
     } catch (err) {
-        console.error('Ошибка при получении кейса:', err);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message
-        });
+        console.error('Error getting case:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
