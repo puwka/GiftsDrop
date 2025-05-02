@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Открытие кейса | Gift Drop</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/case.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="case-container">
+        <header class="case-header">
+            <button class="back-btn" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 id="caseTitle">Открытие кейса</h1>
+        </header>
+
+        <main class="case-main">
+            <!-- Контейнер для анимации -->
+            <div class="animation-container">
+                <div class="case-animation horizontal" id="singleCaseAnimation">
+                    <div class="case-lid"></div>
+                    <div class="case-body">
+                        <div class="case-reward" id="singleCaseReward"></div>
+                    </div>
+                </div>
+
+                <div class="cases-animation vertical hidden" id="multipleCasesAnimation">
+                    <!-- Будет заполняться динамически -->
+                </div>
+            </div>
+
+            <!-- Управление количеством кейсов -->
+            <div class="case-controls">
+                <div class="case-counter">
+                    <button class="count-btn minus" onclick="changeCaseCount(-1)">-</button>
+                    <span id="caseCount">1</span>
+                    <button class="count-btn plus" onclick="changeCaseCount(1)">+</button>
+                </div>
+                <button class="quick-toggle" id="quickToggle" onclick="toggleQuickMode()">
+                    <i class="fas fa-bolt"></i> Быстрое открытие
+                </button>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="case-actions">
+                <button class="action-btn demo" onclick="openCases(false)">
+                    <i class="fas fa-eye"></i> Демо
+                </button>
+                <button class="action-btn open" onclick="openCases(true)">
+                    <i class="fas fa-gift"></i> Открыть (<span id="totalPrice">0</span> 🪙)
+                </button>
+            </div>
+
+            <!-- Результаты -->
+            <div class="case-results" id="caseResults"></div>
+        </main>
+    </div>
+
+    <script src="js/case.js"></script>
+</body>
+</html>

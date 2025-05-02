@@ -1,0 +1,209 @@
+/* Основные стили страницы */
+.case-container {
+    max-width: 100%;
+    min-height: 100vh;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.case-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--header-bg);
+    color: white;
+    position: relative;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+
+/* Анимации кейсов */
+.animation-container {
+    margin: 2rem auto;
+    max-width: 500px;
+    height: 300px;
+    position: relative;
+}
+
+/* Горизонтальная анимация (1 кейс) */
+.case-animation.horizontal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.case-lid, .case-body {
+    width: 150px;
+    height: 100px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    position: relative;
+}
+
+.case-lid {
+    border-radius: 10px 10px 0 0;
+    transform-origin: bottom center;
+    z-index: 2;
+}
+
+.case-body {
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.case-reward {
+    font-size: 2rem;
+    animation: bounceIn 0.5s;
+}
+
+/* Вертикальная анимация (несколько кейсов) */
+.cases-animation.vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.case-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.case-in-stack {
+    width: 120px;
+    height: 80px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+}
+
+/* Управление */
+.case-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--card-bg);
+    margin: 1rem;
+    border-radius: 12px;
+}
+
+.case-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.count-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.quick-toggle {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.quick-toggle.active {
+    background: var(--warning);
+}
+
+/* Кнопки действий */
+.case-actions {
+    display: flex;
+    gap: 10px;
+    padding: 1rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.action-btn.demo {
+    background: var(--gray);
+    color: var(--text-color);
+}
+
+.action-btn.open {
+    background: var(--primary);
+    color: white;
+}
+
+/* Результаты */
+.case-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    padding: 1rem;
+}
+
+.result-item {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    position: relative;
+}
+
+.result-item .rarity {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* Анимации */
+@keyframes openHorizontal {
+    0% { transform: rotateX(0deg); }
+    100% { transform: rotateX(-180deg); }
+}
+
+@keyframes openVertical {
+    0% { transform: translateY(0) rotateX(0deg); }
+    100% { transform: translateY(-20px) rotateX(-180deg); }
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.hidden {
+    display: none !important;
+}
