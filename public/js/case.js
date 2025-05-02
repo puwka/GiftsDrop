@@ -210,7 +210,7 @@ function toggleQuickMode() {
         '<i class="fas fa-bolt"></i> Быстрое открытие';
 }
 
-// Открываем кейс(ы)
+// case.js (измененная функция openCases)
 async function openCases(isReal) {
     if (!currentCase || isOpening) return;
     
@@ -242,10 +242,25 @@ async function openCases(isReal) {
             if (hasLegendaryItems(response.won_items)) {
                 showToast("Поздравляем! Вы получили легендарный предмет!", "success");
             }
+        } else {
+            showToast(response.error || "Ошибка при открытии кейса", "error");
         }
     } catch (error) {
         console.error('Error opening cases:', error);
-        showToast("Ошибка при открытии кейса", "error");
+        showToast(error.message || "Ошибка при открытии кейса", "error");
+        
+        // Попробуем обновить баланс в случае ошибки
+        if (isReal) {
+            try {
+                const balanceResponse = await apiRequest(`/users/balance/${currentUser.id}`);
+                if (balanceResponse.success) {
+                    balance = balanceResponse.balance;
+                    updateBalanceDisplay();
+                }
+            } catch (e) {
+                console.error('Failed to refresh balance:', e);
+            }
+        }
     } finally {
         isOpening = false;
         disableControls(false);

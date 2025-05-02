@@ -265,127 +265,151 @@ router.get('/case/:case_id', async (req, res) => {
     }
 });
 
-// Открытие кейса
+// users.js (измененный эндпоинт /open-case)
 router.post('/open-case', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { user_id, case_id, count = 1, is_demo = false } = req.body;
         
+        // Валидация входных данных
         if (!user_id || !case_id) {
-            return res.status(400).json({ error: 'user_id and case_id are required' });
-        }
-        
-        if (count < 1 || count > 3) {
-            return res.status(400).json({ error: 'count must be between 1 and 3' });
+            return res.status(400).json({ 
+                error: 'user_id and case_id are required',
+                details: 'Missing required fields'
+            });
         }
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            // 1. Проверяем существование пользователя
-            const userExists = await client.query(
-                'SELECT id FROM users WHERE id = $1',
+        if (count < 1 || count > 3) {
+            return res.status(400).json({ 
+                error: 'Invalid case count',
+                details: 'Count must be between 1 and 3'
+            });
+        }
+
+        await client.query('BEGIN');
+
+        // 1. Проверяем существование пользователя
+        const userCheck = await client.query(
+            'SELECT id FROM users WHERE id = $1 FOR UPDATE',
+            [user_id]
+        );
+        
+        if (userCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ 
+                error: 'User not found',
+                details: `User with id ${user_id} not found`
+            });
+        }
+
+        // 2. Проверяем существование кейса
+        const caseQuery = await client.query(
+            'SELECT * FROM cases WHERE id = $1 FOR UPDATE',
+            [case_id]
+        );
+        
+        if (caseQuery.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ 
+                error: 'Case not found',
+                details: `Case with id ${case_id} not found`
+            });
+        }
+
+        const caseData = caseQuery.rows[0];
+        const totalPrice = caseData.price * count;
+
+        // 3. Для реального открытия проверяем баланс
+        if (!is_demo) {
+            const balanceQuery = await client.query(
+                'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
                 [user_id]
             );
             
-            if (userExists.rows.length === 0) {
-                return res.status(404).json({ error: 'User not found' });
+            if (balanceQuery.rows.length === 0 || balanceQuery.rows[0].balance < totalPrice) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ 
+                    error: 'Not enough balance',
+                    details: `Need ${totalPrice}, available ${balanceQuery.rows[0]?.balance || 0}`
+                });
             }
             
-            // 2. Проверяем существование кейса
-            const caseExists = await client.query(
-                'SELECT * FROM cases WHERE id = $1',
-                [case_id]
+            // Списываем средства
+            await client.query(
+                'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
+                [totalPrice, user_id]
             );
             
-            if (caseExists.rows.length === 0) {
-                return res.status(404).json({ error: 'Case not found' });
-            }
-            
-            const caseData = caseExists.rows[0];
-            
-            // 3. Для реального открытия проверяем баланс
-            if (!is_demo) {
-                const balanceQuery = await client.query(
-                    'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
-                    [user_id]
-                );
-                
-                if (balanceQuery.rows.length === 0 || balanceQuery.rows[0].balance < caseData.price * count) {
-                    return res.status(400).json({ error: 'Not enough balance' });
-                }
-                
-                // Списываем средства
-                await client.query(
-                    'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
-                    [caseData.price * count, user_id]
-                );
-                
-                // Записываем транзакцию
-                await client.query(
-                    `INSERT INTO transactions 
-                     (user_id, amount, type, description, created_at)
-                     VALUES ($1, $2, 'case', $3, NOW())`,
-                    [user_id, -caseData.price * count, `Открытие кейса ${caseData.name} (x${count})`]
-                );
-            }
-            
-            // 4. Получаем предметы кейса с их шансами
-            const itemsQuery = await client.query(
-                `SELECT i.*, ci.adjusted_chance 
-                 FROM items i
-                 JOIN cases_items ci ON i.id = ci.item_id
-                 WHERE ci.case_id = $1`,
-                [case_id]
+            // Записываем транзакцию
+            await client.query(
+                `INSERT INTO transactions 
+                 (user_id, amount, type, description, created_at)
+                 VALUES ($1, $2, 'case', $3, NOW())`,
+                [user_id, -totalPrice, `Открытие кейса ${caseData.name} (x${count})`]
             );
-            
-            if (itemsQuery.rows.length === 0) {
-                return res.status(400).json({ error: 'No items in this case' });
-            }
-            
-            // 5. Генерируем выигрыши (для демо подкручиваем шансы)
-            const wonItems = [];
-            const totalItems = is_demo ? 
-                adjustDemoChances(itemsQuery.rows) : 
-                itemsQuery.rows;
-            
-            for (let i = 0; i < count; i++) {
-                const wonItem = getRandomItem(totalItems);
-                wonItems.push(wonItem);
-                
-                // Записываем открытие в базу
-                await client.query(
-                    `INSERT INTO cases_openings 
-                     (user_id, case_id, item_id, is_demo, opened_at)
-                     VALUES ($1, $2, $3, $4, NOW())`,
-                    [user_id, case_id, wonItem.id, is_demo]
-                );
-            }
-            
-            await client.query('COMMIT');
-            
-            return res.json({
-                success: true,
-                won_items: wonItems,
-                new_balance: is_demo ? null : (balanceQuery.rows[0].balance - caseData.price * count)
-            });
-            
-        } catch (err) {
-            await client.query('ROLLBACK');
-            console.error('Error opening case:', err);
-            res.status(500).json({ 
-                error: 'Transaction error',
-                details: err.message
-            });
-        } finally {
-            client.release();
         }
-    } catch (err) {
-        console.error('Error in /open-case:', err.stack);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message
+
+        // 4. Получаем предметы кейса с их шансами
+        const itemsQuery = await client.query(
+            `SELECT i.*, ci.adjusted_chance 
+             FROM items i
+             JOIN cases_items ci ON i.id = ci.item_id
+             WHERE ci.case_id = $1`,
+            [case_id]
+        );
+        
+        if (itemsQuery.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ 
+                error: 'No items in this case',
+                details: `Case ${case_id} has no items`
+            });
+        }
+        
+        // 5. Генерируем выигрыши
+        const wonItems = [];
+        const totalItems = is_demo ? adjustDemoChances(itemsQuery.rows) : itemsQuery.rows;
+        
+        for (let i = 0; i < count; i++) {
+            const wonItem = getRandomItem(totalItems);
+            wonItems.push(wonItem);
+            
+            await client.query(
+                `INSERT INTO cases_openings 
+                 (user_id, case_id, item_id, is_demo, opened_at)
+                 VALUES ($1, $2, $3, $4, NOW())`,
+                [user_id, case_id, wonItem.id, is_demo]
+            );
+        }
+        
+        await client.query('COMMIT');
+        
+        // Получаем актуальный баланс для ответа
+        let newBalance = null;
+        if (!is_demo) {
+            const balanceResult = await client.query(
+                'SELECT balance FROM user_balances WHERE user_id = $1',
+                [user_id]
+            );
+            newBalance = balanceResult.rows[0].balance;
+        }
+        
+        return res.json({
+            success: true,
+            won_items: wonItems,
+            new_balance: newBalance
         });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error opening case:', err.stack);
+        return res.status(500).json({ 
+            error: 'Transaction error',
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    } finally {
+        client.release();
     }
 });
 
