@@ -245,6 +245,290 @@ function updateTransactionsList(transactions) {
     `).join('');
 }
 
+// ==================== Case Functions ====================
+let currentCase = null;
+let caseItems = [];
+let caseCount = 1;
+let isQuickOpen = false;
+let isOpening = false;
+
+async function loadCase(caseId) {
+    try {
+        const response = await apiRequest(`/users/case/${caseId}`);
+        if (response.success) {
+            currentCase = response.case;
+            caseItems = response.items;
+            showCaseModal();
+        } else {
+            showToast("Ошибка загрузки кейса", "error");
+        }
+    } catch (error) {
+        console.error('Error loading case:', error);
+        showToast("Ошибка загрузки кейса", "error");
+    }
+}
+
+function showCaseModal() {
+    if (!currentCase) return;
+    
+    // Устанавливаем информацию о кейсе
+    document.getElementById('modalCaseName').textContent = currentCase.name;
+    document.getElementById('modalCasePrice').textContent = `Цена: ${currentCase.price} 🪙`;
+    document.getElementById('totalPrice').textContent = currentCase.price * caseCount;
+    
+    // Устанавливаем изображение кейса
+    const caseImage = document.getElementById('modalCaseImage');
+    if (currentCase.image_url) {
+        caseImage.style.backgroundImage = `url(${currentCase.image_url})`;
+        caseImage.style.backgroundSize = 'cover';
+        caseImage.style.backgroundPosition = 'center';
+        caseImage.innerHTML = '';
+    } else {
+        caseImage.style.backgroundImage = 'none';
+        caseImage.innerHTML = '<i class="fas fa-gift"></i>';
+    }
+    
+    // Заполняем список возможных предметов
+    const itemsGrid = document.getElementById('possibleItems');
+    itemsGrid.innerHTML = '';
+    
+    caseItems.forEach(item => {
+        const itemCard = document.createElement('div');
+        itemCard.className = 'item-card';
+        
+        // Цвет рамки в зависимости от редкости
+        let rarityClass = '';
+        let rarityColor = '';
+        
+        switch(item.rarity) {
+            case 'uncommon':
+                rarityColor = '#2ecc71';
+                break;
+            case 'rare':
+                rarityColor = '#3498db';
+                break;
+            case 'epic':
+                rarityColor = '#9b59b6';
+                break;
+            case 'legendary':
+                rarityColor = '#f39c12';
+                break;
+            default: // common
+                rarityColor = '#95a5a6';
+        }
+        
+        itemCard.innerHTML = `
+            <div class="rarity-indicator" style="background: ${rarityColor}"></div>
+            <div class="item-image">
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" style="max-width:100%; max-height:100%;">` : 
+                    `<i class="fas fa-box-open"></i>`}
+            </div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-chance">${parseFloat(item.adjusted_chance).toFixed(2)}%</div>
+        `;
+        
+        itemsGrid.appendChild(itemCard);
+    });
+    
+    // Сбрасываем анимацию
+    resetCaseAnimation();
+    
+    // Показываем модальное окно
+    document.getElementById('caseModal').classList.remove('hidden');
+}
+
+function closeCaseModal() {
+    document.getElementById('caseModal').classList.add('hidden');
+    currentCase = null;
+    caseItems = [];
+    caseCount = 1;
+    isQuickOpen = false;
+}
+
+function changeCaseCount(change) {
+    const newCount = caseCount + change;
+    if (newCount >= 1 && newCount <= 3) {
+        caseCount = newCount;
+        document.getElementById('caseCount').textContent = caseCount;
+        document.getElementById('totalPrice').textContent = currentCase.price * caseCount;
+    }
+}
+
+function toggleQuickOpen() {
+    isQuickOpen = !isQuickOpen;
+    const icon = document.getElementById('quickOpenIcon');
+    if (isQuickOpen) {
+        icon.style.color = '#f39c12';
+    } else {
+        icon.style.color = 'white';
+    }
+}
+
+function resetCaseAnimation() {
+    const caseTop = document.querySelector('.case-top');
+    caseTop.style.animation = 'none';
+    caseTop.offsetHeight; // Trigger reflow
+    caseTop.style.animation = null;
+    
+    document.getElementById('caseReward').innerHTML = '';
+    document.getElementById('caseResults').innerHTML = '';
+}
+
+async function openCase(isReal) {
+    if (!currentCase || isOpening) return;
+    
+    // Проверяем баланс для реального открытия
+    if (isReal && balance < currentCase.price * caseCount) {
+        showToast("Недостаточно средств", "error");
+        return;
+    }
+    
+    isOpening = true;
+    
+    try {
+        // Запрос на открытие кейса
+        const response = await apiRequest('/users/open-case', 'POST', {
+            user_id: currentUser.id,
+            case_id: currentCase.id,
+            count: caseCount,
+            is_demo: !isReal
+        });
+        
+        if (response.success) {
+            // Обновляем баланс, если это реальное открытие
+            if (isReal) {
+                balance = response.new_balance;
+                updateBalanceDisplay();
+            }
+            
+            // Анимируем открытие
+            await animateCaseOpening(response.won_items);
+            
+            // Показываем результаты
+            showCaseResults(response.won_items);
+            
+        } else {
+            showToast("Ошибка при открытии кейса", "error");
+        }
+    } catch (error) {
+        console.error('Error opening case:', error);
+        showToast("Ошибка при открытии кейса", "error");
+    } finally {
+        isOpening = false;
+    }
+}
+
+async function animateCaseOpening(wonItems) {
+    const caseTop = document.querySelector('.case-top');
+    const caseReward = document.getElementById('caseReward');
+    
+    // Сбрасываем анимацию
+    resetCaseAnimation();
+    
+    // Запускаем анимацию открытия
+    caseTop.style.animation = 'openCaseTop 1s forwards';
+    
+    // Ждем завершения анимации открытия
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Показываем выигранные предметы
+    if (isQuickOpen) {
+        // Быстрое открытие - показываем все сразу
+        showAllRewards(wonItems);
+    } else {
+        // Обычное открытие - показываем по одному с задержкой
+        for (let i = 0; i < wonItems.length; i++) {
+            showReward(wonItems[i], i);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+}
+
+function showReward(item, index) {
+    const caseReward = document.getElementById('caseReward');
+    const caseResults = document.getElementById('caseResults');
+    
+    // Показываем предмет в основном окне
+    caseReward.innerHTML = `
+        <div class="win-icon ${item.rarity}">
+            ${item.image_url ? 
+                `<img src="${item.image_url}" alt="${item.name}" style="max-width:80%; max-height:80%;">` : 
+                `<i class="fas fa-gift"></i>`}
+        </div>
+    `;
+    
+    // Добавляем предмет в список результатов
+    const resultItem = document.createElement('div');
+    resultItem.className = 'case-result-item';
+    resultItem.innerHTML = `
+        ${item.image_url ? 
+            `<img src="${item.image_url}" alt="${item.name}" style="max-width:80%; max-height:80%;">` : 
+            `<i class="fas fa-gift"></i>`}
+        <div class="rarity-badge ${'rarity-' + item.rarity}">
+            ${index + 1}
+        </div>
+    `;
+    caseResults.appendChild(resultItem);
+    
+    // Анимация появления
+    resultItem.style.animation = 'bounceIn 0.5s';
+}
+
+function showAllRewards(wonItems) {
+    const caseReward = document.getElementById('caseReward');
+    const caseResults = document.getElementById('caseResults');
+    
+    caseReward.innerHTML = `
+        <div style="text-align: center;">
+            <div style="font-size: 1rem; margin-bottom: 5px;">Вы открыли:</div>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+                ${wonItems.map((item, index) => `
+                    <div style="text-align: center;">
+                        <div class="win-icon ${item.rarity}" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            ${item.image_url ? 
+                                `<img src="${item.image_url}" alt="${item.name}" style="max-width:80%; max-height:80%;">` : 
+                                `<i class="fas fa-gift"></i>`}
+                        </div>
+                        <div style="font-size: 0.7rem;">${index + 1}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Добавляем все предметы в список результатов
+    wonItems.forEach((item, index) => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'case-result-item';
+        resultItem.innerHTML = `
+            ${item.image_url ? 
+                `<img src="${item.image_url}" alt="${item.name}" style="max-width:80%; max-height:80%;">` : 
+                `<i class="fas fa-gift"></i>`}
+            <div class="rarity-badge ${'rarity-' + item.rarity}">
+                ${index + 1}
+            </div>
+        `;
+        caseResults.appendChild(resultItem);
+        resultItem.style.animation = 'bounceIn 0.5s';
+    });
+}
+
+function showCaseResults(wonItems) {
+    // Можно добавить дополнительную логику для отображения результатов
+    // Например, подсветку самых редких предметов и т.д.
+    const legendaryItems = wonItems.filter(item => item.rarity === 'legendary');
+    if (legendaryItems.length > 0) {
+        showToast(`Поздравляем! Вы получили легендарный предмет!`, "success");
+    }
+}
+
+// Обновляем функцию openCase в глобальной области видимости
+window.openCase = function(caseType) {
+    // Для примера - загружаем кейс с ID 1 (можно сделать динамически)
+    loadCase(1);
+};
+
 // ==================== Deposit Functions ====================
 function openDepositModal() {
     const modal = document.getElementById('depositModal');
