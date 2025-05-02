@@ -70,33 +70,5 @@
     </div>
 
     <script src="js/case.js"></script>
-    <script>
-        // Инициализация Telegram WebApp
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                const tgWebApp = Telegram.WebApp;
-                
-                // Расширяем на весь экран
-                tgWebApp.expand();
-                
-                // Применяем тему Telegram
-                if (tgWebApp.colorScheme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                }
-                
-                // Обработчик изменения темы
-                tgWebApp.onEvent('themeChanged', function() {
-                    document.documentElement.setAttribute('data-theme', 
-                        tgWebApp.colorScheme === 'dark' ? 'dark' : 'light');
-                });
-                
-                // Показываем кнопку "Назад" в интерфейсе Telegram
-                tgWebApp.BackButton.show();
-                tgWebApp.BackButton.onClick(function() {
-                    window.history.back();
-                });
-            }
-        });
-    </script>
 </body>
 </html>
