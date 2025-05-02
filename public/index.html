@@ -289,6 +289,64 @@
         </div>
     </div>
 
+    <div id="caseModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="caseModalTitle"><i class="fas fa-gift"></i> ОТКРЫТИЕ КЕЙСА</h3>
+            
+            <div class="case-modal-container">
+                <!-- Информация о кейсе -->
+                <div class="case-info">
+                    <div class="case-image" id="modalCaseImage">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="case-details">
+                        <h4 id="modalCaseName">Название кейса</h4>
+                        <p id="modalCasePrice">Цена: 500 🪙</p>
+                        <div class="case-controls">
+                            <button class="case-count-btn minus" onclick="changeCaseCount(-1)">-</button>
+                            <span id="caseCount">1</span>
+                            <button class="case-count-btn plus" onclick="changeCaseCount(1)">+</button>
+                            <button class="quick-open-btn" onclick="toggleQuickOpen()">
+                                <i class="fas fa-bolt" id="quickOpenIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="case-actions">
+                    <button class="modal-button demo" onclick="openCase(false)">
+                        <i class="fas fa-eye"></i> ДЕМО
+                    </button>
+                    <button class="modal-button primary" onclick="openCase(true)">
+                        <i class="fas fa-gift"></i> ОТКРЫТЬ (<span id="totalPrice">500</span> 🪙)
+                    </button>
+                </div>
+                
+                <!-- Анимация открытия -->
+                <div class="case-animation-container">
+                    <div class="case-animation" id="caseAnimation">
+                        <div class="case-top"></div>
+                        <div class="case-bottom">
+                            <div id="caseReward"></div>
+                        </div>
+                    </div>
+                    <div class="case-results" id="caseResults"></div>
+                </div>
+                
+                <!-- Список возможных предметов -->
+                <div class="possible-items">
+                    <h4><i class="fas fa-list"></i> ВОЗМОЖНЫЕ ПРЕДМЕТЫ</h4>
+                    <div class="items-grid" id="possibleItems"></div>
+                </div>
+            </div>
+            
+            <button class="modal-button secondary" onclick="closeCaseModal()">
+                <i class="fas fa-times"></i> ЗАКРЫТЬ
+            </button>
+        </div>
+    </div>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script type="module" src="js/script.js"></script>
 </body>

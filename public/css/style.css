@@ -1161,3 +1161,281 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 16px;
 }
 
+/* Стили для модального окна кейса */
+.case-modal-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0 10px;
+}
+
+.case-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.case-info .case-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+}
+
+.case-details {
+    flex: 1;
+}
+
+.case-details h4 {
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.case-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.case-count-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.case-count-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#caseCount {
+    min-width: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.quick-open-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: white;
+    margin-left: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-open-btn.active {
+    background: var(--warning);
+}
+
+.case-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.case-actions .modal-button {
+    flex: 1;
+}
+
+.case-actions .modal-button.demo {
+    background: var(--gray);
+    color: var(--text-color);
+}
+
+.case-actions .modal-button.demo:hover {
+    background: #d0d0d0;
+}
+
+.case-animation-container {
+    margin-bottom: 20px;
+}
+
+.case-animation {
+    position: relative;
+    height: 150px;
+    margin: 1rem 0;
+    perspective: 1000px;
+}
+
+.case-top {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 50px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    border-radius: 10px 10px 0 0;
+    transform-origin: bottom center;
+    z-index: 2;
+}
+
+.case-bottom {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 80px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+#caseReward {
+    font-size: 1.8rem;
+}
+
+.case-results {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.case-result-item {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.case-result-item .rarity-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.rarity-common {
+    background: #95a5a6;
+}
+
+.rarity-uncommon {
+    background: #2ecc71;
+}
+
+.rarity-rare {
+    background: #3498db;
+}
+
+.rarity-epic {
+    background: #9b59b6;
+}
+
+.rarity-legendary {
+    background: #f39c12;
+}
+
+.possible-items {
+    margin-top: 20px;
+}
+
+.possible-items h4 {
+    color: var(--text-color);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.item-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.item-image {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.item-name {
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+}
+
+.item-chance {
+    font-size: 0.6rem;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-top: 3px;
+}
+
+.rarity-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+}
+
+/* Анимации */
+@keyframes openCaseTop {
+    0% { transform: translateX(-50%) rotateX(0deg); }
+    50% { transform: translateX(-50%) rotateX(-100deg); }
+    100% { transform: translateX(-50%) rotateX(-180deg); }
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
