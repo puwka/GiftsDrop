@@ -343,7 +343,7 @@ async function loadCasePage(caseId) {
     try {
         showLoading(true);
         
-        const response = await apiRequest(`/case/${caseId}`);
+        const response = await apiRequest(`/users/case/${caseId}`);
         if (!response.success) throw new Error(response.error || 'Case not found');
         
         currentCase = response.case;
