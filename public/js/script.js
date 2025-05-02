@@ -400,62 +400,6 @@ function renderCasePage() {
     console.log('Предметы отрендерены'); // Логирование
 }
 
-// Функция загрузки и отображения кейсов
-async function loadCases() {
-    try {
-        const response = await apiRequest('/users/cases');
-        if (!response.success) throw new Error('Failed to load cases');
-        
-        const casesTrack = document.getElementById('casesTrack');
-        if (!casesTrack) return;
-        
-        casesTrack.innerHTML = response.cases.map(caseItem => `
-            <div class="case-card-horizontal ${currentCase?.id === caseItem.id ? 'current-case' : ''}" 
-                 onclick="openCasePage(${caseItem.id})">
-                <div class="case-image-horizontal" style="background: ${getCaseGradient(caseItem.id)}">
-                    <i class="fas ${getCaseIcon(caseItem.id)}"></i>
-                </div>
-                <h3>${caseItem.name}</h3>
-                <p class="case-price-horizontal">${caseItem.price} 🪙</p>
-                <div class="current-case-indicator"></div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading cases:', error);
-    }
-}
-
-// Вспомогательные функции
-function getCaseGradient(id) {
-    const gradients = [
-        'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
-        'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
-        'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
-    ];
-    return gradients[id % gradients.length];
-}
-
-function getCaseIcon(id) {
-    const icons = ['fa-gift', 'fa-gem', 'fa-crown'];
-    return icons[id % icons.length];
-}
-
-// Функция перехода на страницу кейса
-function openCasePage(caseId) {
-    window.location.href = `case.html?id=${caseId}`;
-}
-
-// Вызывайте loadCases() при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    initApp().then(() => {
-        loadCases();
-        if (window.location.pathname.includes('case.html')) {
-            const caseId = new URLSearchParams(window.location.search).get('id');
-            if (caseId) loadCasePage(caseId);
-        }
-    });
-});
-
 function getRarityName(rarity) {
     const names = {
         'common': 'Обычный',
