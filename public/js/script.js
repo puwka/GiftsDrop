@@ -408,6 +408,16 @@ function initEventListeners() {
             openTab(tabName, this);
         });
     });
+
+    document.querySelectorAll('.case-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const caseType = this.getAttribute('onclick').match(/openCase\('(.*?)'\)/)[1];
+            loadCase(getCaseIdByType(caseType));
+        });
+    });
+
+    // Закрытие модального окна кейса
+    document.querySelector('#caseModal .modal-button.secondary')?.addEventListener('click', closeCaseModal);
     
     // Кнопка пополнения
     document.querySelector('.deposit-btn')?.addEventListener('click', openDepositModal);
@@ -435,6 +445,17 @@ function initEventListeners() {
         const amount = parseFloat(this.value) || 0;
         document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
     });
+}
+
+function getCaseIdByType(caseType) {
+    // Здесь можно реализовать логику сопоставления типа кейса с его ID
+    // Например, можно хранить mapping в currentUser или загружать с сервера
+    switch(caseType) {
+        case 'mix': return 1;
+        case 'premium': return 2;
+        case 'legendary': return 3;
+        default: return 1;
+    }
 }
 
 // ==================== Global Functions ====================
