@@ -16,20 +16,20 @@
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h1 id="caseTitle">Открытие кейса</h1>
+            <div class="case-balance">
+                <span class="balance-amount">1000</span>
+                <span class="balance-icon">🪙</span>
+            </div>
         </header>
 
         <main class="case-main">
-            <!-- Контейнер для анимации -->
-            <div class="animation-container">
-                <div class="case-animation horizontal" id="singleCaseAnimation">
-                    <div class="case-lid"></div>
-                    <div class="case-body">
-                        <div class="case-reward" id="singleCaseReward"></div>
+            <!-- Основная анимация кейса -->
+            <div class="case-animation-container">
+                <div class="case-animation" id="caseAnimation">
+                    <div class="case-top"></div>
+                    <div class="case-bottom">
+                        <div class="case-reward" id="caseReward"></div>
                     </div>
-                </div>
-
-                <div class="cases-animation vertical hidden" id="multipleCasesAnimation">
-                    <!-- Будет заполняться динамически -->
                 </div>
             </div>
 
@@ -55,8 +55,17 @@
                 </button>
             </div>
 
-            <!-- Результаты -->
-            <div class="case-results" id="caseResults"></div>
+            <!-- Результаты открытия -->
+            <div class="case-results-container">
+                <h3><i class="fas fa-trophy"></i> ВАШИ ВЫИГРЫШИ</h3>
+                <div class="case-results" id="caseResults"></div>
+            </div>
+
+            <!-- Возможные предметы -->
+            <div class="possible-items">
+                <h3><i class="fas fa-list"></i> ВОЗМОЖНЫЕ ПРЕДМЕТЫ</h3>
+                <div class="items-grid" id="itemsGrid"></div>
+            </div>
         </main>
     </div>
 
