@@ -15,7 +15,6 @@ const usersRoutes = require('./users');
 app.use('/api/users', usersRoutes);
 app.use('/api/balance', usersRoutes);
 app.use('/transactions/:user_id', usersRoutes);
-app.use('/api/cases', usersRoutes);
 
 // Тестовый эндпоинт
 app.get('/api/test-connect', (req, res) => {

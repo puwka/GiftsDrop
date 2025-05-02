@@ -313,100 +313,6 @@ async function processStarsDeposit() {
     }
 }
 
-// ==================== Case Functions ====================
-let currentCase = null;
-let caseItems = [];
-
-async function getCases() {
-    try {
-        const response = await apiRequest('/cases');
-        return response.cases || [];
-    } catch (error) {
-        console.error('Failed to get cases:', error);
-        return [];
-    }
-}
-
-async function getCaseItems(caseId) {
-    try {
-        const response = await apiRequest(`/cases/${caseId}/items`);
-        return response.items || [];
-    } catch (error) {
-        console.error('Failed to get case items:', error);
-        return [];
-    }
-}
-
-async function openCase(caseId, count = 1, isDemo = false) {
-    try {
-        const response = await apiRequest(`/cases/${caseId}/open`, 'POST', {
-            user_id: currentUser.id,
-            count: count,
-            is_demo: isDemo
-        });
-        
-        if (response.error) {
-            showToast(response.error, "error");
-            return null;
-        }
-        
-        // Обновляем баланс пользователя
-        if (!isDemo) {
-            const caseInfo = (await getCases()).find(c => c.id == caseId);
-            balance -= caseInfo.price * count;
-            updateBalanceDisplay();
-        }
-        
-        return response;
-    } catch (error) {
-        console.error('Failed to open case:', error);
-        showToast("Ошибка открытия кейса", "error");
-        return null;
-    }
-}
-
-function showCaseOpeningModal(items, caseInfo) {
-    const modal = document.createElement('div');
-    modal.className = 'case-opening-modal';
-    modal.innerHTML = `
-        <div class="case-opening-content">
-            <h3>${caseInfo.name}</h3>
-            <div class="case-opening-items">
-                ${items.map(item => `
-                    <div class="case-item ${item.rarity}">
-                        <div class="item-image" style="background-image: url(${item.image_url || 'default-item.png'})"></div>
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-rarity">${getRarityName(item.rarity)}</div>
-                    </div>
-                `).join('')}
-            </div>
-            <button class="modal-button" onclick="this.closest('.case-opening-modal').remove()">
-                ЗАКРЫТЬ
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function getRarityName(rarity) {
-    const names = {
-        common: 'Обычный',
-        uncommon: 'Необычный',
-        rare: 'Редкий',
-        epic: 'Эпический',
-        legendary: 'Легендарный'
-    };
-    return names[rarity] || rarity;
-}
-
-// Добавьте в initEventListeners()
-document.querySelectorAll('.case-card').forEach(card => {
-    card.addEventListener('click', function() {
-        const caseType = this.getAttribute('onclick').match(/openCase\('(.*?)'\)/)[1];
-        startCaseOpening(caseType);
-    });
-});
-
 // ==================== Notification System ====================
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
@@ -453,52 +359,12 @@ async function initApp() {
         setTimeout(() => {
             openTab('cases');
         }, 0);
-
-        const cases = await getCases();
-        updateCasesList(cases);
         
     } catch (error) {
         console.error('Initialization error:', error);
         showToast("Ошибка инициализации", "error");
     }
 }
-
-function updateCasesList(cases) {
-    const container = document.getElementById('casesList');
-    if (!container) return;
-    
-    container.innerHTML = cases.map(caseItem => `
-        <div class="case-card" data-case-id="${caseItem.id}">
-            <div class="case-image" style="background-image: url(${caseItem.image_url || 'default-case.png'})">
-                <i class="fas fa-gift"></i>
-            </div>
-            <h3>${caseItem.name}</h3>
-            <p class="case-price">${caseItem.price} 🪙</p>
-            <div class="case-buttons">
-                <button class="case-open-btn" onclick="openCaseNow('${caseItem.id}', 1)">Открыть 1</button>
-                <button class="case-open-btn" onclick="openCaseNow('${caseItem.id}', 3)">Открыть 3</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Глобальные функции для кнопок
-window.openCaseNow = async function(caseId, count) {
-    const items = await openCase(caseId, count);
-    if (items) {
-        const caseInfo = (await getCases()).find(c => c.id == caseId);
-        showCaseOpeningModal(items, caseInfo);
-    }
-};
-
-window.openDemoCase = async function() {
-    const cases = await getCases();
-    const randomCase = cases[Math.floor(Math.random() * cases.length)];
-    const items = await openCase(randomCase.id, 1, true);
-    if (items) {
-        showCaseOpeningModal(items, randomCase);
-    }
-};
 
 // ==================== Telegram Auth Helpers ====================
 function initTelegramAuth() {
