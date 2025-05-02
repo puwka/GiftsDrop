@@ -365,24 +365,20 @@ function showLoading(show) {
     if (loader) loader.style.display = show ? 'block' : 'none';
 }
 
+// Обновим функцию renderCasePage()
 function renderCasePage() {
     if (!currentCase) return;
     
-    console.log('Рендеринг кейса:', currentCase); // Логирование
-    
-    // Обновляем основную информацию о кейсе
     document.getElementById('caseName').textContent = currentCase.name;
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
-    // Рендерим предметы
-    const itemsContainer = document.getElementById('caseItemsTrack');
-    if (!itemsContainer) {
-        console.error('Контейнер для предметов не найден!');
-        return;
-    }
+    // Рендерим предметы для прокрутки
+    const scroller = document.getElementById('caseItemsScroller');
+    if (!scroller) return;
     
-    itemsContainer.innerHTML = caseItems.map(item => `
-        <div class="case-item" data-rarity="${item.rarity}">
+    // Создаем 3 копии предметов для бесшовной прокрутки
+    scroller.innerHTML = [...caseItems, ...caseItems, ...caseItems].map((item, index) => `
+        <div class="case-item-scroll" data-item-id="${item.id}" data-index="${index}">
             <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
                 ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
             </div>
@@ -391,14 +387,9 @@ function renderCasePage() {
                 <p class="item-rarity ${item.rarity || 'common'}">
                     ${getRarityName(item.rarity)}
                 </p>
-                <p class="item-chance">
-                    ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
-                </p>
             </div>
         </div>
     `).join('');
-    
-    console.log('Предметы отрендерены'); // Логирование
 }
 
 function getRarityName(rarity) {
@@ -443,14 +434,24 @@ async function openCase() {
         showLoading(true);
         
         // Запускаем анимацию прокрутки
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        if (itemsTrack) {
-            itemsTrack.classList.add('roulette-animation');
+        const scroller = document.getElementById('caseItemsScroller');
+        if (scroller) {
+            // Сброс предыдущей анимации
+            scroller.style.animation = 'none';
+            scroller.offsetHeight; // Trigger reflow
+            scroller.classList.add('scroll-fast');
+            
+            // Через 7 секунд переключаем на медленную анимацию
+            setTimeout(() => {
+                scroller.classList.remove('scroll-fast');
+                scroller.classList.add('scroll-slow');
+            }, 7000);
         }
 
-        // Ждем завершения анимации перед запросом к серверу
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Ждем завершения анимации (10 секунд)
+        await new Promise(resolve => setTimeout(resolve, 10000));
         
+        // Получаем результат от сервера
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -461,14 +462,11 @@ async function openCase() {
             throw new Error(response.error || 'Не удалось открыть кейс');
         }
         
-        // Сохраняем выигранный предмет
-        wonItem = response.item;
-        
-        // Показываем модальное окно с результатом
-        showWinModal(wonItem);
+        // Показываем выигранный предмет
+        showWinModal(response.item);
         
         if (!isDemoMode) {
-            balance -= response.price;
+            balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
         }
     } catch (error) {
@@ -480,9 +478,10 @@ async function openCase() {
         if (button) button.disabled = false;
         
         // Сбрасываем анимацию
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        if (itemsTrack) {
-            itemsTrack.classList.remove('roulette-animation');
+        const scroller = document.getElementById('caseItemsScroller');
+        if (scroller) {
+            scroller.classList.remove('scroll-fast', 'scroll-slow');
+            scroller.style.transform = 'translateY(0) rotateX(20deg)';
         }
     }
 }
@@ -494,6 +493,12 @@ function showWinModal(item) {
     const sellPriceElement = document.getElementById('sellPrice');
     
     if (!modal || !container || !sellPriceElement) return;
+    
+    // Сбрасываем анимацию прокрутки
+    const scroller = document.getElementById('caseItemsScroller');
+    if (scroller) {
+        scroller.classList.remove('scroll-fast', 'scroll-slow');
+    }
     
     const rarityClass = item.rarity || 'common';
     const rarityName = getRarityName(item.rarity);
@@ -531,7 +536,7 @@ async function sellItem() {
     const modal = document.getElementById('winModal');
     if (!modal || !wonItem) return;
     
-    const sellPrice = Math.floor((wonItem.price || 0) * 0.7); // 70% от цены
+    const sellPrice = Math.floor((wonItem.price || 0) * 1); // 70% от цены
     
     try {
         const success = await updateBalance(
@@ -729,11 +734,13 @@ function initEventListeners() {
     document.getElementById('sellItemBtn')?.addEventListener('click', sellItem);
     
     // Сброс анимации при закрытии модального окна
+    // В initEventListeners() добавить:
     document.getElementById('winModal')?.addEventListener('click', function(e) {
         if (e.target === this) {
-            const itemsTrack = document.getElementById('caseItemsTrack');
-            if (itemsTrack) {
-                itemsTrack.classList.remove('roulette-animation');
+            const scroller = document.getElementById('caseItemsScroller');
+            if (scroller) {
+                scroller.classList.remove('scroll-fast', 'scroll-slow');
+                scroller.style.transform = 'translateY(0) rotateX(20deg)';
             }
         }
     });
