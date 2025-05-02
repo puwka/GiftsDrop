@@ -1161,3 +1161,302 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 16px;
 }
 
+/* Стили для страницы кейса */
+.case-page {
+    padding-bottom: 20px;
+}
+
+.back-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.case-preview {
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.case-preview .case-image {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    box-shadow: 0 5px 15px var(--shadow-color);
+}
+
+.case-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 0.5rem;
+}
+
+.case-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.count-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.count-control button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.count-control span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+.mode-toggle .toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.mode-toggle .toggle-switch {
+    width: 40px;
+    height: 20px;
+    background: var(--border-color);
+    border-radius: 10px;
+    position: relative;
+}
+
+.mode-toggle .toggle-btn.active .toggle-switch {
+    background: var(--primary);
+}
+
+.mode-toggle .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.mode-toggle .toggle-btn.active .toggle-switch::after {
+    transform: translateX(20px);
+}
+
+.open-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.open-btn {
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.open-btn i {
+    font-size: 1.2rem;
+}
+
+.open-btn.primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    box-shadow: 0 5px 15px rgba(138,43,226,0.3);
+}
+
+.open-btn.secondary {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.open-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.section-subtitle {
+    color: var(--text-color);
+    margin: 1.5rem 0 1rem;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.case-items-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    scrollbar-width: none; /* Firefox */
+}
+
+.case-items-container::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.case-item {
+    width: 140px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-right: 1rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    display: inline-block;
+    vertical-align: top;
+}
+
+.case-item .item-image {
+    width: 100%;
+    height: 80px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+}
+
+.case-item .item-info {
+    text-align: center;
+}
+
+.case-item h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    color: var(--text-color);
+}
+
+.item-rarity {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.item-rarity.common {
+    color: #95a5a6;
+}
+
+.item-rarity.rare {
+    color: #3498db;
+}
+
+.item-rarity.epic {
+    color: #9b59b6;
+}
+
+.item-rarity.legendary {
+    color: #f1c40f;
+}
+
+.item-chance {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+/* Стили для результатов */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.won-item {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid;
+    text-align: center;
+}
+
+.won-item[data-rarity="common"] {
+    border-color: #95a5a6;
+}
+
+.won-item[data-rarity="rare"] {
+    border-color: #3498db;
+}
+
+.won-item[data-rarity="epic"] {
+    border-color: #9b59b6;
+}
+
+.won-item[data-rarity="legendary"] {
+    border-color: #f1c40f;
+    animation: pulse 2s infinite;
+}
+
+.won-item .item-image {
+    width: 100%;
+    height: 80px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+}
+
+.won-item h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    color: var(--text-color);
+}
+
+.won-item .item-price {
+    font-size: 0.9rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
+}

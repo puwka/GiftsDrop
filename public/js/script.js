@@ -330,6 +330,138 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Добавляем в script.js
+let currentCase = null;
+let caseItems = [];
+let selectedCount = 1;
+let isDemoMode = false;
+
+async function loadCasePage(caseId) {
+    try {
+        const response = await apiRequest(`/case/${caseId}`);
+        if (response.success) {
+            currentCase = response.case;
+            caseItems = response.items;
+            renderCasePage();
+        } else {
+            showToast("Ошибка загрузки кейса", "error");
+            window.location.href = 'index.html';
+        }
+    } catch (error) {
+        console.error('Failed to load case:', error);
+        showToast("Ошибка загрузки кейса", "error");
+        window.location.href = 'index.html';
+    }
+}
+
+function renderCasePage() {
+    if (!currentCase) return;
+    
+    document.getElementById('caseName').textContent = currentCase.name;
+    document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
+    
+    const itemsContainer = document.getElementById('caseItemsTrack');
+    itemsContainer.innerHTML = caseItems.map(item => `
+        <div class="case-item" data-rarity="${item.rarity}">
+            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')"></div>
+            <div class="item-info">
+                <h4>${item.name}</h4>
+                <p class="item-rarity ${item.rarity}">${getRarityName(item.rarity)}</p>
+                <p class="item-chance">Шанс: ${(item.adjusted_chance || item.drop_chance)}%</p>
+            </div>
+        </div>
+    `).join('');
+    
+    updateOpenButtons();
+}
+
+function getRarityName(rarity) {
+    const names = {
+        'common': 'Обычный',
+        'rare': 'Редкий',
+        'epic': 'Эпический',
+        'legendary': 'Легендарный'
+    };
+    return names[rarity] || rarity;
+}
+
+function updateOpenButtons() {
+    const demoBtn = document.getElementById('demoOpenBtn');
+    const openBtn = document.getElementById('openCaseBtn');
+    const quickOpenBtn = document.getElementById('quickOpenBtn');
+    
+    if (isDemoMode) {
+        demoBtn.classList.add('active');
+        openBtn.classList.remove('active');
+        quickOpenBtn.classList.remove('active');
+    } else {
+        demoBtn.classList.remove('active');
+        openBtn.classList.add('active');
+        quickOpenBtn.classList.add('active');
+    }
+    
+    document.getElementById('openCount').textContent = selectedCount;
+    document.getElementById('totalCost').textContent = isDemoMode ? 0 : currentCase.price * selectedCount;
+}
+
+async function openCase() {
+    if (!currentUser || !currentCase) return;
+    
+    try {
+        const response = await apiRequest('/open-case', 'POST', {
+            user_id: currentUser.id,
+            case_id: currentCase.id,
+            count: selectedCount,
+            is_demo: isDemoMode
+        });
+        
+        if (response.success) {
+            showCaseResults(response.items);
+            
+            if (!isDemoMode) {
+                balance -= response.totalCost;
+                updateBalanceDisplay();
+                showToast(`Открыто ${selectedCount} кейсов`, "success");
+            }
+        }
+    } catch (error) {
+        console.error('Failed to open case:', error);
+        showToast(error.message || "Ошибка открытия кейса", "error");
+    }
+}
+
+function showCaseResults(items) {
+    const resultsContainer = document.getElementById('caseResults');
+    resultsContainer.innerHTML = items.map(item => `
+        <div class="won-item" data-rarity="${item.rarity}">
+            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')"></div>
+            <div class="item-info">
+                <h4>${item.name}</h4>
+                <p class="item-rarity ${item.rarity}">${getRarityName(item.rarity)}</p>
+                <p class="item-price">Цена: ${item.price} 🪙</p>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('caseOpenSection').classList.add('hidden');
+    document.getElementById('caseResultsSection').classList.remove('hidden');
+}
+
+function toggleDemoMode() {
+    isDemoMode = !isDemoMode;
+    updateOpenButtons();
+}
+
+function changeCount(change) {
+    selectedCount = Math.max(1, Math.min(3, selectedCount + change));
+    updateOpenButtons();
+}
+
+function backToCase() {
+    document.getElementById('caseOpenSection').classList.remove('hidden');
+    document.getElementById('caseResultsSection').classList.add('hidden');
+}
+
 // ==================== Initialization ====================
 async function initApp() {
     try {
@@ -435,6 +567,17 @@ function initEventListeners() {
         const amount = parseFloat(this.value) || 0;
         document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
     });
+
+    // Добавляем в initEventListeners()
+    document.getElementById('demoOpenBtn')?.addEventListener('click', toggleDemoMode);
+    document.getElementById('openCaseBtn')?.addEventListener('click', openCase);
+    document.getElementById('quickOpenBtn')?.addEventListener('click', () => {
+        selectedCount = 3;
+        openCase();
+    });
+    document.getElementById('increaseCount')?.addEventListener('click', () => changeCount(1));
+    document.getElementById('decreaseCount')?.addEventListener('click', () => changeCount(-1));
+    document.getElementById('backToCaseBtn')?.addEventListener('click', backToCase);
 }
 
 // ==================== Global Functions ====================

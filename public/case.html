@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Drop | Открытие кейса</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Шапка -->
+        <header class="app-header">
+            <div class="header-content">
+                <button class="back-button" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 id="caseName">Загрузка...</h1>
+                <div class="user-balance">
+                    <span class="balance-amount">0</span>
+                    <span class="balance-icon">🪙</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="app-main case-page">
+            <div id="caseOpenSection">
+                <div class="case-preview">
+                    <div class="case-image" id="currentCaseImage" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="case-price" id="casePrice">0 🪙</div>
+                </div>
+                
+                <div class="case-controls">
+                    <div class="count-control">
+                        <button id="decreaseCount"><i class="fas fa-minus"></i></button>
+                        <span id="openCount">1</span>
+                        <button id="increaseCount"><i class="fas fa-plus"></i></button>
+                    </div>
+                    
+                    <div class="mode-toggle">
+                        <button id="demoOpenBtn" class="toggle-btn">
+                            <span>Демо-режим</span>
+                            <div class="toggle-switch"></div>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="open-buttons">
+                    <button id="openCaseBtn" class="open-btn primary">
+                        <i class="fas fa-gift"></i>
+                        ОТКРЫТЬ (<span id="totalCost">0</span> 🪙)
+                    </button>
+                    <button id="quickOpenBtn" class="open-btn secondary">
+                        <i class="fas fa-bolt"></i>
+                        БЫСТРОЕ ОТКРЫТИЕ (3 КЕЙСА)
+                    </button>
+                </div>
+                
+                <h3 class="section-subtitle">Предметы в кейсе:</h3>
+                
+                <div class="case-items-container">
+                    <div class="roulette-track" id="caseItemsTrack"></div>
+                </div>
+            </div>
+            
+            <div id="caseResultsSection" class="hidden">
+                <h2 class="section-title">ВАШИ ВЫИГРЫШИ</h2>
+                
+                <div class="results-grid" id="caseResults"></div>
+                
+                <button id="backToCaseBtn" class="open-btn primary">
+                    <i class="fas fa-arrow-left"></i>
+                    НАЗАД К КЕЙСУ
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        // Получаем ID кейса из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const caseId = urlParams.get('id');
+        
+        // Инициализируем приложение
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+            initApp().then(() => {
+                if (caseId) {
+                    loadCasePage(caseId);
+                } else {
+                    showToast("Кейс не найден", "error");
+                    window.location.href = 'index.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
