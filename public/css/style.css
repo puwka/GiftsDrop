@@ -1505,6 +1505,11 @@ input[type="number"]::-webkit-inner-spin-button {
     text-overflow: ellipsis;
 }
 
+/* Стили для результатов */
+#caseResultSection {
+    padding: 1.5rem;
+}
+
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }

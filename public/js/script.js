@@ -470,25 +470,40 @@ async function openCase() {
 }
 
 function showCaseResult(item) {
-    const resultHtml = `
-        <div class="won-item" data-rarity="${item.rarity || 'common'}">
+    // 1. Находим контейнер
+    const container = document.getElementById('caseResultContainer');
+    if (!container) {
+        console.error('Result container not found');
+        return;
+    }
+    
+    // 2. Создаем HTML для предмета
+    const rarityClass = item.rarity || 'common';
+    const rarityName = getRarityName(item.rarity);
+    
+    container.innerHTML = `
+        <div class="won-item ${rarityClass}">
             <div class="item-image">
                 ${item.image_url ? 
-                    `<img src="${item.image_url}" alt="${item.name}">` : 
+                    `<img src="${item.image_url}" alt="${item.name}" loading="lazy">` : 
                     `<i class="fas fa-gift"></i>`}
             </div>
             <div class="item-details">
                 <h3>${item.name || 'Неизвестный предмет'}</h3>
-                <p class="rarity ${item.rarity || 'common'}">
-                    ${getRarityName(item.rarity)}
-                </p>
+                <p class="rarity-badge ${rarityClass}">${rarityName}</p>
+                ${item.price ? `<p class="item-price">Цена: ${item.price} 🪙</p>` : ''}
             </div>
         </div>
     `;
     
-    document.getElementById('caseResultContainer').innerHTML = resultHtml;
+    // 3. Показываем секцию с результатами
     document.getElementById('caseOpenSection').classList.add('hidden');
     document.getElementById('caseResultSection').classList.remove('hidden');
+    
+    // 4. Добавляем анимацию для редких предметов
+    if (rarityClass === 'legendary') {
+        container.querySelector('.won-item').classList.add('animate-pulse');
+    }
 }
 
 function toggleDemoMode() {
@@ -622,6 +637,12 @@ function initEventListeners() {
     document.getElementById('increaseCount')?.addEventListener('click', () => changeCount(1));
     document.getElementById('decreaseCount')?.addEventListener('click', () => changeCount(-1));
     document.getElementById('backToCaseBtn')?.addEventListener('click', backToCase);
+
+    // В initEventListeners() добавьте:
+    document.getElementById('backToCaseBtn')?.addEventListener('click', () => {
+        document.getElementById('caseOpenSection').classList.remove('hidden');
+        document.getElementById('caseResultSection').classList.add('hidden');
+    });
 }
 
 // ==================== Global Functions ====================
