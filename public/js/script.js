@@ -431,64 +431,64 @@ function updateOpenButtons() {
 
 async function openCase() {
     if (!currentUser || !currentCase) {
-        showToast("Ошибка авторизации или кейса", "error");
+        showToast("Ошибка: данные не загружены", "error");
         return;
     }
 
+    const button = document.getElementById('openCaseBtn');
+    if (button) button.disabled = true;
+
     try {
-        const openBtn = document.getElementById('openCaseBtn');
-        const quickBtn = document.getElementById('quickOpenBtn');
-        
-        // Блокируем кнопки на время запроса
-        openBtn.disabled = true;
-        quickBtn.disabled = true;
-        
         showLoading(true);
         
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
-            count: selectedCount,
             is_demo: isDemoMode
         });
-
-        if (response.success) {
-            console.log('Case opened:', response.items);
-            showCaseResults(response.items);
-            
-            if (!isDemoMode) {
-                balance -= response.totalCost;
-                updateBalanceDisplay();
-                showToast(`Успешно открыто ${selectedCount} кейсов`, "success");
-            }
+        
+        if (!response.success) {
+            throw new Error(response.error || 'Не удалось открыть кейс');
+        }
+        
+        // Показываем выигранный предмет
+        showCaseResult(response.item);
+        
+        if (!isDemoMode) {
+            balance -= response.price;
+            updateBalanceDisplay();
+            showToast("Кейс успешно открыт!", "success");
         }
     } catch (error) {
-        console.error('Failed to open case:', error);
-        showToast(error.message || "Ошибка открытия кейса", "error");
+        console.error('Open case error:', error);
+        showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        const openBtn = document.getElementById('openCaseBtn');
-        const quickBtn = document.getElementById('quickOpenBtn');
-        openBtn.disabled = false;
-        quickBtn.disabled = false;
         showLoading(false);
+        const button = document.getElementById('openCaseBtn');
+        if (button) button.disabled = false;
     }
 }
 
-function showCaseResults(items) {
-    const resultsContainer = document.getElementById('caseResults');
-    resultsContainer.innerHTML = items.map(item => `
-        <div class="won-item" data-rarity="${item.rarity}">
-            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')"></div>
-            <div class="item-info">
-                <h4>${item.name}</h4>
-                <p class="item-rarity ${item.rarity}">${getRarityName(item.rarity)}</p>
-                <p class="item-price">Цена: ${item.price} 🪙</p>
+function showCaseResult(item) {
+    const resultHtml = `
+        <div class="won-item" data-rarity="${item.rarity || 'common'}">
+            <div class="item-image">
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}">` : 
+                    `<i class="fas fa-gift"></i>`}
+            </div>
+            <div class="item-details">
+                <h3>${item.name || 'Неизвестный предмет'}</h3>
+                <p class="rarity ${item.rarity || 'common'}">
+                    ${getRarityName(item.rarity)}
+                </p>
             </div>
         </div>
-    `).join('');
+    `;
     
+    document.getElementById('caseResultContainer').innerHTML = resultHtml;
     document.getElementById('caseOpenSection').classList.add('hidden');
-    document.getElementById('caseResultsSection').classList.remove('hidden');
+    document.getElementById('caseResultSection').classList.remove('hidden');
 }
 
 function toggleDemoMode() {
