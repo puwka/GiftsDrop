@@ -367,73 +367,48 @@ function showToast(message, type = 'info') {
 // case.js (измененные функции)
 
 // Инициализация пользователя
-// ==================== Initialization ====================
-async function initApp() {
+async function initUser() {
     try {
-        // Инициализация Telegram WebApp
-        const authResult = initTelegramAuth();
-        
-        if (authResult?.data) {
-            const authSuccess = await authenticateUser(authResult.data);
-            if (!authSuccess) {
-                showToast("Ошибка авторизации", "error");
-                return;
+        // Проверяем, авторизован ли пользователь через Telegram
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp.initDataUnsafe?.user) {
+            const userData = Telegram.WebApp.initDataUnsafe.user;
+            
+            // Сначала аутентифицируем пользователя
+            const authResponse = await apiRequest('/users/auth', 'POST', {
+                telegram_id: userData.id,
+                username: userData.username,
+                first_name: userData.first_name,
+                last_name: userData.last_name,
+                photo_url: userData.photo_url,
+                language_code: userData.language_code
+            });
+            
+            if (authResponse.success) {
+                currentUser = authResponse.user;
+                balance = authResponse.balance || 0;
+                updateBalanceDisplay();
             }
         } else {
-            // Режим тестирования
-            currentUser = getTestUserData();
-            balance = 1000;
-            showToast("Режим тестирования", "warning");
-        }
-
-        // Инициализация интерфейса
-        updateProfile();
-        updateBalanceDisplay();
-        updateLevelDisplay();
-        initTheme();
-        
-        // Открываем вкладку по умолчанию
-        setTimeout(() => {
-            openTab('cases');
-        }, 0);
-        
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showToast("Ошибка инициализации", "error");
-    }
-}
-
-// ==================== Telegram Auth Helpers ====================
-function initTelegramAuth() {
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        try {
-            const webApp = Telegram.WebApp;
-            webApp.expand();
-            webApp.ready();
+            // Режим тестирования - создаем тестового пользователя через API
+            const testUser = getTestUserData();
+            const authResponse = await apiRequest('/users/auth', 'POST', {
+                telegram_id: testUser.id,
+                username: testUser.username,
+                first_name: testUser.first_name,
+                last_name: testUser.last_name
+            });
             
-            if (webApp.initDataUnsafe?.user) {
-                return {
-                    data: webApp.initDataUnsafe.user,
-                    webAppInstance: webApp
-                };
+            if (authResponse.success) {
+                currentUser = authResponse.user;
+                balance = authResponse.balance || 1000;
+                updateBalanceDisplay();
+                showToast("Режим тестирования", "warning");
             }
-        } catch (e) {
-            console.error('Telegram auth error:', e);
         }
+    } catch (error) {
+        console.error('Error initializing user:', error);
+        showToast("Ошибка загрузки данных пользователя", "error");
     }
-    return null;
-}
-
-function getTestUserData() {
-    return {
-        id: 999999,
-        first_name: "Тестовый",
-        last_name: "Пользователь",
-        username: "test_user",
-        photo_url: "",
-        language_code: "ru",
-        name: "Тестовый Пользователь"
-    };
 }
 
 // Функция API запроса с улучшенной обработкой ошибок
