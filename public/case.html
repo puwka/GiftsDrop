@@ -13,22 +13,18 @@
         <!-- Шапка -->
         <header class="app-header">
             <div class="header-content">
-                <div class="header-left">
-                    <button class="back-button" onclick="goBack()">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                </div>
-                <div class="header-center">
-                    <h1>Gift Rush</h1>
-                </div>
-                <div class="header-right">
+                <button class="back-button" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1>Открытие кейса</h1>
+                <div class="header-actions">
                     <div class="user-balance">
-                        <span class="balance-amount">4500</span>
+                        <span class="balance-amount">0</span>
                         <span class="balance-icon">🪙</span>
-                        <button class="deposit-btn" onclick="openDepositModal()">
-                            <i class="fas fa-plus"></i>
-                        </button>
                     </div>
+                    <button class="deposit-btn" onclick="openDepositModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
             </div>
         </header>
