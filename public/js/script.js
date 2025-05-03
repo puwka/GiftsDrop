@@ -468,84 +468,78 @@ async function openCase() {
         return;
     }
 
-    const button = document.getElementById('openCaseBtn');
-    if (button) button.disabled = true;
+    const openBtn = document.getElementById('openCaseBtn');
+    if (openBtn) openBtn.disabled = true;
 
     try {
         showLoading(true);
         
-        // Сбрасываем предыдущую анимацию
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        itemsTrack.style.transition = 'none';
-        itemsTrack.style.transform = 'translateX(0)';
-        
-        // Принудительное обновление DOM
-        void itemsTrack.offsetWidth;
-        
-        // Показываем рулетку и скрываем статичное изображение
-        document.getElementById('caseStaticView').classList.add('hidden');
-        document.getElementById('caseRouletteView').classList.remove('hidden');
-        
-        // Создаем много копий предметов в случайном порядке
-        const repeatedItems = [];
-        for (let i = 0; i < 10; i++) {
-            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-        }
-        
-        // Очищаем и заполняем трек
-        itemsTrack.innerHTML = repeatedItems.map(item => `
-            <div class="roulette-item ${item.rarity || 'common'}" 
-                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-            </div>
-        `).join('');
-
-        // Ждем следующего кадра анимации
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        
-        // Запускаем анимацию прокрутки
-        const itemWidth = 116;
-        const totalWidth = repeatedItems.length * itemWidth;
-        const stopPosition = totalWidth - window.innerWidth - 200;
-        
-        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
-
-        // Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
+        // 1. Получаем случайный предмет ДО анимации
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
             is_demo: isDemoMode
         });
         
-        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
+        if (!response.success) {
+            throw new Error(response.error || 'Не удалось открыть кейс');
+        }
         
-        showWinModal(response.item);
+        const wonItem = response.item;
         
+        // 2. Подготовка рулетки
+        const itemsTrack = document.getElementById('caseItemsTrack');
+        itemsTrack.style.transition = 'none';
+        itemsTrack.style.transform = 'translateX(0)';
+        
+        // 3. Создаем 10 циклов перемешанных предметов
+        const repeatedItems = [];
+        for (let i = 0; i < 10; i++) {
+            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+        }
+        
+        // 4. Вставляем выигрышный предмет в конец
+        repeatedItems.push(wonItem);
+        
+        // 5. Заполняем рулетку
+        itemsTrack.innerHTML = repeatedItems.map(item => `
+            <div class="roulette-item ${item.rarity || 'common'}" 
+                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+            </div>
+        `).join('');
+        
+        // 6. Ждем обновления DOM
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        
+        // 7. Рассчитываем позицию для остановки на выигрышном предмете
+        const itemWidth = 100; // Ширина предмета с отступами
+        const targetPosition = (repeatedItems.length - 1) * itemWidth - window.innerWidth / 2 + itemWidth / 2;
+        
+        // 8. Запускаем анимацию
+        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        itemsTrack.style.transform = `translateX(-${targetPosition}px)`;
+        
+        // 9. Ждем завершения анимации
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // 10. Показываем выигрыш
+        showWinModal(wonItem);
+        
+        // 11. Обновляем баланс (если не демо-режим)
         if (!isDemoMode) {
-            balance -= response.price;
+            balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
         }
+        
     } catch (error) {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        showLoading(false);
-        const button = document.getElementById('openCaseBtn');
-        if (button) button.disabled = false;
+        // 12. Разблокируем кнопку
+        const openBtn = document.getElementById('openCaseBtn');
+        if (openBtn) openBtn.disabled = false;
         
-        // Возвращаем статичное изображение
-        setTimeout(() => {
-            document.getElementById('caseStaticView').classList.remove('hidden');
-            document.getElementById('caseRouletteView').classList.add('hidden');
-            
-            // Полный сброс анимации
-            const itemsTrack = document.getElementById('caseItemsTrack');
-            itemsTrack.style.transition = 'none';
-            itemsTrack.style.transform = 'translateX(0)';
-            void itemsTrack.offsetWidth;
-        }, 1000);
+        showLoading(false);
     }
 }
 
