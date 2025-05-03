@@ -415,7 +415,7 @@ body {
 /* Специфичные стили для категории "Все" */
 .case-category.all .case-card {
     position: relative;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .category-count {
@@ -1750,4 +1750,16 @@ body {
 }
 .case-categories::-webkit-scrollbar {
     display: none;
+}
+
+.category-count {
+    background: rgba(255,255,255,0.2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-left: 0.3rem;
+}
+
+.category-btn.active .category-count {
+    background: rgba(255,255,255,0.3);
 }

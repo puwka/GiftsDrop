@@ -664,9 +664,15 @@ function initCaseCategories() {
     if (allCasesContainer) {
         allCasesContainer.innerHTML = '';
         
+        // Собираем все уникальные кейсы (чтобы избежать дублирования)
+        const allCases = new Set();
         document.querySelectorAll('.case-category:not(.all) .case-card').forEach(card => {
-            const clone = card.cloneNode(true);
-            allCasesContainer.appendChild(clone);
+            allCases.add(card.outerHTML);
+        });
+        
+        // Добавляем все уникальные кейсы в контейнер "Все"
+        allCases.forEach(html => {
+            allCasesContainer.insertAdjacentHTML('beforeend', html);
         });
     }
     
@@ -682,16 +688,24 @@ function initCaseCategories() {
         });
     });
 
-    // В initCaseCategories()
+    // Обновляем счетчики для категорий
     const categoryCounts = {
-        all: document.querySelectorAll('.case-card').length,
-        free: document.querySelectorAll('.case-card.free').length,
-        // ... для других категорий
+        all: document.querySelectorAll('.case-category.all .case-card').length,
+        free: document.querySelectorAll('.case-category.free .case-card').length,
+        branded: document.querySelectorAll('.case-category.branded .case-card').length,
+        exclusive: document.querySelectorAll('.case-category.exclusive .case-card').length,
+        farm: document.querySelectorAll('.case-category.farm .case-card').length
     };
 
     categoryBtns.forEach(btn => {
         const count = categoryCounts[btn.dataset.category] || 0;
-        btn.innerHTML += ` <span class="category-count">${count}</span>`;
+        const countSpan = btn.querySelector('.category-count') || document.createElement('span');
+        countSpan.className = 'category-count';
+        countSpan.textContent = count;
+        
+        if (!btn.querySelector('.category-count')) {
+            btn.appendChild(countSpan);
+        }
     });
 }
 
