@@ -660,6 +660,16 @@ async function initApp() {
     }
 }
 
+// Добавьте функцию для закрытия приложения через Telegram
+function closeApp() {
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        Telegram.WebApp.close();
+    } else {
+        // Альтернативное действие, если не в Telegram
+        window.location.href = 'index.html';
+    }
+}
+
 // ==================== Telegram Auth Helpers ====================
 function initTelegramAuth() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {

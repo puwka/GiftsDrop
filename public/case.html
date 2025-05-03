@@ -13,15 +13,19 @@
         <!-- Шапка -->
         <header class="app-header">
             <div class="header-content">
-                <button class="back-button" onclick="window.history.back()">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <h1 id="caseName">Загрузка...</h1>
+                <h1>GiftRush</h1>
                 <div class="user-balance">
-                    <span class="balance-amount">0</span>
+                    <span class="balance-amount">1000</span>
                     <span class="balance-icon">🪙</span>
+                    <button class="deposit-btn" onclick="openDepositModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
             </div>
+            <!-- Кнопка выхода через Telegram -->
+            <button class="back-button tg-back-btn" onclick="closeApp()">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
         </header>
 
         <!-- Основной контент -->
