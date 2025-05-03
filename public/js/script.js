@@ -584,9 +584,6 @@ function showWinModal(item) {
 async function keepItem() {
     const modal = document.getElementById('winModal');
     if (modal) modal.classList.add('hidden');
-    
-    showToast("Предмет добавлен в вашу коллекцию", "success");
-    // Здесь можно добавить логику сохранения предмета у пользователя
 }
 
 async function sellItem() {
