@@ -134,37 +134,6 @@ function updateLevelDisplay() {
     if (xpElement) xpElement.textContent = `${userXP}/100 XP`;
 }
 
-// ==================== Theme Management ====================
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeSwitch(savedTheme);
-}
-
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeSwitch(newTheme);
-}
-
-function updateThemeSwitch(theme) {
-    const icon = document.querySelector('.theme-switch-btn i');
-    const text = document.querySelector('.theme-switch-btn span');
-    
-    if (icon && text) {
-        if (theme === 'dark') {
-            icon.className = 'fas fa-sun';
-            text.textContent = 'Светлая тема';
-        } else {
-            icon.className = 'fas fa-moon';
-            text.textContent = 'Темная тема';
-        }
-    }
-}
-
 // ==================== Tab Navigation ====================
 function openTab(tabName, clickedElement) {
     // Проверяем, что tabName существует
@@ -767,9 +736,6 @@ function initEventListeners() {
     // Обработчики пополнения
     document.getElementById('depositTonBtn')?.addEventListener('click', processTonDeposit);
     document.getElementById('depositStarsBtn')?.addEventListener('click', processStarsDeposit);
-    
-    // Переключатель темы
-    document.querySelector('.theme-switch-btn')?.addEventListener('click', toggleTheme);
     
     // Автоматический расчет суммы при вводе
     document.getElementById('tonAmount')?.addEventListener('input', function() {
