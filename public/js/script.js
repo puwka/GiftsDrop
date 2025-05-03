@@ -660,72 +660,38 @@ function initCaseCategories() {
     const caseCategories = document.querySelectorAll('.case-category');
     const allCasesContainer = document.querySelector('.case-category.all .cases-grid');
     
-    // Создаем объект для хранения счетчиков
-    const categoryCounts = {
-        all: 0,
-        free: 0,
-        branded: 0,
-        exclusive: 0,
-        farm: 0
-    };
-    
-    // Собираем все кейсы из других категорий
-    const allCases = [];
-    document.querySelectorAll('.case-category:not(.all) .case-card').forEach(card => {
-        // Определяем категорию кейса (первый класс после case-card)
-        const cardCategory = card.classList[1] || 'other';
-        allCases.push({element: card, category: cardCategory});
-        categoryCounts.all++;
-        categoryCounts[cardCategory]++;
-    });
-    
-    // Заполняем категорию "Все"
+    // Собираем все кейсы из других категорий для "Все"
     if (allCasesContainer) {
         allCasesContainer.innerHTML = '';
-        allCases.forEach(({element}) => {
-            const clone = element.cloneNode(true);
+        
+        document.querySelectorAll('.case-category:not(.all) .case-card').forEach(card => {
+            const clone = card.cloneNode(true);
             allCasesContainer.appendChild(clone);
         });
     }
     
-    // Обновляем счетчики в кнопках
     categoryBtns.forEach(btn => {
-        const category = btn.dataset.category;
-        const countSpan = btn.querySelector('.category-count');
-        if (countSpan) {
-            countSpan.textContent = categoryCounts[category] || 0;
-        }
-    });
-    
-    // Обработчики кликов
-    categoryBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Убираем активное состояние у всех кнопок
+        btn.addEventListener('click', () => {
             categoryBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            // Добавляем активное состояние текущей кнопке
-            this.classList.add('active');
-            
-            // Скрываем все категории
             caseCategories.forEach(cat => cat.classList.remove('show'));
             
-            // Показываем выбранную категорию
-            const category = this.dataset.category;
+            const category = btn.dataset.category;
             document.querySelector(`.case-category.${category}`).classList.add('show');
         });
     });
-}
 
-function initTouchHandlers() {
-    // Улучшенная обработка кликов для мобильных
-    document.querySelectorAll('.case-card, .category-btn').forEach(element => {
-        element.addEventListener('touchstart', function() {
-            this.classList.add('touch-active');
-        }, {passive: true});
-        
-        element.addEventListener('touchend', function() {
-            this.classList.remove('touch-active');
-        }, {passive: true});
+    // В initCaseCategories()
+    const categoryCounts = {
+        all: document.querySelectorAll('.case-card').length,
+        free: document.querySelectorAll('.case-card.free').length,
+        // ... для других категорий
+    };
+
+    categoryBtns.forEach(btn => {
+        const count = categoryCounts[btn.dataset.category] || 0;
+        btn.innerHTML += ` <span class="category-count">${count}</span>`;
     });
 }
 
@@ -765,7 +731,6 @@ async function initApp() {
         updateBalanceDisplay();
         updateLevelDisplay();
         initCaseCategories();
-        initTouchHandlers();
         
         setTimeout(() => openTab('cases'), 0);
         
