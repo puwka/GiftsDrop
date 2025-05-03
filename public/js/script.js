@@ -386,15 +386,6 @@ function renderCasePage() {
             <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
                 ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
             </div>
-            <div class="item-info">
-                <h4>${item.name || 'Неизвестный предмет'}</h4>
-                <p class="item-rarity ${item.rarity || 'common'}">
-                    ${getRarityName(item.rarity)}
-                </p>
-                <p class="item-chance">
-                    ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
-                </p>
-            </div>
         </div>
     `).join('');
     
