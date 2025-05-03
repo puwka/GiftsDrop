@@ -389,12 +389,13 @@ function renderCasePage() {
         `).join('');
     }
     
-    // Рендерим предметы для сетки внизу (полная информация)
+    // Рендерим предметы для сетки внизу
     const itemsGrid = document.getElementById('caseItemsGrid');
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
             <div class="case-item" data-rarity="${item.rarity}">
-                <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+                <div class="item-image ${item.rarity || 'common'}" 
+                     style="background-image: url('${item.image_url || 'img/default-item.png'}')">
                     ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
                 </div>
                 <div class="item-info">
