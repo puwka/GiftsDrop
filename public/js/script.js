@@ -219,6 +219,29 @@ function updateTransactionsList(transactions) {
     `).join('');
 }
 
+function navigateTo(url) {
+    // Сохраняем баланс перед переходом
+    if (currentUser) {
+        localStorage.setItem('userBalance', balance);
+    }
+    
+    // Если URL содержит хэш (например, #bonuses), делаем плавный скролл
+    if (url.includes('#')) {
+        const [base, hash] = url.split('#');
+        window.location.href = base;
+        
+        // После загрузки страницы скроллим к нужному разделу
+        window.addEventListener('load', () => {
+            const section = document.getElementById(hash);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    } else {
+        window.location.href = url;
+    }
+}
+
 // ==================== Deposit Functions ====================
 function openDepositModal() {
     const modal = document.getElementById('depositModal');
@@ -677,11 +700,18 @@ async function initApp() {
 }
 
 function highlightCurrentTab() {
-    const currentPage = window.location.pathname.includes('case.html') ? 'cases' : 
-                      window.location.hash.replace('#', '') || 'cases';
+    // Для case.html всегда активен таб "Кейсы"
+    if (window.location.pathname.includes('case.html')) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === 'cases');
+        });
+        return;
+    }
     
+    // Для index.html определяем по хэшу
+    const currentTab = window.location.hash.replace('#', '') || 'cases';
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-tab') === currentPage);
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === currentTab);
     });
 }
 
