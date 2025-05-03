@@ -1326,73 +1326,19 @@ input[type="number"]::-webkit-inner-spin-button {
     box-shadow: 0 6px 15px rgba(138, 43, 226, 0.4); /* Увеличил тень при наведении */
 }
 
-/* Обновленные стили для мобильных устройств */
-@media (max-width: 768px) {
-    .case-items-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-    }
-
-    .case-item {
-        padding: 0.5rem;
-        height: auto;
-        min-height: 120px;
-    }
-
-    .case-item .item-image {
-        height: 60px;
-        font-size: 1.5rem;
-    }
-
-    .case-item h4 {
-        font-size: 0.8rem;
-        margin: 3px 0;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-    }
-
-    .item-rarity {
-        font-size: 0.7rem;
-    }
-
-    .item-chance {
-        font-size: 0.65rem;
-    }
-
-    /* Горизонтальная прокрутка */
-    .case-items-horizontal-container {
-        height: 120px;
-    }
-
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 400px) {
     .roulette-item {
         min-width: 80px;
         height: 100px;
-        margin: 0 5px;
     }
-}
-
-/* Дополнительные исправления для очень маленьких экранов */
-@media (max-width: 400px) {
+    
     .case-items-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
-
-    .case-item {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-    }
-
-    .case-item .item-image {
-        width: 50px;
-        height: 50px;
-        flex-shrink: 0;
-    }
-
-    .case-item .item-info {
-        text-align: left;
-        flex-grow: 1;
+    
+    .case-items-grid .item-image {
+        height: 60px;
     }
 }
 
