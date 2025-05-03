@@ -371,7 +371,6 @@ function renderCasePage() {
     console.log('Рендеринг кейса:', currentCase);
     
     // Обновляем основную информацию о кейсе
-    document.getElementById('caseName').textContent = currentCase.name;
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
     // Создаем перемешанный массив предметов для прокрутки
