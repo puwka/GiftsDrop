@@ -73,8 +73,7 @@ async function updateBalance(amount, type = 'deposit', description = '') {
         
         if (response.success) {
             balance = response.new_balance;
-            // Сохраняем баланс в localStorage
-            localStorage.setItem('userBalance', balance);
+            localStorage.setItem('userBalance', balance); // Сохраняем
             updateBalanceDisplay();
             return true;
         }
@@ -392,15 +391,15 @@ function renderCasePage() {
 }
 
 function goBack() {
+    // Сохраняем баланс в URL перед переходом
+    const balanceParam = `balance=${balance}`;
+    const url = `index.html?${balanceParam}`;
+    
     // Если в Telegram WebApp - используем его API
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         window.history.back();
     } else {
-        // В браузере - сохраняем баланс в localStorage перед переходом
-        if (currentUser) {
-            localStorage.setItem('userBalance', balance);
-        }
-        window.location.href = 'index.html';
+        window.location.href = url;
     }
 }
 
@@ -636,13 +635,20 @@ function backToCase() {
 // ==================== Initialization ====================
 async function initApp() {
     try {
-         // Проверяем сохраненный баланс
-         const savedBalance = localStorage.getItem('userBalance');
-         if (savedBalance) {
-             balance = parseInt(savedBalance);
-         }
+        // Получаем баланс из URL (если есть)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlBalance = urlParams.get('balance');
+        
+        if (urlBalance) {
+            balance = parseInt(urlBalance);
+            localStorage.setItem('userBalance', balance); // Дублируем в localStorage
+        } else {
+            // Если в URL нет, пробуем взять из localStorage
+            const savedBalance = localStorage.getItem('userBalance');
+            if (savedBalance) balance = parseInt(savedBalance);
+        }
 
-        // Инициализация Telegram WebApp
+        // Остальная логика инициализации...
         const authResult = initTelegramAuth();
         
         if (authResult?.data) {
@@ -654,19 +660,15 @@ async function initApp() {
         } else {
             // Режим тестирования
             currentUser = getTestUserData();
-            balance = 1000;
+            balance = balance || 1000; // Если баланс не задан, ставим 1000
             showToast("Режим тестирования", "warning");
         }
 
-        // Инициализация интерфейса
         updateProfile();
         updateBalanceDisplay();
         updateLevelDisplay();
         
-        // Открываем вкладку по умолчанию
-        setTimeout(() => {
-            openTab('cases');
-        }, 0);
+        setTimeout(() => openTab('cases'), 0);
         
     } catch (error) {
         console.error('Initialization error:', error);

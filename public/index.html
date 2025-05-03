@@ -286,12 +286,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Инициализация приложения
                 await initApp();
-                
-                // Принудительно обновляем баланс при загрузке
-                updateBalanceDisplay();
-                
+                updateBalanceDisplay(); // Принудительно обновляем баланс
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 showToast(error.message || "Ошибка загрузки", "error");
