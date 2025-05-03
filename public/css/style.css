@@ -1431,3 +1431,32 @@ input[type="number"]::-webkit-inner-spin-button {
 .case-items-horizontal-container {
     contain: strict; /* Оптимизация производительности */
 }
+
+/* Добавьте эти стили */
+.case-image {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.roulette-item {
+    width: 100px;
+    height: 100px;
+    margin: 0 8px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    flex-shrink: 0;
+    position: relative;
+}
