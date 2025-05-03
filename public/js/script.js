@@ -342,17 +342,18 @@ let isDemoMode = false;
 
 async function loadCasePage(caseId) {
     try {
-        console.log(`Загрузка кейса ID: ${caseId}`); // Логирование
+        console.log(`Загрузка кейса ID: ${caseId}`);
         const response = await apiRequest(`/users/case/${caseId}`);
-        console.log('Ответ сервера:', response); // Логируем ответ
+        console.log('Ответ сервера:', response);
         
         if (!response.success) throw new Error(response.error || 'Case not found');
         
         currentCase = response.case;
         caseItems = response.items || [];
-        console.log('Получено предметов:', caseItems.length); // Логирование
+        console.log('Получено предметов:', caseItems.length);
         
-        renderCasePage();
+        // Показываем статичное изображение кейса
+        renderCaseStaticView();
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
         showToast("Ошибка загрузки кейса", "error");
@@ -370,6 +371,14 @@ function renderCasePage() {
     
     console.log('Рендеринг кейса:', currentCase);
     
+    const staticView = document.getElementById('caseStaticView');
+    if (staticView) {
+        staticView.querySelector('.case-image').style.backgroundImage = 
+            currentCase.image_url ? `url('${currentCase.image_url}')` : '';
+        staticView.querySelector('.case-image i').style.display = 
+            currentCase.image_url ? 'none' : 'block';
+    }
+
     // Обновляем основную информацию о кейсе
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
@@ -464,9 +473,12 @@ async function openCase() {
     try {
         showLoading(true);
         
+        // Показываем рулетку и скрываем статичное изображение
+        document.getElementById('caseStaticView').classList.add('hidden');
+        document.getElementById('caseRouletteView').classList.remove('hidden');
+        
         // Создаем много копий предметов в случайном порядке
         const itemsTrack = document.getElementById('caseItemsTrack');
-        const itemsCount = caseItems.length;
         const repeatedItems = [];
         
         // 10 полных циклов предметов для плавной прокрутки
@@ -516,6 +528,14 @@ async function openCase() {
         showLoading(false);
         const button = document.getElementById('openCaseBtn');
         if (button) button.disabled = false;
+        
+        // После завершения возвращаем статичное изображение кейса
+        setTimeout(() => {
+            document.getElementById('caseStaticView').classList.remove('hidden');
+            document.getElementById('caseRouletteView').classList.add('hidden');
+            itemsTrack.style.transition = 'none';
+            itemsTrack.style.transform = 'translateX(0)';
+        }, 1000);
     }
 }
 
