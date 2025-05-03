@@ -353,7 +353,7 @@ async function loadCasePage(caseId) {
         console.log('Получено предметов:', caseItems.length);
         
         // Показываем статичное изображение кейса
-        renderCaseStaticView();
+        renderCasePage();
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
         showToast("Ошибка загрузки кейса", "error");
