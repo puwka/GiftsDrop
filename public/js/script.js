@@ -342,26 +342,18 @@ let isDemoMode = false;
 
 async function loadCasePage(caseId) {
     try {
+        console.log(`Загрузка кейса ID: ${caseId}`);
         const response = await apiRequest(`/users/case/${caseId}`);
+        console.log('Ответ сервера:', response);
         
         if (!response.success) throw new Error(response.error || 'Case not found');
         
         currentCase = response.case;
         caseItems = response.items || [];
+        console.log('Получено предметов:', caseItems.length);
         
-        // Обновляем изображение кейса
-        const caseImage = document.querySelector('#caseStaticView .case-image');
-        if (currentCase.image_url) {
-            caseImage.style.backgroundImage = `url('${currentCase.image_url}')`;
-            caseImage.innerHTML = ''; // Удаляем иконку, если есть изображение
-        } else {
-            caseImage.style.backgroundImage = '';
-            caseImage.innerHTML = '<i class="fas fa-gift"></i>';
-        }
-
+        // Показываем статичное изображение кейса
         renderCasePage();
-        
-        document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
         
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
