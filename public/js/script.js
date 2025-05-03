@@ -410,6 +410,18 @@ function renderCasePage() {
     console.log('Предметы отрендерены');
 }
 
+function goBack() {
+    // Если в Telegram WebApp - используем его API
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        // Для Telegram можно либо закрыть, либо вернуться назад
+        // Telegram.WebApp.close(); // Закрыть приложение
+        window.history.back(); // Или вернуться назад
+    } else {
+        // В браузере - переход на главную
+        window.location.href = 'index.html';
+    }
+}
+
 function getRarityName(rarity) {
     const names = {
         'common': 'Обычный',

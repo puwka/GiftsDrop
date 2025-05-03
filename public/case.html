@@ -13,19 +13,24 @@
         <!-- Шапка -->
         <header class="app-header">
             <div class="header-content">
-                <h1>GiftRush</h1>
-                <div class="user-balance">
-                    <span class="balance-amount">1000</span>
-                    <span class="balance-icon">🪙</span>
-                    <button class="deposit-btn" onclick="openDepositModal()">
-                        <i class="fas fa-plus"></i>
+                <div class="header-left">
+                    <button class="back-button" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
                     </button>
                 </div>
+                <div class="header-center">
+                    <h1>Gift Rush</h1>
+                </div>
+                <div class="header-right">
+                    <div class="user-balance">
+                        <span class="balance-amount">4500</span>
+                        <span class="balance-icon">🪙</span>
+                        <button class="deposit-btn" onclick="openDepositModal()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <!-- Кнопка выхода через Telegram -->
-            <button class="back-button tg-back-btn" onclick="closeApp()">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
         </header>
 
         <!-- Основной контент -->
