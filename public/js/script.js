@@ -474,7 +474,35 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // 1. Получаем случайный предмет ДО анимации
+        // 1. Подготовка рулетки перед анимацией
+        const itemsTrack = document.getElementById('caseItemsTrack');
+        itemsTrack.style.transition = 'none';
+        itemsTrack.style.transform = 'translateX(0)';
+        
+        // 2. Создаем 10 циклов перемешанных предметов
+        const repeatedItems = [];
+        for (let i = 0; i < 10; i++) {
+            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+        }
+        
+        // 3. Заполняем рулетку
+        itemsTrack.innerHTML = repeatedItems.map(item => `
+            <div class="roulette-item ${item.rarity || 'common'}" 
+                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+            </div>
+        `).join('');
+        
+        // 4. Ждем обновления DOM
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // 5. Запускаем анимацию прокрутки
+        const itemWidth = 100;
+        const scrollDistance = repeatedItems.length * itemWidth * 0.8; // Прокрутка 80% длины
+        
+        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.1, 0.7, 0.1, 1)';
+        itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
+        
+        // 6. Параллельно делаем запрос на сервер
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -485,61 +513,37 @@ async function openCase() {
             throw new Error(response.error || 'Не удалось открыть кейс');
         }
         
-        const wonItem = response.item;
-        
-        // 2. Подготовка рулетки
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        itemsTrack.style.transition = 'none';
-        itemsTrack.style.transform = 'translateX(0)';
-        
-        // 3. Создаем 10 циклов перемешанных предметов
-        const repeatedItems = [];
-        for (let i = 0; i < 10; i++) {
-            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-        }
-        
-        // 4. Вставляем выигрышный предмет в конец
-        repeatedItems.push(wonItem);
-        
-        // 5. Заполняем рулетку
-        itemsTrack.innerHTML = repeatedItems.map(item => `
-            <div class="roulette-item ${item.rarity || 'common'}" 
-                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-            </div>
-        `).join('');
-        
-        // 6. Ждем обновления DOM
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        
-        // 7. Рассчитываем позицию для остановки на выигрышном предмете
-        const itemWidth = 100; // Ширина предмета с отступами
-        const targetPosition = (repeatedItems.length - 1) * itemWidth - window.innerWidth / 2 + itemWidth / 2;
-        
-        // 8. Запускаем анимацию
-        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        itemsTrack.style.transform = `translateX(-${targetPosition}px)`;
-        
-        // 9. Ждем завершения анимации
+        // 7. Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // 10. Показываем выигрыш
+        // 8. Резкая остановка анимации
+        itemsTrack.style.transition = 'none';
+        
+        // 9. Показываем выигрышный предмет в центре
+        const wonItem = response.item;
+        const targetIndex = repeatedItems.length + Math.floor(Math.random() * caseItems.length);
+        const targetPosition = targetIndex * itemWidth - window.innerWidth/2 + itemWidth/2;
+        
+        itemsTrack.style.transform = `translateX(-${targetPosition}px)`;
+        
+        // 10. Показываем модальное окно с выигрышем
         showWinModal(wonItem);
         
-        // 11. Обновляем баланс (если не демо-режим)
+        // 11. Обновляем баланс
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
         }
-        
+
     } catch (error) {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        // 12. Разблокируем кнопку
-        const openBtn = document.getElementById('openCaseBtn');
-        if (openBtn) openBtn.disabled = false;
-        
-        showLoading(false);
+        // 12. Восстанавливаем состояние
+        setTimeout(() => {
+            if (openBtn) openBtn.disabled = false;
+            showLoading(false);
+        }, 1000);
     }
 }
 
