@@ -140,6 +140,13 @@
                 setTimeout(() => window.location.href = 'index.html', 2000);
             }
         });
+
+        // Добавьте в конец script.js
+        window.addEventListener('beforeunload', () => {
+            if (!window.location.href.includes('index.html')) {
+                localStorage.removeItem('userBalance');
+            }
+        });
     </script>
 </body>
 </html>

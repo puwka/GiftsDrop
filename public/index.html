@@ -283,6 +283,21 @@
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script type="module" src="js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Инициализация приложения
+                await initApp();
+                
+                // Принудительно обновляем баланс при загрузке
+                updateBalanceDisplay();
+                
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                showToast(error.message || "Ошибка загрузки", "error");
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -73,6 +73,8 @@ async function updateBalance(amount, type = 'deposit', description = '') {
         
         if (response.success) {
             balance = response.new_balance;
+            // Сохраняем баланс в localStorage
+            localStorage.setItem('userBalance', balance);
             updateBalanceDisplay();
             return true;
         }
@@ -392,11 +394,12 @@ function renderCasePage() {
 function goBack() {
     // Если в Telegram WebApp - используем его API
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        // Для Telegram можно либо закрыть, либо вернуться назад
-        // Telegram.WebApp.close(); // Закрыть приложение
-        window.history.back(); // Или вернуться назад
+        window.history.back();
     } else {
-        // В браузере - переход на главную
+        // В браузере - сохраняем баланс в localStorage перед переходом
+        if (currentUser) {
+            localStorage.setItem('userBalance', balance);
+        }
         window.location.href = 'index.html';
     }
 }
@@ -633,6 +636,12 @@ function backToCase() {
 // ==================== Initialization ====================
 async function initApp() {
     try {
+         // Проверяем сохраненный баланс
+         const savedBalance = localStorage.getItem('userBalance');
+         if (savedBalance) {
+             balance = parseInt(savedBalance);
+         }
+
         // Инициализация Telegram WebApp
         const authResult = initTelegramAuth();
         
