@@ -368,28 +368,55 @@ function showLoading(show) {
 function renderCasePage() {
     if (!currentCase) return;
     
-    console.log('Рендеринг кейса:', currentCase); // Логирование
+    console.log('Рендеринг кейса:', currentCase);
     
     // Обновляем основную информацию о кейсе
     document.getElementById('caseName').textContent = currentCase.name;
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
-    // Рендерим предметы
+    // Рендерим предметы для горизонтального скролла
     const itemsContainer = document.getElementById('caseItemsTrack');
-    if (!itemsContainer) {
-        console.error('Контейнер для предметов не найден!');
-        return;
+    if (itemsContainer) {
+        itemsContainer.innerHTML = caseItems.map(item => `
+            <div class="case-item" data-rarity="${item.rarity}">
+                <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+                    ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
+                </div>
+                <div class="item-info">
+                    <h4>${item.name || 'Неизвестный предмет'}</h4>
+                    <p class="item-rarity ${item.rarity || 'common'}">
+                        ${getRarityName(item.rarity)}
+                    </p>
+                    <p class="item-chance">
+                        ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
+                    </p>
+                </div>
+            </div>
+        `).join('');
     }
     
-    itemsContainer.innerHTML = caseItems.map(item => `
-        <div class="case-item" data-rarity="${item.rarity}">
-            <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-                ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
+    // Рендерим предметы для сетки внизу
+    const itemsGrid = document.getElementById('caseItemsGrid');
+    if (itemsGrid) {
+        itemsGrid.innerHTML = caseItems.map(item => `
+            <div class="case-item" data-rarity="${item.rarity}">
+                <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+                    ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
+                </div>
+                <div class="item-info">
+                    <h4>${item.name || 'Неизвестный предмет'}</h4>
+                    <p class="item-rarity ${item.rarity || 'common'}">
+                        ${getRarityName(item.rarity)}
+                    </p>
+                    <p class="item-chance">
+                        ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
+                    </p>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
     
-    console.log('Предметы отрендерены'); // Логирование
+    console.log('Предметы отрендерены');
 }
 
 function getRarityName(rarity) {
@@ -420,7 +447,6 @@ function updateOpenButtons() {
     document.getElementById('openCount').textContent = selectedCount;
     document.getElementById('totalCost').textContent = isDemoMode ? 0 : currentCase.price * selectedCount;
 }
-// Обновим функцию openCase()
 async function openCase() {
     if (!currentUser || !currentCase) {
         showToast("Ошибка: данные не загружены", "error");
@@ -436,11 +462,17 @@ async function openCase() {
         // Запускаем анимацию прокрутки
         const itemsTrack = document.getElementById('caseItemsTrack');
         if (itemsTrack) {
-            itemsTrack.classList.add('roulette-animation');
+            // Рассчитываем общую ширину всех предметов
+            const itemWidth = 160; // Ширина одного предмета
+            const totalWidth = caseItems.length * itemWidth;
+            
+            // Анимация с замедлением
+            itemsTrack.style.transition = 'transform 7s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            itemsTrack.style.transform = `translateX(-${totalWidth - window.innerWidth + 100}px)`;
         }
 
         // Ждем завершения анимации перед запросом к серверу
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 7000));
         
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
@@ -473,7 +505,10 @@ async function openCase() {
         // Сбрасываем анимацию
         const itemsTrack = document.getElementById('caseItemsTrack');
         if (itemsTrack) {
-            itemsTrack.classList.remove('roulette-animation');
+            itemsTrack.style.transition = 'none';
+            itemsTrack.style.transform = 'translateX(0)';
+            // Принудительное обновление DOM
+            void itemsTrack.offsetWidth;
         }
     }
 }
