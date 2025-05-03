@@ -1462,3 +1462,12 @@ input[type="number"]::-webkit-inner-spin-button {
     flex-shrink: 0;
     position: relative;
 }
+
+.case-page {
+    padding-bottom: 80px; /* Добавляем отступ для нижнего меню */
+}
+
+/* Подсветка текущей страницы */
+.nav-btn[data-tab="cases"] {
+    color: var(--nav-active);
+}

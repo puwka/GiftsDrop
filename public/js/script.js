@@ -676,6 +676,15 @@ async function initApp() {
     }
 }
 
+function highlightCurrentTab() {
+    const currentPage = window.location.pathname.includes('case.html') ? 'cases' : 
+                      window.location.hash.replace('#', '') || 'cases';
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === currentPage);
+    });
+}
+
 // Добавьте функцию для закрытия приложения через Telegram
 function closeApp() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
@@ -741,6 +750,10 @@ function initEventListeners() {
             const tabName = this.getAttribute('data-tab');
             switchDepositTab(tabName);
         });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        highlightCurrentTab();
     });
     
     // Обработчики пополнения
