@@ -1285,3 +1285,59 @@ input[type="number"]::-webkit-inner-spin-button {
 .roulette-animation {
     animation: scrollAnimation 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
+
+/* Добавьте эти стили в конец файла style.css */
+
+/* Исправленные стили для предметов в кейсе */
+.case-items-horizontal-container {
+    height: 140px; /* Уменьшил высоту контейнера */
+    padding: 5px; /* Уменьшил отступы */
+}
+
+.roulette-item {
+    min-width: 100px; /* Уменьшил ширину предметов */
+    height: 120px; /* Уменьшил высоту предметов */
+    margin: 0 5px; /* Уменьшил отступы между предметами */
+}
+
+/* Сетка предметов внизу страницы */
+.case-items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Адаптивные колонки */
+    gap: 0.8rem; /* Уменьшил промежутки */
+}
+
+.case-items-grid .case-item {
+    height: auto; /* Автоматическая высота */
+    padding: 0.8rem; /* Уменьшил отступы */
+}
+
+.case-items-grid .item-image {
+    height: 80px; /* Уменьшил высоту изображения */
+    font-size: 1.5rem; /* Уменьшил размер иконки */
+}
+
+/* Кнопка открытия кейса */
+#openCaseBtn {
+    border: none; /* Убрал белую оконтовку */
+    box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3); /* Добавил тень вместо обводки */
+}
+
+#openCaseBtn:hover {
+    box-shadow: 0 6px 15px rgba(138, 43, 226, 0.4); /* Увеличил тень при наведении */
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 400px) {
+    .roulette-item {
+        min-width: 80px;
+        height: 100px;
+    }
+    
+    .case-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .case-items-grid .item-image {
+        height: 60px;
+    }
+}
