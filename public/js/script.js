@@ -390,6 +390,19 @@ function renderCasePage() {
     console.log('Предметы отрендерены');
 }
 
+function goBack() {
+    // Сохраняем баланс в URL перед переходом
+    const balanceParam = `balance=${balance}`;
+    const url = `index.html?${balanceParam}`;
+    
+    // Если в Telegram WebApp - используем его API
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        window.history.back();
+    } else {
+        window.location.href = url;
+    }
+}
+
 function getRarityName(rarity) {
     const names = {
         'common': 'Обычный',
