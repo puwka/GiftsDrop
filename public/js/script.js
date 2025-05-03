@@ -653,7 +653,6 @@ async function initApp() {
         updateProfile();
         updateBalanceDisplay();
         updateLevelDisplay();
-        initTheme();
         
         // Открываем вкладку по умолчанию
         setTimeout(() => {
