@@ -778,7 +778,6 @@ function initEventListeners() {
 window.openTab = openTab;
 window.openDepositModal = openDepositModal;
 window.closeDepositModal = closeDepositModal;
-window.toggleTheme = toggleTheme;
 window.switchDepositTab = switchDepositTab;
 window.processTonDeposit = processTonDeposit;
 window.processStarsDeposit = processStarsDeposit;
