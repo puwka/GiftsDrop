@@ -354,7 +354,6 @@ async function loadCasePage(caseId) {
         
         // Показываем статичное изображение кейса
         renderCasePage();
-        renderCaseStaticView();
         
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
@@ -386,6 +385,14 @@ function renderCasePage() {
     if (!currentCase) return;
     
     console.log('Рендеринг кейса:', currentCase);
+
+    const staticView = document.getElementById('caseStaticView');
+    if (staticView) {
+        staticView.querySelector('.case-image').style.backgroundImage = 
+            currentCase.image_url ? `url('${currentCase.image_url}')` : '';
+        staticView.querySelector('.case-image i').style.display = 
+            currentCase.image_url ? 'none' : 'block';
+    }
 
     // Обновляем основную информацию о кейсе
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
