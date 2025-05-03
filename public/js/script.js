@@ -716,6 +716,19 @@ function initCaseCategories() {
     });
 }
 
+function initTouchHandlers() {
+    // Улучшенная обработка кликов для мобильных
+    document.querySelectorAll('.case-card, .category-btn').forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.classList.add('touch-active');
+        }, {passive: true});
+        
+        element.addEventListener('touchend', function() {
+            this.classList.remove('touch-active');
+        }, {passive: true});
+    });
+}
+
 // ==================== Initialization ====================
 async function initApp() {
     try {
@@ -752,6 +765,7 @@ async function initApp() {
         updateBalanceDisplay();
         updateLevelDisplay();
         initCaseCategories();
+        initTouchHandlers();
         
         setTimeout(() => openTab('cases'), 0);
         
