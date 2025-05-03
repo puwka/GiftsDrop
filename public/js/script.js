@@ -474,75 +474,73 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // 1. Подготовка рулетки перед анимацией
+        // 1. Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
+        const rouletteContainer = document.querySelector('.case-items-horizontal-container');
+        
+        // 2. Сброс предыдущего состояния
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
+        void itemsTrack.offsetWidth; // Принудительный reflow
         
-        // 2. Создаем 10 циклов перемешанных предметов
+        // 3. Генерация элементов для прокрутки (50 предметов)
         const repeatedItems = [];
         for (let i = 0; i < 10; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
-        // 3. Заполняем рулетку
+        // 4. Вставка в DOM
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
         
-        // 4. Ждем обновления DOM
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // 5. Запуск анимации прокрутки
+        await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // 5. Запускаем анимацию прокрутки
-        const itemWidth = 100;
-        const scrollDistance = repeatedItems.length * itemWidth * 0.8; // Прокрутка 80% длины
+        const itemWidth = 100; // Ширина одного элемента
+        const totalWidth = repeatedItems.length * itemWidth;
+        const containerWidth = rouletteContainer.offsetWidth;
+        const scrollDistance = totalWidth - containerWidth;
         
-        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.1, 0.7, 0.1, 1)';
+        itemsTrack.style.transition = 'transform 3s ease-out';
         itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
         
-        // 6. Параллельно делаем запрос на сервер
+        // 6. Параллельно делаем запрос к серверу
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
             is_demo: isDemoMode
         });
         
-        if (!response.success) {
-            throw new Error(response.error || 'Не удалось открыть кейс');
-        }
+        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         
         // 7. Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // 8. Резкая остановка анимации
-        itemsTrack.style.transition = 'none';
+        // 8. Показываем выигрыш
+        showWinModal(response.item);
         
-        // 9. Показываем выигрышный предмет в центре
-        const wonItem = response.item;
-        const targetIndex = repeatedItems.length + Math.floor(Math.random() * caseItems.length);
-        const targetPosition = targetIndex * itemWidth - window.innerWidth/2 + itemWidth/2;
-        
-        itemsTrack.style.transform = `translateX(-${targetPosition}px)`;
-        
-        // 10. Показываем модальное окно с выигрышем
-        showWinModal(wonItem);
-        
-        // 11. Обновляем баланс
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
         }
-
+        
     } catch (error) {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        // 12. Восстанавливаем состояние
+        // 9. Восстанавливаем состояние
         setTimeout(() => {
             if (openBtn) openBtn.disabled = false;
             showLoading(false);
+            
+            // Сброс анимации
+            const itemsTrack = document.getElementById('caseItemsTrack');
+            itemsTrack.style.transition = 'none';
+            itemsTrack.style.transform = 'translateX(0)';
+            void itemsTrack.offsetWidth;
         }, 1000);
     }
 }
