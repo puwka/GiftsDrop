@@ -468,83 +468,104 @@ async function openCase() {
         return;
     }
 
-    const button = document.getElementById('openCaseBtn');
-    if (button) button.disabled = true;
+    const openBtn = document.getElementById('openCaseBtn');
+    if (openBtn) openBtn.disabled = true;
 
     try {
         showLoading(true);
         
-        // Сбрасываем предыдущую анимацию
+        // Элементы интерфейса
+        const staticView = document.getElementById('caseStaticView');
+        const rouletteView = document.getElementById('caseRouletteView');
         const itemsTrack = document.getElementById('caseItemsTrack');
+        
+        // 1. Плавное скрытие статичного вида кейса
+        staticView.classList.add('hidden');
+        
+        // 2. Ждем завершения анимации скрытия (300ms)
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // 3. Подготовка рулетки
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
+        void itemsTrack.offsetWidth; // Принудительный reflow
         
-        // Принудительное обновление DOM
-        void itemsTrack.offsetWidth;
+        // 4. Показываем рулетку с анимацией появления
+        rouletteView.classList.remove('hidden');
+        rouletteView.classList.add('active');
         
-        // Показываем рулетку и скрываем статичное изображение
-        document.getElementById('caseStaticView').classList.add('hidden');
-        document.getElementById('caseRouletteView').classList.remove('hidden');
-        
-        // Создаем много копий предметов в случайном порядке
+        // 5. Создаем 15 циклов перемешанных предметов для плавной прокрутки
         const repeatedItems = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 15; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
-        // Очищаем и заполняем трек
+        // 6. Заполняем рулетку предметами
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
-
-        // Ждем следующего кадра анимации
+        
+        // 7. Ждем следующего кадра анимации
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // Запускаем анимацию прокрутки
-        const itemWidth = 116;
+        // 8. Запускаем анимацию прокрутки
+        const itemWidth = 100; // Ширина одного предмета с отступами
         const totalWidth = repeatedItems.length * itemWidth;
         const stopPosition = totalWidth - window.innerWidth - 200;
         
-        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
-
-        // Ждем завершения анимации
+        
+        // 9. Ждем завершения анимации прокрутки (5000ms)
         await new Promise(resolve => setTimeout(resolve, 5000));
         
+        // 10. Отправляем запрос на открытие кейса
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
             is_demo: isDemoMode
         });
         
-        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
+        if (!response.success) {
+            throw new Error(response.error || 'Не удалось открыть кейс');
+        }
         
+        // 11. Показываем выигранный предмет
         showWinModal(response.item);
         
+        // 12. Обновляем баланс (если не демо-режим)
         if (!isDemoMode) {
-            balance -= response.price;
+            balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
         }
+        
     } catch (error) {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        showLoading(false);
-        const button = document.getElementById('openCaseBtn');
-        if (button) button.disabled = false;
-        
-        // Возвращаем статичное изображение
+        // 13. Возвращаемся к статичному виду кейса
         setTimeout(() => {
-            document.getElementById('caseStaticView').classList.remove('hidden');
-            document.getElementById('caseRouletteView').classList.add('hidden');
-            
-            // Полный сброс анимации
+            const rouletteView = document.getElementById('caseRouletteView');
+            const staticView = document.getElementById('caseStaticView');
             const itemsTrack = document.getElementById('caseItemsTrack');
+            
+            rouletteView.classList.remove('active');
+            rouletteView.classList.add('hidden');
+            
+            staticView.classList.remove('hidden');
+            
+            // Сбрасываем анимацию прокрутки
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
             void itemsTrack.offsetWidth;
+            
+            // Разблокируем кнопку
+            const openBtn = document.getElementById('openCaseBtn');
+            if (openBtn) openBtn.disabled = false;
+            
+            showLoading(false);
         }, 1000);
     }
 }
