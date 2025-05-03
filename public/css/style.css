@@ -1812,3 +1812,86 @@ input[type="number"]::-webkit-inner-spin-button {
 .case-items-grid .item-image {
     height: 120px;
 }
+
+/* Стили для горизонтального контейнера предметов */
+.case-items-horizontal-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow-x: hidden;
+    margin: 1rem 0;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+/* Стили для трека с предметами */
+.roulette-track {
+    display: flex;
+    height: 100%;
+    transition: transform 7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Стили для предметов в горизонтальном скролле */
+.roulette-item {
+    min-width: 160px;
+    height: 160px;
+    margin: 0 10px;
+    border-radius: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Оконтовка по редкости */
+.roulette-item.common {
+    border: 3px solid #95a5a6;
+}
+.roulette-item.rare {
+    border: 3px solid #3498db;
+}
+.roulette-item.epic {
+    border: 3px solid #9b59b6;
+}
+.roulette-item.legendary {
+    border: 3px solid #f1c40f;
+    animation: pulse 2s infinite;
+}
+
+/* Сетка предметов внизу */
+.case-items-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.case-items-grid .case-item {
+    margin-right: 0;
+    height: 200px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+.case-items-grid .item-image {
+    width: 100%;
+    height: 120px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: rgba(138, 43, 226, 0.1);
+}
+
+/* Анимация пульсации для легендарных предметов */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(241, 196, 15, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
+}

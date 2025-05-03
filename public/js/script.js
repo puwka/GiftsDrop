@@ -374,28 +374,20 @@ function renderCasePage() {
     document.getElementById('caseName').textContent = currentCase.name;
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     
-    // Рендерим предметы для горизонтального скролла
+    // Создаем перемешанный массив предметов для прокрутки
+    const shuffledItems = [...caseItems].sort(() => Math.random() - 0.5);
+    
+    // Рендерим предметы для горизонтального скролла (только картинки)
     const itemsContainer = document.getElementById('caseItemsTrack');
     if (itemsContainer) {
-        itemsContainer.innerHTML = caseItems.map(item => `
-            <div class="case-item" data-rarity="${item.rarity}">
-                <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-                    ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
-                </div>
-                <div class="item-info">
-                    <h4>${item.name || 'Неизвестный предмет'}</h4>
-                    <p class="item-rarity ${item.rarity || 'common'}">
-                        ${getRarityName(item.rarity)}
-                    </p>
-                    <p class="item-chance">
-                        ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
-                    </p>
-                </div>
+        itemsContainer.innerHTML = shuffledItems.map(item => `
+            <div class="roulette-item ${item.rarity || 'common'}" 
+                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
     }
     
-    // Рендерим предметы для сетки внизу
+    // Рендерим предметы для сетки внизу (полная информация)
     const itemsGrid = document.getElementById('caseItemsGrid');
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
@@ -463,12 +455,13 @@ async function openCase() {
         const itemsTrack = document.getElementById('caseItemsTrack');
         if (itemsTrack) {
             // Рассчитываем общую ширину всех предметов
-            const itemWidth = 160; // Ширина одного предмета
-            const totalWidth = caseItems.length * itemWidth;
+            const itemCount = caseItems.length;
+            const itemWidth = 180; // Ширина одного предмета с отступами
+            const totalWidth = itemCount * itemWidth;
             
             // Анимация с замедлением
             itemsTrack.style.transition = 'transform 7s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            itemsTrack.style.transform = `translateX(-${totalWidth - window.innerWidth + 100}px)`;
+            itemsTrack.style.transform = `translateX(-${totalWidth - window.innerWidth + 200}px)`;
         }
 
         // Ждем завершения анимации перед запросом к серверу
@@ -509,6 +502,9 @@ async function openCase() {
             itemsTrack.style.transform = 'translateX(0)';
             // Принудительное обновление DOM
             void itemsTrack.offsetWidth;
+            
+            // Перемешиваем предметы для следующего открытия
+            renderCasePage();
         }
     }
 }
