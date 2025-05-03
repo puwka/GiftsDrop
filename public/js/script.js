@@ -468,46 +468,51 @@ async function openCase() {
         return;
     }
 
-    const openBtn = document.getElementById('openCaseBtn');
-    if (openBtn) openBtn.disabled = true;
+    const button = document.getElementById('openCaseBtn');
+    if (button) button.disabled = true;
 
     try {
         showLoading(true);
         
-        // 1. Получаем элементы DOM
+        // Сбрасываем предыдущую анимацию
         const itemsTrack = document.getElementById('caseItemsTrack');
-        const rouletteContainer = document.querySelector('.case-items-horizontal-container');
-        
-        // 2. Сброс предыдущего состояния
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
-        void itemsTrack.offsetWidth; // Принудительный reflow
         
-        // 3. Генерация элементов для прокрутки (50 предметов)
+        // Принудительное обновление DOM
+        void itemsTrack.offsetWidth;
+        
+        // Показываем рулетку и скрываем статичное изображение
+        document.getElementById('caseStaticView').classList.add('hidden');
+        document.getElementById('caseRouletteView').classList.remove('hidden');
+        
+        // Создаем много копий предметов в случайном порядке
         const repeatedItems = [];
         for (let i = 0; i < 10; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
-        // 4. Вставка в DOM
+        // Очищаем и заполняем трек
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
-        
-        // 5. Запуск анимации прокрутки
+
+        // Ждем следующего кадра анимации
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        const itemWidth = 100; // Ширина одного элемента
+        // Запускаем анимацию прокрутки
+        const itemWidth = 116;
         const totalWidth = repeatedItems.length * itemWidth;
-        const containerWidth = rouletteContainer.offsetWidth;
-        const scrollDistance = totalWidth - containerWidth;
+        const stopPosition = totalWidth - window.innerWidth - 200;
         
-        itemsTrack.style.transition = 'transform 3s ease-out';
-        itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
+        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
+
+        // Ждем завершения анимации
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // 6. Параллельно делаем запрос к серверу
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -516,27 +521,26 @@ async function openCase() {
         
         if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         
-        // 7. Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // 8. Показываем выигрыш
         showWinModal(response.item);
         
         if (!isDemoMode) {
-            balance -= currentCase.price * selectedCount;
+            balance -= response.price;
             updateBalanceDisplay();
         }
-        
     } catch (error) {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        // 9. Восстанавливаем состояние
+        showLoading(false);
+        const button = document.getElementById('openCaseBtn');
+        if (button) button.disabled = false;
+        
+        // Возвращаем статичное изображение
         setTimeout(() => {
-            if (openBtn) openBtn.disabled = false;
-            showLoading(false);
+            document.getElementById('caseStaticView').classList.remove('hidden');
+            document.getElementById('caseRouletteView').classList.add('hidden');
             
-            // Сброс анимации
+            // Полный сброс анимации
             const itemsTrack = document.getElementById('caseItemsTrack');
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
