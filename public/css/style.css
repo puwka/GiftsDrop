@@ -1467,6 +1467,111 @@ input[type="number"]::-webkit-inner-spin-button {
     display: none;
 }
 
+/* Стили для горизонтального контейнера предметов */
+.case-items-horizontal-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    scrollbar-width: none; /* Firefox */
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.case-items-horizontal-container::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+/* Обновленные стили для предметов в горизонтальном скролле */
+.case-items-horizontal-container .case-item {
+    width: 140px;
+    height: 160px;
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-right: 1rem;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.case-items-horizontal-container .item-image {
+    width: 100%;
+    height: 80px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--primary);
+    background-color: rgba(138, 43, 226, 0.1);
+}
+
+.case-items-horizontal-container .item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.case-items-horizontal-container .item-info h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Обновленные стили для кнопок управления */
+.case-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.count-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.count-control button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.count-control span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
 .case-item {
     flex: 0 0 150px;
     background: var(--card-bg);
