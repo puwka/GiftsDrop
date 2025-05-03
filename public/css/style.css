@@ -1422,3 +1422,12 @@ input[type="number"]::-webkit-inner-spin-button {
 #caseRouletteView {
     transition: all 0.3s ease;
 }
+
+.roulette-track {
+    will-change: transform; /* Оптимизация анимации */
+    backface-visibility: hidden; /* Устранение мерцания */
+}
+
+.case-items-horizontal-container {
+    contain: strict; /* Оптимизация производительности */
+}
