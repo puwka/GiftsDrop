@@ -30,31 +30,98 @@
         <main class="app-main">
             <!-- Вкладка "Кейсы" -->
             <section id="cases" class="tab-content active">
-                <h2 class="section-title">КЕЙСЫ</h2>
+                <h2 class="section-title">КОЛЛЕКЦИЯ КЕЙСОВ</h2>
                 
-                <div class="cases-grid">
-                    <div class="case-card" onclick="window.location.href='case.html?id=1'">
-                        <div class="case-image" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
-                            <i class="fas fa-gift"></i>
+                <!-- Категории -->
+                <div class="case-categories">
+                    <button class="category-btn active" data-category="all">
+                        <i class="fas fa-layer-group"></i> Все
+                    </button>
+                    <button class="category-btn" data-category="free">
+                        <i class="fas fa-coins"></i> Бесплатные
+                    </button>
+                    <button class="category-btn" data-category="branded">
+                        <i class="fas fa-tag"></i> Фирменные
+                    </button>
+                    <button class="category-btn" data-category="exclusive">
+                        <i class="fas fa-crown"></i> Эксклюзивные
+                    </button>
+                    <button class="category-btn" data-category="farm">
+                        <i class="fas fa-seedling"></i> Фарм
+                    </button>
+                </div>
+                
+                <!-- Контейнеры для кейсов -->
+                <div class="cases-container">
+                    <div class="case-category all show">
+                        <!-- Все кейсы будут добавлены динамически -->
+                    </div>
+                    <!-- Бесплатные кейсы -->
+                    <div class="case-category free show">
+                        <div class="cases-grid">
+                            <div class="case-card" onclick="window.location.href='case.html?id=1'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #8a2be2 0%, #6c5ce7 100%);">
+                                    <i class="fas fa-gift"></i>
+                                </div>
+                                <h3>Стартовый набор</h3>
+                                <p class="case-price">Бесплатно</p>
+                            </div>
+                            
+                            <div class="case-card" onclick="window.location.href='case.html?id=2'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <h3>Бонусный кейс</h3>
+                                <p class="case-price">Бесплатно</p>
+                            </div>
                         </div>
-                        <h3>Микс Кейс</h3>
-                        <p class="case-price">Бесплатно</p>
                     </div>
                     
-                    <div class="case-card" onclick="window.location.href='case.html?id=2'">
-                        <div class="case-image" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
-                            <i class="fas fa-gem"></i> 
+                    <!-- Фирменные кейсы -->
+                    <div class="case-category branded">
+                        <div class="cases-grid">
+                            <div class="case-card premium" onclick="window.location.href='case.html?id=4'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);">
+                                    <i class="fas fa-gem"></i>
+                                </div>
+                                <h3>Премиум кейс</h3>
+                                <p class="case-price">500 🪙</p>
+                            </div>
+                            
+                            <div class="case-card" onclick="window.location.href='case.html?id=5'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                <h3>Брендовый набор</h3>
+                                <p class="case-price">350 🪙</p>
+                            </div>
                         </div>
-                        <h3>Премиум Кейс</h3>
-                        <p class="case-price">500 🪙</p>
                     </div>
                     
-                    <div class="case-card" onclick="window.location.href='case.html?id=3'">
-                        <div class="case-image" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
-                            <i class="fas fa-crown"></i>
+                    <!-- Эксклюзивные кейсы -->
+                    <div class="case-category exclusive">
+                        <div class="cases-grid">
+                            <div class="case-card legendary" onclick="window.location.href='case.html?id=3'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <h3>Легендарный кейс</h3>
+                                <p class="case-price">1000 🪙</p>
+                            </div>
                         </div>
-                        <h3>Легендарный Кейс</h3>
-                        <p class="case-price">1000 🪙</p>
+                    </div>
+                    
+                    <!-- Фарм кейсы -->
+                    <div class="case-category farm">
+                        <div class="cases-grid">
+                            <div class="case-card" onclick="window.location.href='case.html?id=6'">
+                                <div class="case-image" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                                    <i class="fas fa-seedling"></i>
+                                </div>
+                                <h3>Фермерский набор</h3>
+                                <p class="case-price">200 🪙</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
