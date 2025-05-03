@@ -1341,3 +1341,61 @@ input[type="number"]::-webkit-inner-spin-button {
         height: 60px;
     }
 }
+
+/* Добавьте в style.css */
+.case-items-horizontal-container {
+    position: relative;
+    height: 150px;
+    overflow: hidden;
+    margin: 1rem 0;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.roulette-track {
+    display: flex;
+    height: 100%;
+    transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.roulette-item {
+    min-width: 100px;
+    height: 130px;
+    margin: 0 8px;
+    border-radius: 8px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.roulette-pointer {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: var(--danger);
+    z-index: 2;
+}
+
+.roulette-pointer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 15px solid var(--danger);
+}
