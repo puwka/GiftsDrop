@@ -479,37 +479,39 @@ async function openCase() {
         itemsTrack.style.transform = 'translateX(0)';
         void itemsTrack.offsetWidth;
 
-        // Генерация элементов для прокрутки
-        const repeatedItems = [];
-        for (let i = 0; i < 10; i++) {
-            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+        // Создаем массив из 50 случайных предметов (для плавной прокрутки)
+        const scrollItems = [];
+        for (let i = 0; i < 50; i++) {
+            scrollItems.push(...caseItems);
         }
-
-        // Вставка в DOM
-        itemsTrack.innerHTML = repeatedItems.map(item => `
+        
+        // Выбираем выигрышный предмет (с учетом шансов)
+        const winningItem = selectItemWithChance(caseItems);
+        wonItem = winningItem; // Сохраняем для использования в модальном окне
+        
+        // Вставляем предметы в рулетку
+        itemsTrack.innerHTML = scrollItems.map((item, index) => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')"
                  data-item-id="${item.id}">
             </div>
         `).join('');
 
-        // Выбираем случайный предмет (который будет в центре)
-        const winningItem = selectItemWithChance(caseItems);
-        const winningItemIndex = repeatedItems.findIndex(item => item.id === winningItem.id);
-        
-        // Рассчитываем позицию остановки
+        // Рассчитываем позицию остановки (чтобы winningItem был по центру)
         const itemWidth = 120;
-        const stopPosition = calculateStopPosition(winningItemIndex, itemWidth, repeatedItems.length);
+        const centerPosition = Math.floor(rouletteContainer.offsetWidth / 2);
+        const winningItemPosition = scrollItems.findIndex(item => item.id === winningItem.id);
+        const stopPosition = (winningItemPosition * itemWidth) - centerPosition + (itemWidth / 2);
         
-        // Запускаем анимацию
-        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.1, 0.2, 1)';
+        // Запускаем анимацию прокрутки
+        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.1, 0.7, 0.1, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
-
-        // Параллельно делаем запрос к серверу с ВЫБРАННЫМ предметом
+        
+        // Отправляем запрос на сервер с выбранным предметом
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
-            item_id: winningItem.id, // Отправляем ID выбранного предмета
+            item_id: winningItem.id,
             is_demo: isDemoMode
         });
 
@@ -518,7 +520,7 @@ async function openCase() {
         // Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Показываем выигрыш (используем winningItem вместо response.item)
+        // Показываем выигрыш
         showWinModal(winningItem);
         
         if (!isDemoMode) {
@@ -598,7 +600,6 @@ function showWinModal(item) {
                 <h4 class="item-name">${item.name || 'Неизвестный предмет'}</h4>
                 <p class="item-rarity ${rarityClass}">${rarityName}</p>
                 ${item.price ? `<p class="item-price">Цена: ${item.price} 🪙</p>` : ''}
-                ${item.drop_chance ? `<p class="item-chance">Шанс: ${item.drop_chance}%</p>` : ''}
             </div>
         </div>
     `;
@@ -609,10 +610,9 @@ function showWinModal(item) {
     
     modal.classList.remove('hidden');
     
-    // Добавляем анимацию для легендарных предметов
+    // Анимация для легендарных предметов
     if (rarityClass === 'legendary') {
-        const wonItem = container.querySelector('.won-item');
-        wonItem.style.animation = 'pulse 2s infinite';
+        container.querySelector('.won-item').style.animation = 'pulse 2s infinite';
     }
 }
 
