@@ -468,40 +468,35 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
         const staticView = document.getElementById('caseStaticView');
         const rouletteView = document.getElementById('caseRouletteView');
-        const pointer = document.querySelector('.roulette-pointer');
         
-        // 1. Сброс анимации
+        // Сброс анимации
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
         void itemsTrack.offsetWidth;
         
-        // 2. Переключаем вид
+        // Переключаем вид
         staticView.classList.add('hidden');
         rouletteView.classList.remove('hidden');
         
-        // 3. Создаем кольцевую рулетку (3 полных цикла + выигрышный предмет)
+        // Создаем рулетку с 3 циклами случайных предметов
         const loopCount = 3;
         let rouletteItems = [];
-        
-        // Заполняем случайными предметами
         for (let i = 0; i < loopCount; i++) {
             rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
-        // 4. Выбираем выигрышный предмет и его позицию
+        // Выбираем случайный предмет для выигрыша
         const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
-        wonItem = winningItem; // Сохраняем выигранный предмет в глобальную переменную
-        const winningPosition = Math.floor(rouletteItems.length * 0.75); // 75% длины
+        wonItem = winningItem; // Сохраняем глобально
         
-        // Вставляем выигрышный предмет в рассчитанную позицию
-        rouletteItems.splice(winningPosition, 0, winningItem);
+        // Вставляем выигрышный предмет в конец (чтобы он оказался под указателем)
+        rouletteItems.push(winningItem);
         
-        // 5. Рендерим рулетку
-        itemsTrack.innerHTML = rouletteItems.map((item, index) => `
+        // Рендерим рулетку
+        itemsTrack.innerHTML = rouletteItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  data-item-id="${item.id}"
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
@@ -510,29 +505,29 @@ async function openCase() {
 
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // 6. Точный расчет позиции остановки
-        const itemWidth = 120; // Должно соответствовать CSS
-        const pointerCenter = window.innerWidth / 2;
-        const stopPosition = (winningPosition * itemWidth) - pointerCenter + (itemWidth / 2);
+        // Рассчитываем позицию остановки (последний элемент)
+        const itemWidth = 120;
+        const trackWidth = rouletteItems.length * itemWidth;
+        const stopPosition = trackWidth - (window.innerWidth / 2) - (itemWidth / 2);
         
-        // 7. Запускаем анимацию с физикой "торможения"
+        // Запускаем анимацию
         itemsTrack.style.transition = 'transform 5s cubic-bezier(0.08, 0.65, 0.25, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
         
-        // 8. Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 5200)); // +200ms для гарантии
+        // Ждем завершения анимации
+        await new Promise(resolve => setTimeout(resolve, 5200));
         
-        // 9. Визуально выделяем выигрышный предмет
+        // Выделяем выигрышный предмет
         const winningElement = itemsTrack.querySelector(`[data-item-id="${winningItem.id}"]`);
         if (winningElement) {
             winningElement.style.transform = 'scale(1.1)';
             winningElement.style.boxShadow = '0 0 15px gold';
         }
         
-        // 10. Показываем модальное окно с выигранным предметом
+        // Показываем модальное окно с выигранным предметом
         showWinModal(winningItem);
         
-        // 11. Обновляем баланс (только если не демо-режим)
+        // Обновляем баланс (если не демо-режим)
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
@@ -555,8 +550,8 @@ async function openCase() {
         
         // Возвращаем исходный вид
         setTimeout(() => {
-            document.getElementById('caseStaticView').classList.remove('hidden');
-            document.getElementById('caseRouletteView').classList.add('hidden');
+            staticView.classList.remove('hidden');
+            rouletteView.classList.add('hidden');
             
             const itemsTrack = document.getElementById('caseItemsTrack');
             itemsTrack.style.transition = 'none';
