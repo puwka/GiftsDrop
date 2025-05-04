@@ -676,29 +676,6 @@ async function sellItem() {
     }
 }
 
-async function sellItem() {
-    const modal = document.getElementById('winModal');
-    if (!modal || !wonItem) return;
-    
-    const sellPrice = Math.floor((wonItem.price || 0) * 0.7);
-    
-    try {
-        const success = await updateBalance(
-            sellPrice,
-            'sell',
-            `Продажа предмета: ${wonItem.name}`
-        );
-        
-        if (success) {
-            showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
-            modal.classList.add('hidden');
-        }
-    } catch (error) {
-        console.error('Sell item error:', error);
-        showToast("Ошибка при продаже предмета", "error");
-    }
-}
-
 function showCaseResult(item) {
     // 1. Находим контейнер
     const container = document.getElementById('caseResultContainer');
