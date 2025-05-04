@@ -468,7 +468,7 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // Получаем предметы с их шансами
+        // Получаем предметы с их шансами из БД
         const response = await apiRequest(`/users/case/${currentCase.id}/items`);
         if (!response.success) throw new Error(response.error || "Ошибка загрузки предметов");
         
@@ -476,7 +476,7 @@ async function openCase() {
         const winningItem = selectItemWithChance(itemsWithChances);
         wonItem = winningItem;
 
-        // Настройка анимации
+        // Настройка анимации рулетки
         const itemsTrack = document.getElementById('caseItemsTrack');
         const staticView = document.getElementById('caseStaticView');
         const rouletteView = document.getElementById('caseRouletteView');
@@ -526,7 +526,7 @@ async function openCase() {
             winningElement.classList.add('highlighted');
         }
         
-        // Показываем модальное окно
+        // Показываем модальное окно с выигрышем
         showWinModal(winningItem);
         
         // Обновляем баланс (если не демо-режим)
@@ -534,6 +534,7 @@ async function openCase() {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
             
+            // Сохраняем открытие кейса в БД
             const result = await apiRequest('/users/open-case', 'POST', {
                 user_id: currentUser.id,
                 case_id: currentCase.id,
@@ -645,7 +646,6 @@ function showWinModal(item) {
     }
 }
 
-// Функции для обработки действий с предметом
 async function keepItem() {
     const modal = document.getElementById('winModal');
     if (modal) modal.classList.add('hidden');
@@ -655,7 +655,7 @@ async function sellItem() {
     const modal = document.getElementById('winModal');
     if (!modal || !wonItem) return;
     
-    const sellPrice = Math.floor((wonItem.price || 0) * 1); // 70% от цены
+    const sellPrice = Math.floor((wonItem.price || 0) * 0.7);
     
     try {
         const success = await updateBalance(

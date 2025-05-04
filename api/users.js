@@ -261,13 +261,13 @@ router.get('/case/:id', async (req, res) => {
 router.post('/open-case', async (req, res) => {
     console.log('Open case request received:', req.body);
     
-    const { user_id, case_id, is_demo = false } = req.body;
+    const { user_id, case_id, item_id, is_demo = false } = req.body;
     
     // Базовая валидация
-    if (!user_id || !case_id) {
+    if (!user_id || !case_id || !item_id) {
         return res.status(400).json({ 
             success: false,
-            error: 'user_id and case_id are required'
+            error: 'user_id, case_id and item_id are required'
         });
     }
 
@@ -275,11 +275,11 @@ router.post('/open-case', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // 1. Проверка существования кейса (упрощённая)
-        const caseResult = await client.query(
-            'SELECT id, price FROM cases WHERE id = $1',
-            [case_id]
-        );
+        // 1. Проверка существования кейса и предмета
+        const [caseResult, itemResult] = await Promise.all([
+            client.query('SELECT id, price FROM cases WHERE id = $1', [case_id]),
+            client.query('SELECT * FROM items WHERE id = $1', [item_id])
+        ]);
         
         if (caseResult.rows.length === 0) {
             return res.status(404).json({
@@ -288,7 +288,15 @@ router.post('/open-case', async (req, res) => {
             });
         }
         
+        if (itemResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Item not found'
+            });
+        }
+        
         const caseData = caseResult.rows[0];
+        const itemData = itemResult.rows[0];
         
         // 2. Для реального открытия - проверка баланса
         if (!is_demo) {
@@ -309,34 +317,23 @@ router.post('/open-case', async (req, res) => {
                 'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
                 [caseData.price, user_id]
             );
+            
+            // Запись транзакции
+            await client.query(
+                `INSERT INTO transactions 
+                 (user_id, amount, type, description, created_at)
+                 VALUES ($1, $2, $3, $4, NOW())`,
+                [user_id, -caseData.price, 'case_open', `Открытие кейса ${case_id}`]
+            );
         }
         
-        // 3. Получаем ОДИН случайный предмет (упрощённая логика)
-        const itemResult = await client.query(
-            `SELECT i.* FROM items i
-             JOIN cases_items ci ON i.id = ci.item_id
-             WHERE ci.case_id = $1
-             ORDER BY RANDOM()
-             LIMIT 1`,
-            [case_id]
-        );
-        
-        if (itemResult.rows.length === 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'No items in this case'
-            });
-        }
-        
-        const wonItem = itemResult.rows[0];
-        
-        // 4. Записываем открытие (только для реальных открытий)
+        // 3. Записываем открытие (только для реальных открытий)
         if (!is_demo) {
             await client.query(
                 `INSERT INTO cases_openings 
                  (user_id, case_id, item_id, is_demo, opened_at)
                  VALUES ($1, $2, $3, $4, NOW())`,
-                [user_id, case_id, wonItem.id, is_demo]
+                [user_id, case_id, item_id, is_demo]
             );
         }
         
@@ -345,7 +342,7 @@ router.post('/open-case', async (req, res) => {
         // Успешный ответ
         res.json({
             success: true,
-            item: wonItem,
+            item: itemData,
             price: is_demo ? 0 : caseData.price
         });
         
