@@ -363,6 +363,35 @@ router.post('/open-case', async (req, res) => {
     }
 });
 
+router.get('/case/:id/items', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Получаем предметы с их шансами для конкретного кейса
+        const { rows } = await pool.query(`
+            SELECT i.*, ci.adjusted_chance 
+            FROM cases_items ci
+            JOIN items i ON ci.item_id = i.id
+            WHERE ci.case_id = $1
+        `, [id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No items found for this case' });
+        }
+        
+        res.json({
+            success: true,
+            items: rows
+        });
+    } catch (err) {
+        console.error('Error getting case items:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
+    }
+});
+
 module.exports = router;
 
 // Добавьте в users.js

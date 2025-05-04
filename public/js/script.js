@@ -468,6 +468,17 @@ async function openCase() {
     try {
         showLoading(true);
         
+        // Получаем данные о шансах из API
+        const caseData = await apiRequest(`/users/case/${currentCase.id}/items`);
+        if (!caseData.success) throw new Error(caseData.error || "Не удалось получить данные о кейсе");
+        
+        const itemsWithChances = caseData.items; // Массив предметов с adjusted_chance
+        
+        // Выбираем предмет с учетом шансов
+        const winningItem = selectItemWithChance(itemsWithChances);
+        wonItem = winningItem;
+        
+        // Остальная логика анимации рулетки...
         const itemsTrack = document.getElementById('caseItemsTrack');
         const staticView = document.getElementById('caseStaticView');
         const rouletteView = document.getElementById('caseRouletteView');
@@ -485,12 +496,8 @@ async function openCase() {
         const loopCount = 3;
         let rouletteItems = [];
         for (let i = 0; i < loopCount; i++) {
-            rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+            rouletteItems.push(...[...itemsWithChances].sort(() => Math.random() - 0.5));
         }
-        
-        // Выбираем случайный предмет для выигрыша
-        const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
-        wonItem = winningItem; // Сохраняем глобально
         
         // Вставляем выигрышный предмет в конец (чтобы он оказался под указателем)
         rouletteItems.push(winningItem);
@@ -550,15 +557,43 @@ async function openCase() {
         
         // Возвращаем исходный вид
         setTimeout(() => {
+            const staticView = document.getElementById('caseStaticView');
+            const rouletteView = document.getElementById('caseRouletteView');
+            const itemsTrack = document.getElementById('caseItemsTrack');
+            
             staticView.classList.remove('hidden');
             rouletteView.classList.add('hidden');
             
-            const itemsTrack = document.getElementById('caseItemsTrack');
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
             void itemsTrack.offsetWidth;
         }, 1500);
     }
+}
+
+// Функция для выбора предмета с учетом шансов
+function selectItemWithChance(items) {
+    // Создаем массив с кумулятивными шансами
+    let cumulativeChance = 0;
+    const itemsWithRanges = items.map(item => {
+        const start = cumulativeChance;
+        cumulativeChance += item.adjusted_chance;
+        return {
+            ...item,
+            start,
+            end: cumulativeChance
+        };
+    });
+
+    // Генерируем случайное число от 0 до общей суммы шансов
+    const random = Math.random() * cumulativeChance;
+    
+    // Находим предмет, в диапазон которого попало случайное число
+    const selectedItem = itemsWithRanges.find(item => 
+        random >= item.start && random < item.end
+    );
+    
+    return selectedItem || items[0]; // На всякий случай возвращаем первый предмет, если что-то пошло не так
 }
 
 function getItemCenterPosition(itemIndex, itemWidth) {
