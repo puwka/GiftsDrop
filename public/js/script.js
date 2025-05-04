@@ -658,23 +658,6 @@ function backToCase() {
 function initCaseCategories() {
     const categoryBtns = document.querySelectorAll('.category-btn');
     const caseCategories = document.querySelectorAll('.case-category');
-    const allCasesContainer = document.querySelector('.case-category.all .cases-grid');
-    
-    // Собираем все кейсы из других категорий для "Все"
-    if (allCasesContainer) {
-        allCasesContainer.innerHTML = '';
-        
-        // Собираем все уникальные кейсы (чтобы избежать дублирования)
-        const allCases = new Set();
-        document.querySelectorAll('.case-category:not(.all) .case-card').forEach(card => {
-            allCases.add(card.outerHTML);
-        });
-        
-        // Добавляем все уникальные кейсы в контейнер "Все"
-        allCases.forEach(html => {
-            allCasesContainer.insertAdjacentHTML('beforeend', html);
-        });
-    }
     
     categoryBtns.forEach(btn => {
         btn.addEventListener('click', () => {
