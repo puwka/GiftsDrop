@@ -486,6 +486,14 @@ async function openCase() {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
+        // Выбираем случайный предмет, который будет под указателем
+        const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
+        wonItem = winningItem; // Сохраняем для последующего использования
+        
+        // Вставляем выигрышный предмет в середину списка
+        const middleIndex = Math.floor(repeatedItems.length / 2);
+        repeatedItems.splice(middleIndex, 0, winningItem);
+        
         // Очищаем и заполняем трек
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
@@ -497,9 +505,9 @@ async function openCase() {
         await new Promise(resolve => requestAnimationFrame(resolve));
         
         // Запускаем анимацию прокрутки
-        const itemWidth = 116;
+        const itemWidth = 120; // Ширина одного предмета
         const totalWidth = repeatedItems.length * itemWidth;
-        const stopPosition = totalWidth - window.innerWidth - 200;
+        const stopPosition = totalWidth - window.innerWidth / 2 - itemWidth * 2; // Останавливаемся на выигрышном предмете
         
         itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
@@ -507,19 +515,22 @@ async function openCase() {
         // Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        const response = await apiRequest('/users/open-case', 'POST', {
-            user_id: currentUser.id,
-            case_id: currentCase.id,
-            is_demo: isDemoMode
-        });
-        
-        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
-        
-        showWinModal(response.item);
+        // Показываем модальное окно с выигранным предметом
+        showWinModal(winningItem);
         
         if (!isDemoMode) {
-            balance -= response.price;
+            // Обновляем баланс
+            balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
+            
+            // Отправляем запрос на сервер только после анимации
+            const response = await apiRequest('/users/open-case', 'POST', {
+                user_id: currentUser.id,
+                case_id: currentCase.id,
+                is_demo: isDemoMode
+            });
+            
+            if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         }
     } catch (error) {
         console.error('Open case error:', error);
@@ -566,12 +577,19 @@ function showWinModal(item) {
                 <h4 class="item-name">${item.name || 'Неизвестный предмет'}</h4>
                 <p class="item-rarity ${rarityClass}">${rarityName}</p>
                 ${item.price ? `<p class="item-price">Цена: ${item.price} 🪙</p>` : ''}
+                ${item.drop_chance ? `<p class="item-chance">Шанс: ${item.drop_chance}%</p>` : ''}
             </div>
         </div>
     `;
     
     sellPriceElement.textContent = sellPrice;
     modal.classList.remove('hidden');
+    
+    // Добавляем анимацию для редких предметов
+    if (rarityClass === 'legendary') {
+        const wonItemElement = container.querySelector('.won-item');
+        wonItemElement.style.animation = 'pulse 2s infinite';
+    }
 }
 
 // Функции для обработки действий с предметом
