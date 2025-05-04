@@ -1328,7 +1328,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Стили для страницы кейса */
 .case-page {
-    padding-bottom: 80px;
+    padding-bottom: 70px;
     overflow-y: auto;
     height: calc(100vh - 120px);
 }
@@ -1336,7 +1336,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .case-items-container {
     height: auto;
     overflow: visible;
-    padding-bottom: 80px;
+    padding-bottom: 70px;
 }
 
 .case-items-grid {
