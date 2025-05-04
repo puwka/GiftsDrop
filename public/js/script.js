@@ -507,7 +507,7 @@ async function openCase() {
         const stopPosition = (winningItemIndex * itemWidth) - containerCenter + (itemWidth / 2);
         
         // Увеличиваем время анимации до 7 секунд
-        const animationDuration = 7000; // 7 секунд в миллисекундах
+        const animationDuration = 6000; // 7 секунд в миллисекундах
         
         // Запускаем анимацию
         setTimeout(() => {
