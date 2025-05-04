@@ -481,7 +481,7 @@ async function openCase() {
 
         // Создаем длинную дорожку из случайных предметов
         const scrollItems = [];
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 100; i++) {
             scrollItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
 
@@ -500,15 +500,18 @@ async function openCase() {
             </div>
         `).join('');
 
-        // Рассчитываем позицию остановки (чтобы winningItem был по центру)
+        // Рассчитываем позицию остановки с учетом увеличенного времени
         const itemWidth = 120;
         const containerCenter = rouletteContainer.offsetWidth / 2;
-        const winningItemIndex = scrollItems.findIndex(item => item.id === winningItem.id);
+        const winningItemIndex = scrollItems.length - 10; // Останавливаемся за 10 предметов до конца
         const stopPosition = (winningItemIndex * itemWidth) - containerCenter + (itemWidth / 2);
+        
+        // Увеличиваем время анимации до 7 секунд
+        const animationDuration = 7000; // 7 секунд в миллисекундах
         
         // Запускаем анимацию
         setTimeout(() => {
-            itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.1, 0.2, 1)';
+            itemsTrack.style.transition = `transform ${animationDuration/1000}s cubic-bezier(0.2, 0.1, 0.2, 1)`;
             itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
         }, 10);
 
@@ -522,8 +525,8 @@ async function openCase() {
 
         if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         
-        // Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 7000));
+        // Ждем завершения анимации (теперь 7 секунд)
+        await new Promise(resolve => setTimeout(resolve, animationDuration));
         
         // Показываем выигрыш
         showWinModal(winningItem);
