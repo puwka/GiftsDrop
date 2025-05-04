@@ -463,107 +463,80 @@ async function openCase() {
         return;
     }
 
-    const button = document.getElementById('openCaseBtn');
-    if (button) button.disabled = true;
+    const openBtn = document.getElementById('openCaseBtn');
+    if (openBtn) openBtn.disabled = true;
 
     try {
         showLoading(true);
         
-        // Получаем предметы с их шансами
-        const response = await apiRequest(`/users/case/${currentCase.id}/items`);
-        if (!response.success) throw new Error(response.error || "Ошибка загрузки предметов");
-        
-        const itemsWithChances = response.items;
-        const winningItem = selectItemWithChance(itemsWithChances);
-        wonItem = winningItem; // Сохраняем выигранный предмет
-
-        // Настройка анимации
+        // 1. Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
-        const staticView = document.getElementById('caseStaticView');
-        const rouletteView = document.getElementById('caseRouletteView');
+        const rouletteContainer = document.querySelector('.case-items-horizontal-container');
         
-        // Сброс анимации
+        // 2. Сброс предыдущего состояния
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
-        void itemsTrack.offsetWidth;
+        void itemsTrack.offsetWidth; // Принудительный reflow
         
-        // Переключение вида
-        staticView.classList.add('hidden');
-        rouletteView.classList.remove('hidden');
-        
-        // Создаем рулетку с 3 циклами случайных предметов + выигрышный в конце
-        const loopCount = 3;
-        let rouletteItems = [];
-        for (let i = 0; i < loopCount; i++) {
-            rouletteItems.push(...[...itemsWithChances].sort(() => Math.random() - 0.5));
+        // 3. Генерация элементов для прокрутки (50 предметов)
+        const repeatedItems = [];
+        for (let i = 0; i < 10; i++) {
+            repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
-        rouletteItems.push(winningItem);
         
-        // Рендерим рулетку
-        itemsTrack.innerHTML = rouletteItems.map(item => `
+        // 4. Вставка в DOM
+        itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
-                 data-item-id="${item.id}"
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
-
+        
+        // 5. Запуск анимации прокрутки
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // Рассчитываем позицию остановки (последний элемент)
-        const itemWidth = 120;
-        const trackWidth = rouletteItems.length * itemWidth;
-        const stopPosition = trackWidth - (window.innerWidth / 2) - (itemWidth / 2);
+        const itemWidth = 100; // Ширина одного элемента
+        const totalWidth = repeatedItems.length * itemWidth;
+        const containerWidth = rouletteContainer.offsetWidth;
+        const scrollDistance = totalWidth - containerWidth;
         
-        // Запускаем анимацию с эффектом замедления
-        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.08, 0.65, 0.25, 1)';
-        itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
+        itemsTrack.style.transition = 'transform 3s ease-out';
+        itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
         
-        // Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 5200));
+        // 6. Параллельно делаем запрос к серверу
+        const response = await apiRequest('/users/open-case', 'POST', {
+            user_id: currentUser.id,
+            case_id: currentCase.id,
+            is_demo: isDemoMode
+        });
         
-        // Выделяем выигрышный предмет
-        const winningElement = itemsTrack.querySelector(`[data-item-id="${winningItem.id}"]`);
-        if (winningElement) {
-            winningElement.classList.add('highlighted');
-        }
+        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         
-        // Показываем модальное окно с ВЫИГРАННЫМ предметом
-        showWinModal(winningItem);
+        // 7. Ждем завершения анимации
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Обновляем баланс (если не демо-режим)
+        // 8. Показываем выигрыш
+        showWinModal(response.item);
+        
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
-            
-            const result = await apiRequest('/users/open-case', 'POST', {
-                user_id: currentUser.id,
-                case_id: currentCase.id,
-                item_id: winningItem.id,
-                is_demo: isDemoMode
-            });
-            
-            if (!result.success) throw new Error(result.error || 'Ошибка открытия кейса');
         }
+        
     } catch (error) {
-        console.error('Ошибка открытия кейса:', error);
+        console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        showLoading(false);
-        if (button) button.disabled = false;
-        
-        // Возвращаем исходный вид
+        // 9. Восстанавливаем состояние
         setTimeout(() => {
-            const staticView = document.getElementById('caseStaticView');
-            const rouletteView = document.getElementById('caseRouletteView');
+            if (openBtn) openBtn.disabled = false;
+            showLoading(false);
+            
+            // Сброс анимации
             const itemsTrack = document.getElementById('caseItemsTrack');
-            
-            staticView.classList.remove('hidden');
-            rouletteView.classList.add('hidden');
-            
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
             void itemsTrack.offsetWidth;
-        }, 1500);
+        }, 1000);
     }
 }
 
