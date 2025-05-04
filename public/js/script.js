@@ -658,7 +658,7 @@ function backToCase() {
 function initCaseCategories() {
     const categoryBtns = document.querySelectorAll('.category-btn');
     const caseCategories = document.querySelectorAll('.case-category');
-
+    
     categoryBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             categoryBtns.forEach(b => b.classList.remove('active'));
@@ -667,11 +667,13 @@ function initCaseCategories() {
             caseCategories.forEach(cat => cat.classList.remove('show'));
             
             const category = btn.dataset.category;
-            const activeCategory = document.querySelector(`.case-category.${category}`);
-            activeCategory.classList.add('show');
+            document.querySelector(`.case-category.${category}`).classList.add('show');
             
-            // Прокручиваем к началу категории
-            activeCategory.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Плавная прокрутка к началу
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
     });
 
