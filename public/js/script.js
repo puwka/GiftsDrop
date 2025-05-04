@@ -457,9 +457,6 @@ function updateOpenButtons() {
 
 // В script.js обновите функцию openCase:
 async function openCase() {
-    console.log('Starting case opening with items:', caseItems);
-    console.log('Initial scroll position:', itemsTrack.scrollLeft);
-
     if (!currentUser || !currentCase) {
         showToast("Ошибка: данные не загружены", "error");
         return;
@@ -584,12 +581,6 @@ function calculateStopPosition(items, winningIndex, itemWidth) {
 
 // Новая функция для показа модального окна с выигрышем
 function showWinModal(item) {
-
-    console.log('Winning item:', winningItem);
-    console.log('Current scroll position:', itemsTrack.scrollLeft);
-    console.log('Calculated stop position:', stopPosition);
-    console.log('Items at pointer:', document.elementsFromPoint(window.innerWidth / 2, 50));
-
     const modal = document.getElementById('winModal');
     if (!modal) return;
 
