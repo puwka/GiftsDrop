@@ -1354,6 +1354,59 @@ input[type="number"]::-webkit-inner-spin-button {
     border-top: 15px solid var(--danger);
 }
 
+.roulette-track {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    will-change: transform;
+}
+
+.roulette-item {
+    min-width: 120px;
+    height: 140px;
+    margin: 0 10px;
+    border-radius: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(138, 43, 226, 0.1);
+    border: 2px solid;
+}
+
+.roulette-item.common { border-color: #95a5a6; }
+.roulette-item.rare { border-color: #3498db; }
+.roulette-item.epic { border-color: #9b59b6; }
+.roulette-item.legendary { border-color: #f1c40f; }
+
+.roulette-pointer {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: #ff0000;
+    z-index: 10;
+}
+
+.roulette-pointer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 20px solid #ff0000;
+}
+
 /* Сетка предметов */
 .case-items-grid {
     display: grid;

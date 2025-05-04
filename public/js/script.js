@@ -477,37 +477,39 @@ async function openCase() {
         // Сброс предыдущего состояния
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
-        void itemsTrack.offsetWidth;
+        void itemsTrack.offsetWidth; // Принудительный reflow
 
-        // Создаем массив из 50 случайных предметов (для плавной прокрутки)
+        // Создаем массив для рулетки (3 полных цикла + выигрышный предмет в конце)
         const scrollItems = [];
-        for (let i = 0; i < 50; i++) {
-            scrollItems.push(...caseItems);
+        for (let i = 0; i < 3; i++) {
+            scrollItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
         // Выбираем выигрышный предмет (с учетом шансов)
         const winningItem = selectItemWithChance(caseItems);
-        wonItem = winningItem; // Сохраняем для использования в модальном окне
+        scrollItems.push(winningItem);
+        wonItem = winningItem; // Сохраняем для модального окна
         
         // Вставляем предметы в рулетку
-        itemsTrack.innerHTML = scrollItems.map((item, index) => `
+        itemsTrack.innerHTML = scrollItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')"
                  data-item-id="${item.id}">
             </div>
         `).join('');
 
-        // Рассчитываем позицию остановки (чтобы winningItem был по центру)
+        // Рассчитываем позицию остановки (последний предмет - выигрышный)
         const itemWidth = 120;
-        const centerPosition = Math.floor(rouletteContainer.offsetWidth / 2);
-        const winningItemPosition = scrollItems.findIndex(item => item.id === winningItem.id);
-        const stopPosition = (winningItemPosition * itemWidth) - centerPosition + (itemWidth / 2);
+        const containerWidth = rouletteContainer.offsetWidth;
+        const stopPosition = (scrollItems.length * itemWidth) - containerWidth + (containerWidth/2 - itemWidth/2);
         
-        // Запускаем анимацию прокрутки
-        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.1, 0.7, 0.1, 1)';
-        itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
-        
-        // Отправляем запрос на сервер с выбранным предметом
+        // Запускаем анимацию
+        setTimeout(() => {
+            itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.1, 0.2, 1)';
+            itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
+        }, 50);
+
+        // Отправляем запрос на сервер
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
@@ -555,26 +557,20 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
 // Функция выбора предмета с учетом шансов
 function selectItemWithChance(items) {
     // Создаем массив с кумулятивными шансами
-    let cumulativeChance = 0;
-    const itemsWithRanges = items.map(item => {
-        const start = cumulativeChance;
-        cumulativeChance += item.drop_chance || 1; // Используем drop_chance или 1 по умолчанию
-        return {
-            ...item,
-            start,
-            end: cumulativeChance
-        };
+    const totalChance = items.reduce((sum, item) => sum + (item.drop_chance || 1), 0);
+    let cumulative = 0;
+    const slots = items.map(item => {
+        const chance = (item.drop_chance || 1) / totalChance * 100;
+        const slot = { item, min: cumulative, max: cumulative + chance };
+        cumulative += chance;
+        return slot;
     });
 
     // Генерируем случайное число
-    const random = Math.random() * cumulativeChance;
+    const random = Math.random() * 100;
     
-    // Находим предмет
-    const selectedItem = itemsWithRanges.find(item => 
-        random >= item.start && random < item.end
-    );
-    
-    return selectedItem || items[0];
+    // Находим выигрышный предмет
+    return slots.find(slot => random >= slot.min && random < slot.max).item;
 }
 
 // Новая функция для показа модального окна с выигрышем
