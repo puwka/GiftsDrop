@@ -468,17 +468,15 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // Получаем данные о шансах из API
-        const caseData = await apiRequest(`/users/case/${currentCase.id}/items`);
-        if (!caseData.success) throw new Error(caseData.error || "Не удалось получить данные о кейсе");
+        // Получаем предметы с их шансами
+        const response = await apiRequest(`/users/case/${currentCase.id}/items`);
+        if (!response.success) throw new Error(response.error || "Ошибка загрузки предметов");
         
-        const itemsWithChances = caseData.items; // Массив предметов с adjusted_chance
-        
-        // Выбираем предмет с учетом шансов
+        const itemsWithChances = response.items;
         const winningItem = selectItemWithChance(itemsWithChances);
         wonItem = winningItem;
-        
-        // Остальная логика анимации рулетки...
+
+        // Настройка анимации
         const itemsTrack = document.getElementById('caseItemsTrack');
         const staticView = document.getElementById('caseStaticView');
         const rouletteView = document.getElementById('caseRouletteView');
@@ -488,18 +486,16 @@ async function openCase() {
         itemsTrack.style.transform = 'translateX(0)';
         void itemsTrack.offsetWidth;
         
-        // Переключаем вид
+        // Переключение вида
         staticView.classList.add('hidden');
         rouletteView.classList.remove('hidden');
         
-        // Создаем рулетку с 3 циклами случайных предметов
+        // Создаем рулетку с 3 циклами случайных предметов + выигрышный в конце
         const loopCount = 3;
         let rouletteItems = [];
         for (let i = 0; i < loopCount; i++) {
             rouletteItems.push(...[...itemsWithChances].sort(() => Math.random() - 0.5));
         }
-        
-        // Вставляем выигрышный предмет в конец (чтобы он оказался под указателем)
         rouletteItems.push(winningItem);
         
         // Рендерим рулетку
@@ -517,7 +513,7 @@ async function openCase() {
         const trackWidth = rouletteItems.length * itemWidth;
         const stopPosition = trackWidth - (window.innerWidth / 2) - (itemWidth / 2);
         
-        // Запускаем анимацию
+        // Запускаем анимацию с эффектом замедления
         itemsTrack.style.transition = 'transform 5s cubic-bezier(0.08, 0.65, 0.25, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
         
@@ -527,11 +523,10 @@ async function openCase() {
         // Выделяем выигрышный предмет
         const winningElement = itemsTrack.querySelector(`[data-item-id="${winningItem.id}"]`);
         if (winningElement) {
-            winningElement.style.transform = 'scale(1.1)';
-            winningElement.style.boxShadow = '0 0 15px gold';
+            winningElement.classList.add('highlighted');
         }
         
-        // Показываем модальное окно с выигранным предметом
+        // Показываем модальное окно
         showWinModal(winningItem);
         
         // Обновляем баланс (если не демо-режим)
@@ -539,17 +534,17 @@ async function openCase() {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
             
-            const response = await apiRequest('/users/open-case', 'POST', {
+            const result = await apiRequest('/users/open-case', 'POST', {
                 user_id: currentUser.id,
                 case_id: currentCase.id,
                 item_id: winningItem.id,
                 is_demo: isDemoMode
             });
             
-            if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
+            if (!result.success) throw new Error(result.error || 'Ошибка открытия кейса');
         }
     } catch (error) {
-        console.error('Open case error:', error);
+        console.error('Ошибка открытия кейса:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
         showLoading(false);

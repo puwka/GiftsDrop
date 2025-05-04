@@ -1637,20 +1637,44 @@ input[type="number"]::-webkit-inner-spin-button {
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
 }
 
-/* Гарантируем одинаковые размеры */
-.roulette-item {
-    width: 120px !important;
-    height: 120px !important;
-    margin: 0 10px !important;
-    flex-shrink: 0 !important;
-    transition: transform 0.3s, box-shadow 0.3s !important;
+/* Добавляем в style.css */
+.roulette-track {
+    display: flex;
+    height: 100%;
+    transition: transform 5s cubic-bezier(0.19, 1, 0.22, 1);
+    align-items: center;
+    will-change: transform;
 }
 
-/* Точное позиционирование указателя */
+.roulette-item {
+    width: 120px;
+    height: 120px;
+    margin: 0 10px;
+    border-radius: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.roulette-item.highlighted {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px gold;
+    animation: pulse 0.5s 3;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
 .roulette-pointer {
     position: absolute;
-    left: calc(50% - 1px) !important;
+    left: 50%;
     top: 0;
+    transform: translateX(-50%);
     width: 2px;
     height: 100%;
     background: #ff0000;
