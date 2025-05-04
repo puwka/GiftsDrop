@@ -557,20 +557,26 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
 // Функция выбора предмета с учетом шансов
 function selectItemWithChance(items) {
     // Создаем массив с кумулятивными шансами
-    const totalChance = items.reduce((sum, item) => sum + (item.drop_chance || 1), 0);
-    let cumulative = 0;
-    const slots = items.map(item => {
-        const chance = (item.drop_chance || 1) / totalChance * 100;
-        const slot = { item, min: cumulative, max: cumulative + chance };
-        cumulative += chance;
-        return slot;
+    let cumulativeChance = 0;
+    const itemsWithRanges = items.map(item => {
+        const start = cumulativeChance;
+        cumulativeChance += item.drop_chance || 1; // Используем drop_chance или 1 по умолчанию
+        return {
+            ...item,
+            start,
+            end: cumulativeChance
+        };
     });
 
     // Генерируем случайное число
-    const random = Math.random() * 100;
+    const random = Math.random() * cumulativeChance;
     
-    // Находим выигрышный предмет
-    return slots.find(slot => random >= slot.min && random < slot.max).item;
+    // Находим предмет
+    const selectedItem = itemsWithRanges.find(item => 
+        random >= item.start && random < item.end
+    );
+    
+    return selectedItem || items[0];
 }
 
 // Новая функция для показа модального окна с выигрышем
