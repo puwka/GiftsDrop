@@ -261,13 +261,12 @@ router.get('/case/:id', async (req, res) => {
 router.post('/open-case', async (req, res) => {
     console.log('Open case request received:', req.body);
     
-    const { user_id, case_id, is_demo = false } = req.body;
+    const { user_id, case_id, item_id, is_demo = false } = req.body;
     
-    // Базовая валидация
-    if (!user_id || !case_id) {
+    if (!user_id || !case_id || !item_id) {
         return res.status(400).json({ 
             success: false,
-            error: 'user_id and case_id are required'
+            error: 'user_id, case_id and item_id are required'
         });
     }
 
@@ -275,7 +274,7 @@ router.post('/open-case', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // 1. Проверка существования кейса (упрощённая)
+        // Проверка существования кейса
         const caseResult = await client.query(
             'SELECT id, price FROM cases WHERE id = $1',
             [case_id]
@@ -290,7 +289,7 @@ router.post('/open-case', async (req, res) => {
         
         const caseData = caseResult.rows[0];
         
-        // 2. Для реального открытия - проверка баланса
+        // Для реального открытия - проверка баланса
         if (!is_demo) {
             const balanceResult = await client.query(
                 'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
@@ -311,26 +310,22 @@ router.post('/open-case', async (req, res) => {
             );
         }
         
-        // 3. Получаем ОДИН случайный предмет (упрощённая логика)
+        // Получаем информацию о выигрышном предмете
         const itemResult = await client.query(
-            `SELECT i.* FROM items i
-             JOIN cases_items ci ON i.id = ci.item_id
-             WHERE ci.case_id = $1
-             ORDER BY RANDOM()
-             LIMIT 1`,
-            [case_id]
+            'SELECT * FROM items WHERE id = $1',
+            [item_id]
         );
         
         if (itemResult.rows.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'No items in this case'
+                error: 'Item not found'
             });
         }
         
         const wonItem = itemResult.rows[0];
         
-        // 4. Записываем открытие (только для реальных открытий)
+        // Записываем открытие (только для реальных открытий)
         if (!is_demo) {
             await client.query(
                 `INSERT INTO cases_openings 
@@ -342,7 +337,7 @@ router.post('/open-case', async (req, res) => {
         
         await client.query('COMMIT');
         
-        // Успешный ответ
+        // Возвращаем выигрышный предмет
         res.json({
             success: true,
             item: wonItem,
