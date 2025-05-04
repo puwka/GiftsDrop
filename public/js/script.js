@@ -35,7 +35,8 @@ let currentUser = null;
 let balance = 0;
 let userLevel = 1;
 let userXP = 0;
-let wonItem = null;
+// В начале файла script.js
+let wonItem = null; // Будет хранить выигранный предмет
 
 async function authenticateUser(userData) {
     try {
@@ -468,15 +469,15 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // Получаем предметы с их шансами из БД
+        // Получаем предметы с их шансами
         const response = await apiRequest(`/users/case/${currentCase.id}/items`);
         if (!response.success) throw new Error(response.error || "Ошибка загрузки предметов");
         
         const itemsWithChances = response.items;
         const winningItem = selectItemWithChance(itemsWithChances);
-        wonItem = winningItem;
+        wonItem = winningItem; // Сохраняем выигранный предмет
 
-        // Настройка анимации рулетки
+        // Настройка анимации
         const itemsTrack = document.getElementById('caseItemsTrack');
         const staticView = document.getElementById('caseStaticView');
         const rouletteView = document.getElementById('caseRouletteView');
@@ -526,7 +527,7 @@ async function openCase() {
             winningElement.classList.add('highlighted');
         }
         
-        // Показываем модальное окно с выигрышем
+        // Показываем модальное окно с ВЫИГРАННЫМ предметом
         showWinModal(winningItem);
         
         // Обновляем баланс (если не демо-режим)
@@ -534,7 +535,6 @@ async function openCase() {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
             
-            // Сохраняем открытие кейса в БД
             const result = await apiRequest('/users/open-case', 'POST', {
                 user_id: currentUser.id,
                 case_id: currentCase.id,
@@ -649,6 +649,31 @@ function showWinModal(item) {
 async function keepItem() {
     const modal = document.getElementById('winModal');
     if (modal) modal.classList.add('hidden');
+    wonItem = null; // Очищаем выигранный предмет
+}
+
+async function sellItem() {
+    const modal = document.getElementById('winModal');
+    if (!modal || !wonItem) return;
+    
+    const sellPrice = Math.floor((wonItem.price || 0) * 0.7);
+    
+    try {
+        const success = await updateBalance(
+            sellPrice,
+            'sell',
+            `Продажа предмета: ${wonItem.name}`
+        );
+        
+        if (success) {
+            showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
+            modal.classList.add('hidden');
+            wonItem = null; // Очищаем выигранный предмет
+        }
+    } catch (error) {
+        console.error('Sell item error:', error);
+        showToast("Ошибка при продаже предмета", "error");
+    }
 }
 
 async function sellItem() {
