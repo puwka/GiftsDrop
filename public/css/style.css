@@ -1326,6 +1326,48 @@ input[type="number"]::-webkit-inner-spin-button {
     text-overflow: ellipsis;
 }
 
+/* Стили для страницы кейса */
+.case-page {
+    padding-bottom: 80px;
+    overflow-y: auto;
+    height: calc(100vh - 120px);
+}
+
+.case-items-container {
+    height: auto;
+    overflow: visible;
+    padding-bottom: 80px;
+}
+
+.case-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+    overflow: visible;
+}
+
+/* Адаптивные стили */
+@media (max-width: 480px) {
+    .case-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .case-page {
+        padding-bottom: 60px;
+    }
+}
+
+@media (max-width: 360px) {
+    .case-items-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .case-page {
+        padding-bottom: 50px;
+    }
+}
+
 .item-rarity {
     font-size: 0.8rem;
     font-weight: 600;
