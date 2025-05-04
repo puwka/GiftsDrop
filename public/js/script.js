@@ -468,65 +468,61 @@ async function openCase() {
     try {
         showLoading(true);
         
-        // Сбрасываем предыдущую анимацию
         const itemsTrack = document.getElementById('caseItemsTrack');
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
-        
-        // Принудительное обновление DOM
         void itemsTrack.offsetWidth;
         
-        // Показываем рулетку и скрываем статичное изображение
         document.getElementById('caseStaticView').classList.add('hidden');
         document.getElementById('caseRouletteView').classList.remove('hidden');
         
-        // Создаем много копий предметов в случайном порядке
+        // Создаем копии предметов для плавной анимации
         const repeatedItems = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
         // Выбираем случайный предмет, который будет под указателем
-        const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
-        wonItem = winningItem; // Сохраняем для последующего использования
+        const winningIndex = Math.floor(Math.random() * caseItems.length);
+        const winningItem = caseItems[winningIndex];
+        wonItem = winningItem;
         
-        // Вставляем выигрышный предмет в середину списка
-        const middleIndex = Math.floor(repeatedItems.length / 2);
-        repeatedItems.splice(middleIndex, 0, winningItem);
+        // Вставляем выигрышный предмет в определенную позицию
+        const insertPosition = Math.floor(repeatedItems.length * 0.7);
+        repeatedItems.splice(insertPosition, 0, winningItem);
         
-        // Очищаем и заполняем трек
+        // Рендерим предметы в треке
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
             </div>
         `).join('');
 
-        // Ждем следующего кадра анимации
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // Запускаем анимацию прокрутки
-        const itemWidth = 120; // Ширина одного предмета
-        const totalWidth = repeatedItems.length * itemWidth;
-        const stopPosition = totalWidth - window.innerWidth / 2 - itemWidth * 2; // Останавливаемся на выигрышном предмете
+        // Рассчитываем позицию остановки так, чтобы выигрышный предмет был по центру
+        const itemWidth = 120;
+        const trackWidth = repeatedItems.length * itemWidth;
+        const centerPosition = (window.innerWidth / 2) - (itemWidth / 2);
+        const stopPosition = (insertPosition * itemWidth) - centerPosition;
         
         itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
 
-        // Ждем завершения анимации
+        // Задержка для завершения анимации
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // Показываем модальное окно с выигранным предметом
+        // Показываем выигранный предмет
         showWinModal(winningItem);
         
         if (!isDemoMode) {
-            // Обновляем баланс
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
             
-            // Отправляем запрос на сервер только после анимации
             const response = await apiRequest('/users/open-case', 'POST', {
                 user_id: currentUser.id,
                 case_id: currentCase.id,
+                item_id: winningItem.id,
                 is_demo: isDemoMode
             });
             
@@ -540,12 +536,10 @@ async function openCase() {
         const button = document.getElementById('openCaseBtn');
         if (button) button.disabled = false;
         
-        // Возвращаем статичное изображение
         setTimeout(() => {
             document.getElementById('caseStaticView').classList.remove('hidden');
             document.getElementById('caseRouletteView').classList.add('hidden');
             
-            // Полный сброс анимации
             const itemsTrack = document.getElementById('caseItemsTrack');
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
@@ -554,17 +548,25 @@ async function openCase() {
     }
 }
 
+function calculateStopPosition(items, winningIndex, itemWidth) {
+    const visibleItems = Math.ceil(window.innerWidth / itemWidth);
+    const paddingItems = Math.floor(visibleItems / 2);
+    
+    // Позиция, при которой выигрышный элемент будет по центру
+    return (winningIndex + paddingItems) * itemWidth - (window.innerWidth / 2) + (itemWidth / 2);
+}
+
 // Новая функция для показа модального окна с выигрышем
 function showWinModal(item) {
     const modal = document.getElementById('winModal');
+    if (!modal) return;
+
     const container = document.getElementById('wonItemContainer');
     const sellPriceElement = document.getElementById('sellPrice');
     
-    if (!modal || !container || !sellPriceElement) return;
-    
     const rarityClass = item.rarity || 'common';
     const rarityName = getRarityName(item.rarity);
-    const sellPrice = Math.floor((item.price || 0) * 0.7); // 70% от цены
+    const sellPrice = Math.floor((item.price || 0) * 0.7);
     
     container.innerHTML = `
         <div class="won-item" data-rarity="${rarityClass}">
@@ -582,13 +584,16 @@ function showWinModal(item) {
         </div>
     `;
     
-    sellPriceElement.textContent = sellPrice;
+    if (sellPriceElement) {
+        sellPriceElement.textContent = sellPrice;
+    }
+    
     modal.classList.remove('hidden');
     
-    // Добавляем анимацию для редких предметов
+    // Добавляем анимацию для легендарных предметов
     if (rarityClass === 'legendary') {
-        const wonItemElement = container.querySelector('.won-item');
-        wonItemElement.style.animation = 'pulse 2s infinite';
+        const wonItem = container.querySelector('.won-item');
+        wonItem.style.animation = 'pulse 2s infinite';
     }
 }
 
