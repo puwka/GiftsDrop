@@ -467,8 +467,10 @@ async function openCase() {
     if (openBtn) openBtn.disabled = true;
 
     try {
-        showLoading(true);
-        
+        // Показываем рулетку и скрываем статичное изображение
+        document.getElementById('caseStaticView').classList.add('hidden');
+        document.getElementById('caseRouletteView').classList.remove('hidden');
+
         // 1. Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
         const rouletteContainer = document.querySelector('.case-items-horizontal-container');
@@ -494,10 +496,10 @@ async function openCase() {
         // 5. Запуск анимации прокрутки
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        const itemWidth = 100; // Ширина одного элемента
+        const itemWidth = 120; // Ширина одного элемента
         const totalWidth = repeatedItems.length * itemWidth;
         const containerWidth = rouletteContainer.offsetWidth;
-        const scrollDistance = totalWidth - containerWidth;
+        const scrollDistance = totalWidth - containerWidth + (itemWidth * 5); // Добавляем немного для остановки
         
         itemsTrack.style.transition = 'transform 3s ease-out';
         itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
@@ -529,7 +531,10 @@ async function openCase() {
         // 9. Восстанавливаем состояние
         setTimeout(() => {
             if (openBtn) openBtn.disabled = false;
-            showLoading(false);
+            
+            // Возвращаем статичное изображение
+            document.getElementById('caseStaticView').classList.remove('hidden');
+            document.getElementById('caseRouletteView').classList.add('hidden');
             
             // Сброс анимации
             const itemsTrack = document.getElementById('caseItemsTrack');
