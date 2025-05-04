@@ -494,7 +494,7 @@ async function openCase() {
         
         // 4. Выбираем выигрышный предмет и его позицию
         const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
-        wonItem = winningItem;
+        wonItem = winningItem; // Сохраняем выигранный предмет в глобальную переменную
         const winningPosition = Math.floor(rouletteItems.length * 0.75); // 75% длины
         
         // Вставляем выигрышный предмет в рассчитанную позицию
@@ -529,10 +529,10 @@ async function openCase() {
             winningElement.style.boxShadow = '0 0 15px gold';
         }
         
-        // 10. Показываем модальное окно с ЭТИМ ЖЕ предметом
+        // 10. Показываем модальное окно с выигранным предметом
         showWinModal(winningItem);
         
-        // 11. Обновляем баланс
+        // 11. Обновляем баланс (только если не демо-режим)
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
