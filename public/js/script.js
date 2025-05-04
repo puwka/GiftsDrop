@@ -468,30 +468,35 @@ async function openCase() {
     try {
         showLoading(true);
         
+        // Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
+        const staticView = document.getElementById('caseStaticView');
+        const rouletteView = document.getElementById('caseRouletteView');
+        
+        // Сброс анимации
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
         void itemsTrack.offsetWidth;
         
-        document.getElementById('caseStaticView').classList.add('hidden');
-        document.getElementById('caseRouletteView').classList.remove('hidden');
+        // Переключаем вид
+        staticView.classList.add('hidden');
+        rouletteView.classList.remove('hidden');
         
-        // Создаем копии предметов для плавной анимации
+        // 1. Выбираем случайный предмет, который будет выигрышным
+        const winningItem = caseItems[Math.floor(Math.random() * caseItems.length)];
+        wonItem = winningItem;
+        
+        // 2. Создаем "бесконечную" рулетку с повторяющимися предметами
         const repeatedItems = [];
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
         
-        // Выбираем случайный предмет, который будет под указателем
-        const winningIndex = Math.floor(Math.random() * caseItems.length);
-        const winningItem = caseItems[winningIndex];
-        wonItem = winningItem;
-        
-        // Вставляем выигрышный предмет в определенную позицию
-        const insertPosition = Math.floor(repeatedItems.length * 0.7);
+        // 3. Вставляем выигрышный предмет в позицию, которая окажется под указателем
+        const insertPosition = Math.floor(repeatedItems.length * 0.75);
         repeatedItems.splice(insertPosition, 0, winningItem);
         
-        // Рендерим предметы в треке
+        // 4. Рендерим предметы
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
                  style="background-image: url('${item.image_url || 'img/default-item.png'}')">
@@ -500,21 +505,22 @@ async function openCase() {
 
         await new Promise(resolve => requestAnimationFrame(resolve));
         
-        // Рассчитываем позицию остановки так, чтобы выигрышный предмет был по центру
-        const itemWidth = 120;
-        const trackWidth = repeatedItems.length * itemWidth;
-        const centerPosition = (window.innerWidth / 2) - (itemWidth / 2);
-        const stopPosition = (insertPosition * itemWidth) - centerPosition;
+        // 5. Рассчитываем точную позицию остановки
+        const itemWidth = 120; // Ширина одного элемента в пикселях
+        const centerOffset = (window.innerWidth / 2) - (itemWidth / 2);
+        const stopPosition = (insertPosition * itemWidth) - centerOffset;
         
-        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        // 6. Запускаем анимацию
+        itemsTrack.style.transition = 'transform 5s cubic-bezier(0.1, 0.8, 0.2, 1)';
         itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
 
-        // Задержка для завершения анимации
+        // 7. Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // Показываем выигранный предмет
+        // 8. Показываем выигранный предмет (тот самый, что под указателем)
         showWinModal(winningItem);
         
+        // 9. Обновляем баланс и отправляем данные на сервер
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
             updateBalanceDisplay();
@@ -536,6 +542,7 @@ async function openCase() {
         const button = document.getElementById('openCaseBtn');
         if (button) button.disabled = false;
         
+        // Возвращаем исходный вид
         setTimeout(() => {
             document.getElementById('caseStaticView').classList.remove('hidden');
             document.getElementById('caseRouletteView').classList.add('hidden');
@@ -546,6 +553,11 @@ async function openCase() {
             void itemsTrack.offsetWidth;
         }, 1000);
     }
+}
+
+function getItemCenterPosition(itemIndex, itemWidth) {
+    const viewportCenter = window.innerWidth / 2;
+    return (itemIndex * itemWidth) + (itemWidth / 2) - viewportCenter;
 }
 
 function calculateStopPosition(items, winningIndex, itemWidth) {
