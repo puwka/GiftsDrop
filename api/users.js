@@ -261,13 +261,12 @@ router.get('/case/:id', async (req, res) => {
 router.post('/open-case', async (req, res) => {
     console.log('Open case request received:', req.body);
     
-    const { user_id, case_id, is_demo = false } = req.body;
+    const { user_id, case_id, item_id, is_demo = false } = req.body;
     
-    // Базовая валидация
-    if (!user_id || !case_id) {
+    if (!user_id || !case_id || !item_id) {
         return res.status(400).json({ 
             success: false,
-            error: 'user_id and case_id are required'
+            error: 'user_id, case_id and item_id are required'
         });
     }
 
@@ -275,7 +274,7 @@ router.post('/open-case', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // 1. Проверка существования кейса (упрощённая)
+        // 1. Проверка существования кейса
         const caseResult = await client.query(
             'SELECT id, price FROM cases WHERE id = $1',
             [case_id]
@@ -311,20 +310,16 @@ router.post('/open-case', async (req, res) => {
             );
         }
         
-        // 3. Получаем ОДИН случайный предмет (упрощённая логика)
+        // 3. Получаем предмет по переданному ID
         const itemResult = await client.query(
-            `SELECT i.* FROM items i
-             JOIN cases_items ci ON i.id = ci.item_id
-             WHERE ci.case_id = $1
-             ORDER BY RANDOM()
-             LIMIT 1`,
-            [case_id]
+            `SELECT * FROM items WHERE id = $1`,
+            [item_id]
         );
         
         if (itemResult.rows.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'No items in this case'
+                error: 'Item not found'
             });
         }
         

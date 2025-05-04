@@ -471,53 +471,55 @@ async function openCase() {
         document.getElementById('caseStaticView').classList.add('hidden');
         document.getElementById('caseRouletteView').classList.remove('hidden');
 
-        // 1. Получаем элементы DOM
         const itemsTrack = document.getElementById('caseItemsTrack');
         const rouletteContainer = document.querySelector('.case-items-horizontal-container');
         
-        // 2. Сброс предыдущего состояния
+        // Сброс предыдущего состояния
         itemsTrack.style.transition = 'none';
         itemsTrack.style.transform = 'translateX(0)';
-        void itemsTrack.offsetWidth; // Принудительный reflow
-        
-        // 3. Генерация элементов для прокрутки (50 предметов)
+        void itemsTrack.offsetWidth;
+
+        // Генерация элементов для прокрутки
         const repeatedItems = [];
         for (let i = 0; i < 10; i++) {
             repeatedItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
         }
-        
-        // 4. Вставка в DOM
+
+        // Вставка в DOM
         itemsTrack.innerHTML = repeatedItems.map(item => `
             <div class="roulette-item ${item.rarity || 'common'}" 
-                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
+                 style="background-image: url('${item.image_url || 'img/default-item.png'}')"
+                 data-item-id="${item.id}">
             </div>
         `).join('');
+
+        // Выбираем случайный предмет (который будет в центре)
+        const winningItem = selectItemWithChance(caseItems);
+        const winningItemIndex = repeatedItems.findIndex(item => item.id === winningItem.id);
         
-        // 5. Запуск анимации прокрутки
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        // Рассчитываем позицию остановки
+        const itemWidth = 120;
+        const stopPosition = calculateStopPosition(winningItemIndex, itemWidth, repeatedItems.length);
         
-        const itemWidth = 120; // Ширина одного элемента
-        const totalWidth = repeatedItems.length * itemWidth;
-        const containerWidth = rouletteContainer.offsetWidth;
-        const scrollDistance = totalWidth - containerWidth + (itemWidth * 5); // Добавляем немного для остановки
-        
-        itemsTrack.style.transition = 'transform 3s ease-out';
-        itemsTrack.style.transform = `translateX(-${scrollDistance}px)`;
-        
-        // 6. Параллельно делаем запрос к серверу
+        // Запускаем анимацию
+        itemsTrack.style.transition = 'transform 3s cubic-bezier(0.2, 0.1, 0.2, 1)';
+        itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
+
+        // Параллельно делаем запрос к серверу с ВЫБРАННЫМ предметом
         const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser.id,
             case_id: currentCase.id,
+            item_id: winningItem.id, // Отправляем ID выбранного предмета
             is_demo: isDemoMode
         });
-        
+
         if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
         
-        // 7. Ждем завершения анимации
+        // Ждем завершения анимации
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // 8. Показываем выигрыш
-        showWinModal(response.item);
+        // Показываем выигрыш (используем winningItem вместо response.item)
+        showWinModal(winningItem);
         
         if (!isDemoMode) {
             balance -= currentCase.price * selectedCount;
@@ -528,15 +530,11 @@ async function openCase() {
         console.error('Open case error:', error);
         showToast(error.message || "Ошибка при открытии кейса", "error");
     } finally {
-        // 9. Восстанавливаем состояние
         setTimeout(() => {
             if (openBtn) openBtn.disabled = false;
-            
-            // Возвращаем статичное изображение
             document.getElementById('caseStaticView').classList.remove('hidden');
             document.getElementById('caseRouletteView').classList.add('hidden');
             
-            // Сброс анимации
             const itemsTrack = document.getElementById('caseItemsTrack');
             itemsTrack.style.transition = 'none';
             itemsTrack.style.transform = 'translateX(0)';
@@ -545,13 +543,20 @@ async function openCase() {
     }
 }
 
-// Функция для выбора предмета с учетом шансов
+// Функция для расчета позиции остановки
+function calculateStopPosition(winningIndex, itemWidth, totalItems) {
+    const itemsPerScreen = 3; // Примерное количество видимых предметов
+    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
+    return (winningIndex * itemWidth) + centerOffset;
+}
+
+// Функция выбора предмета с учетом шансов
 function selectItemWithChance(items) {
     // Создаем массив с кумулятивными шансами
     let cumulativeChance = 0;
     const itemsWithRanges = items.map(item => {
         const start = cumulativeChance;
-        cumulativeChance += item.adjusted_chance;
+        cumulativeChance += item.drop_chance || 1; // Используем drop_chance или 1 по умолчанию
         return {
             ...item,
             start,
@@ -559,28 +564,15 @@ function selectItemWithChance(items) {
         };
     });
 
-    // Генерируем случайное число от 0 до общей суммы шансов
+    // Генерируем случайное число
     const random = Math.random() * cumulativeChance;
     
-    // Находим предмет, в диапазон которого попало случайное число
+    // Находим предмет
     const selectedItem = itemsWithRanges.find(item => 
         random >= item.start && random < item.end
     );
     
-    return selectedItem || items[0]; // На всякий случай возвращаем первый предмет, если что-то пошло не так
-}
-
-function getItemCenterPosition(itemIndex, itemWidth) {
-    const viewportCenter = window.innerWidth / 2;
-    return (itemIndex * itemWidth) + (itemWidth / 2) - viewportCenter;
-}
-
-function calculateStopPosition(items, winningIndex, itemWidth) {
-    const visibleItems = Math.ceil(window.innerWidth / itemWidth);
-    const paddingItems = Math.floor(visibleItems / 2);
-    
-    // Позиция, при которой выигрышный элемент будет по центру
-    return (winningIndex + paddingItems) * itemWidth - (window.innerWidth / 2) + (itemWidth / 2);
+    return selectedItem || items[0];
 }
 
 // Новая функция для показа модального окна с выигрышем
