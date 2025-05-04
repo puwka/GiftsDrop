@@ -1328,6 +1328,7 @@ input[type="number"]::-webkit-inner-spin-button {
     align-items: center;
     justify-content: center;
     background-color: rgba(138, 43, 226, 0.1);
+    transition: transform 0.1s;
 }
 
 .roulette-pointer {
@@ -1359,6 +1360,7 @@ input[type="number"]::-webkit-inner-spin-button {
     height: 100%;
     align-items: center;
     will-change: transform;
+    padding: 0 50%;
 }
 
 .roulette-item {

@@ -259,100 +259,61 @@ router.get('/case/:id', async (req, res) => {
 });
 
 router.post('/open-case', async (req, res) => {
-    console.log('Open case request received:', req.body);
-    
     const { user_id, case_id, item_id, is_demo = false } = req.body;
     
     if (!user_id || !case_id || !item_id) {
-        return res.status(400).json({ 
-            success: false,
-            error: 'user_id, case_id and item_id are required'
-        });
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        // 1. Проверка существования кейса
-        const caseResult = await client.query(
-            'SELECT id, price FROM cases WHERE id = $1',
-            [case_id]
-        );
-        
-        if (caseResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'Case not found'
-            });
-        }
-        
-        const caseData = caseResult.rows[0];
-        
-        // 2. Для реального открытия - проверка баланса
-        if (!is_demo) {
-            const balanceResult = await client.query(
-                'SELECT balance FROM user_balances WHERE user_id = $1 FOR UPDATE',
-                [user_id]
-            );
-            
-            if (balanceResult.rows.length === 0 || balanceResult.rows[0].balance < caseData.price) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Not enough balance'
-                });
-            }
-            
-            // Списание средств
-            await client.query(
-                'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
-                [caseData.price, user_id]
-            );
-        }
-        
-        // 3. Получаем предмет по переданному ID
-        const itemResult = await client.query(
-            `SELECT * FROM items WHERE id = $1`,
+        // Проверяем существование предмета
+        const itemCheck = await client.query(
+            'SELECT * FROM items WHERE id = $1', 
             [item_id]
         );
-        
-        if (itemResult.rows.length === 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Item not found'
-            });
+        if (itemCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
         }
+        const wonItem = itemCheck.rows[0];
         
-        const wonItem = itemResult.rows[0];
-        
-        // 4. Записываем открытие (только для реальных открытий)
+        // Для реального открытия - списываем средства
         if (!is_demo) {
+            const caseCheck = await client.query(
+                'SELECT price FROM cases WHERE id = $1',
+                [case_id]
+            );
+            if (caseCheck.rows.length === 0) {
+                return res.status(404).json({ error: 'Case not found' });
+            }
+            
             await client.query(
-                `INSERT INTO cases_openings 
-                 (user_id, case_id, item_id, is_demo, opened_at)
-                 VALUES ($1, $2, $3, $4, NOW())`,
-                [user_id, case_id, wonItem.id, is_demo]
+                'UPDATE user_balances SET balance = balance - $1 WHERE user_id = $2',
+                [caseCheck.rows[0].price, user_id]
             );
         }
+        
+        // Записываем открытие
+        await client.query(
+            `INSERT INTO cases_openings 
+             (user_id, case_id, item_id, is_demo, opened_at)
+             VALUES ($1, $2, $3, $4, NOW())`,
+            [user_id, case_id, item_id, is_demo]
+        );
         
         await client.query('COMMIT');
         
-        // Успешный ответ
-        res.json({
+        res.json({ 
             success: true,
-            item: wonItem,
-            price: is_demo ? 0 : caseData.price
+            item: wonItem
         });
         
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Database error:', err);
-        
-        res.status(500).json({
-            success: false,
-            error: 'Database operation failed',
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+        res.status(500).json({ error: 'Database operation failed' });
     } finally {
         client.release();
     }
