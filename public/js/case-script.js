@@ -5,7 +5,7 @@ let selectedCount = 1;
 let isDemoMode = false;
 let wonItem = null;
 
-// Переносим функцию initCaseButtons в начало
+// Инициализация кнопок управления
 function initCaseButtons() {
     document.getElementById('demoOpenBtn').addEventListener('click', toggleDemoMode);
     document.getElementById('openCaseBtn').addEventListener('click', openCase);
@@ -18,33 +18,13 @@ function initCaseButtons() {
     document.getElementById('decreaseCount').addEventListener('click', () => changeCount(-1));
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const caseId = urlParams.get('id');
-        
-        if (!caseId) {
-            throw new Error('ID кейса не указан');
-        }
-        
-        await loadCasePage(caseId);
-        initCaseButtons(); // Теперь функция определена
-        
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        showToast(error.message || "Ошибка загрузки", "error");
-        setTimeout(() => window.location.href = 'index.html', 2000);
-    }
-});
-
-// Остальной код остается без изменений...
-
+// Загрузка данных кейса
 async function loadCasePage(caseId) {
     try {
-        // Загружаем данные кейса и предметов с сервера
+        // Загружаем данные кейса и предметов
         const [caseResponse, itemsResponse] = await Promise.all([
-            apiRequest(`/users/case/${caseId}`),
-            apiRequest(`/users/case/${caseId}/items`)
+            apiRequest(`/case/${caseId}`),
+            apiRequest(`/case/${caseId}/items`)
         ]);
         
         if (!caseResponse.success || !itemsResponse.success) {
@@ -54,6 +34,9 @@ async function loadCasePage(caseId) {
         currentCase = caseResponse.case;
         caseItems = itemsResponse.items;
         
+        // Нормализуем шансы выпадения (если они не в процентах)
+        normalizeDropChances();
+        
         renderCasePage();
         
     } catch (error) {
@@ -62,14 +45,29 @@ async function loadCasePage(caseId) {
     }
 }
 
+// Нормализация шансов выпадения в проценты
+function normalizeDropChances() {
+    if (!caseItems.length) return;
+    
+    // Проверяем, нужно ли нормализовать (если сумма не равна 100)
+    const totalChance = caseItems.reduce((sum, item) => sum + (item.drop_chance || item.adjusted_chance || 0), 0);
+    
+    if (totalChance !== 100) {
+        caseItems.forEach(item => {
+            item.drop_chance = ((item.drop_chance || item.adjusted_chance || 1) / totalChance * 100).toFixed(2);
+        });
+    }
+}
+
+// Отображение данных кейса
 function renderCasePage() {
     if (!currentCase) return;
     
-    // Обновляем основную информацию о кейсе
+    // Обновляем цену кейса
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
-    document.getElementById('totalCost').textContent = currentCase.price * selectedCount;
+    updateTotalCost();
     
-    // Рендерим предметы для сетки
+    // Рендерим предметы
     const itemsGrid = document.getElementById('caseItemsGrid');
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
@@ -91,32 +89,33 @@ function renderCasePage() {
     }
 }
 
+// Открытие кейса
 async function openCase() {
     if (!currentCase) return;
 
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    // Проверяем баланс в реальном режиме
+    // Проверка баланса в реальном режиме
     if (!isDemoMode && balance < currentCase.price * selectedCount) {
         showToast("Недостаточно средств", "error");
         openBtn.disabled = false;
         return;
     }
 
-    // Получаем элементы DOM
+    // Переключаем вид на рулетку
     const staticView = document.getElementById('caseStaticView');
     const rouletteView = document.getElementById('caseRouletteView');
     const track = document.getElementById('rouletteTrack');
     
-    // Показываем рулетку
     staticView.classList.add('hidden');
     rouletteView.classList.remove('hidden');
     track.innerHTML = '';
     
     try {
         // Отправляем запрос на открытие кейса
-        const response = await apiRequest('/cases/open', 'POST', {
+        const response = await apiRequest('/open-case', 'POST', {
+            user_id: currentUser?.id || 0,
             case_id: currentCase.id,
             count: selectedCount,
             is_demo: isDemoMode
@@ -126,48 +125,19 @@ async function openCase() {
             throw new Error(response.error || 'Ошибка открытия кейса');
         }
         
-        const wonItems = response.items || [];
-        if (wonItems.length === 0) {
+        // Получаем выигранные предметы
+        const wonItems = Array.isArray(response.items) ? response.items : [response.item];
+        if (!wonItems.length) {
             throw new Error('Не получены выигранные предметы');
         }
         
         // Для демонстрации берем первый выигранный предмет
         const targetItem = wonItems[0];
         
-        // Создаем дорожку с предметами
-        const rouletteItems = [];
-        for (let i = 0; i < 5; i++) {
-            rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-        }
-        rouletteItems.push(targetItem);
+        // Создаем дорожку с предметами для анимации
+        createRouletteTrack(targetItem);
         
-        // Отображаем предметы
-        track.style.width = `${rouletteItems.length * 140}px`;
-        rouletteItems.forEach((item, index) => {
-            const itemEl = document.createElement('div');
-            itemEl.className = `roulette-item ${item.rarity}`;
-            itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
-            itemEl.innerHTML = !item.image_url ? `<i class="fas fa-gift"></i>` : '';
-            if (index === rouletteItems.length - 1) {
-                itemEl.dataset.winning = 'true';
-            }
-            track.appendChild(itemEl);
-        });
-
-        // Анимация рулетки
-        const itemWidth = 140;
-        const itemsPerScreen = 3;
-        const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
-        const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
-        
-        track.style.transform = 'translateX(0)';
-        track.style.transition = 'none';
-        void track.offsetWidth;
-        
-        track.style.transition = 'transform 4s cubic-bezier(0.19, 1, 0.22, 1)';
-        track.style.transform = `translateX(-${targetPosition}px)`;
-        
-        // После завершения анимации показываем модальное окно
+        // После анимации показываем модальное окно с выигрышем
         setTimeout(() => {
             showWinModal(targetItem);
             
@@ -175,10 +145,7 @@ async function openCase() {
             const checkModalClose = setInterval(() => {
                 if (!document.getElementById('winModal').classList.contains('active')) {
                     clearInterval(checkModalClose);
-                    staticView.classList.remove('hidden');
-                    rouletteView.classList.add('hidden');
-                    track.style.transform = 'translateX(0)';
-                    track.style.transition = 'none';
+                    resetCaseView();
                     if (openBtn) openBtn.disabled = false;
                 }
             }, 100);
@@ -187,12 +154,98 @@ async function openCase() {
     } catch (error) {
         console.error('Ошибка открытия кейса:', error);
         showToast(error.message || "Ошибка открытия кейса", "error");
-        staticView.classList.remove('hidden');
-        rouletteView.classList.add('hidden');
+        resetCaseView();
         if (openBtn) openBtn.disabled = false;
     }
 }
 
+// Создание дорожки для анимации рулетки
+function createRouletteTrack(targetItem) {
+    const track = document.getElementById('rouletteTrack');
+    const rouletteItems = [];
+    
+    // Добавляем случайные предметы (5 наборов)
+    for (let i = 0; i < 5; i++) {
+        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+    }
+    
+    // Добавляем целевой предмет в конец
+    rouletteItems.push(targetItem);
+    
+    // Отображаем предметы
+    track.style.width = `${rouletteItems.length * 140}px`;
+    rouletteItems.forEach((item, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = `roulette-item ${item.rarity}`;
+        itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
+        itemEl.innerHTML = !item.image_url ? `<i class="fas fa-gift"></i>` : '';
+        if (index === rouletteItems.length - 1) {
+            itemEl.dataset.winning = 'true';
+        }
+        track.appendChild(itemEl);
+    });
+
+    // Анимация рулетки
+    const itemWidth = 140;
+    const itemsPerScreen = 3;
+    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
+    const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
+    
+    track.style.transform = 'translateX(0)';
+    track.style.transition = 'none';
+    void track.offsetWidth; // Trigger reflow
+    
+    track.style.transition = 'transform 4s cubic-bezier(0.19, 1, 0.22, 1)';
+    track.style.transform = `translateX(-${targetPosition}px)`;
+}
+
+// Сброс вида после открытия
+function resetCaseView() {
+    const staticView = document.getElementById('caseStaticView');
+    const rouletteView = document.getElementById('caseRouletteView');
+    const track = document.getElementById('rouletteTrack');
+    
+    staticView.classList.remove('hidden');
+    rouletteView.classList.add('hidden');
+    track.style.transform = 'translateX(0)';
+    track.style.transition = 'none';
+}
+
+// Обновление общей стоимости
+function updateTotalCost() {
+    if (!currentCase) return;
+    document.getElementById('totalCost').textContent = currentCase.price * selectedCount;
+}
+
+// Изменение количества
+function changeCount(delta) {
+    const newCount = selectedCount + delta;
+    if (newCount >= 1 && newCount <= 10) {
+        selectedCount = newCount;
+        document.getElementById('openCount').textContent = selectedCount;
+        updateTotalCost();
+    }
+}
+
+// Включение/выключение демо-режима
+function toggleDemoMode() {
+    const btn = document.getElementById('demoOpenBtn');
+    isDemoMode = !isDemoMode;
+    btn.classList.toggle('active', isDemoMode);
+    
+    showToast(
+        isDemoMode ? "Демо-режим включен" : "Демо-режим выключен", 
+        isDemoMode ? "info" : "warning"
+    );
+}
+
+// Обновление кнопок открытия
+function updateOpenButtons() {
+    document.getElementById('openCount').textContent = selectedCount;
+    updateTotalCost();
+}
+
+// Показ модального окна с выигрышем
 function showWinModal(item) {
     const modal = document.getElementById('winModal');
     if (!modal || !item) return;
@@ -212,7 +265,7 @@ function showWinModal(item) {
         document.querySelector('.prize-item').innerHTML = `<i class="fas fa-gift"></i>`;
     }
     
-    // Устанавливаем цену продажи
+    // Устанавливаем цену продажи (70% от стоимости)
     const sellPrice = Math.floor((item.price || 0) * 0.7);
     document.getElementById('sellPrice').textContent = sellPrice;
     
@@ -233,66 +286,7 @@ function showWinModal(item) {
     wonItem = item;
 }
 
-function createConfetti() {
-    const container = document.querySelector('.confetti-container');
-    container.innerHTML = '';
-    
-    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-    const count = 100;
-    
-    for (let i = 0; i < count; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = `${Math.random() * 100}%`;
-        confetti.style.top = '-10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-        confetti.style.opacity = '0';
-        
-        container.appendChild(confetti);
-        
-        // Анимация
-        const animation = confetti.animate([
-            { 
-                top: '-10px',
-                opacity: 0,
-                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
-            },
-            { 
-                top: `${10 + Math.random() * 80}%`,
-                opacity: 1,
-                transform: `rotate(${Math.random() * 360}deg) scale(1)`
-            },
-            { 
-                top: '110%',
-                opacity: 0,
-                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
-            }
-        ], {
-            duration: 2000 + Math.random() * 3000,
-            delay: Math.random() * 1000,
-            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
-        });
-        
-        animation.onfinish = () => confetti.remove();
-    }
-}
-
-function selectItemWithChance(items) {
-    // Создаем "лотерейные билеты" с учетом шансов
-    const lotteryTickets = [];
-    items.forEach(item => {
-        const chance = item.drop_chance || 1;
-        for (let i = 0; i < chance; i++) {
-            lotteryTickets.push(item);
-        }
-    });
-    
-    // Выбираем случайный "билет"
-    const randomIndex = Math.floor(Math.random() * lotteryTickets.length);
-    return lotteryTickets[randomIndex];
-}
-
+// Получение названия редкости
 function getRarityName(rarity) {
     const names = {
         'common': 'Обычный',
@@ -303,6 +297,7 @@ function getRarityName(rarity) {
     return names[rarity] || rarity;
 }
 
+// Обработчики для кнопок модального окна
 async function keepItem() {
     closeWinModal();
     showToast(`Предмет "${wonItem.name}" добавлен в вашу коллекцию`, "success");
@@ -337,3 +332,23 @@ function closeWinModal() {
 // Глобальные функции
 window.keepItem = keepItem;
 window.sellItem = sellItem;
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const caseId = urlParams.get('id');
+        
+        if (!caseId) {
+            throw new Error('ID кейса не указан');
+        }
+        
+        await loadCasePage(caseId);
+        initCaseButtons();
+        
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
+        showToast(error.message || "Ошибка загрузки", "error");
+        setTimeout(() => window.location.href = 'index.html', 2000);
+    }
+});
