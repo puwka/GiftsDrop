@@ -1216,7 +1216,7 @@ input[type="number"]::-webkit-inner-spin-button {
     background: rgba(138, 43, 226, 0.1);
 }
 
-/* Стили для рулетки */
+/* Roulette Styles */
 .roulette-container {
     position: relative;
     width: 100%;
@@ -1225,18 +1225,18 @@ input[type="number"]::-webkit-inner-spin-button {
     overflow: hidden;
     border-radius: 16px;
     background: rgba(0,0,0,0.2);
-  }
-  
-  .roulette-track {
+}
+
+.roulette-track {
     display: flex;
     height: 100%;
     align-items: center;
     position: absolute;
     left: 0;
     transition: transform 5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  
-  .roulette-item {
+}
+
+.roulette-item {
     width: 140px;
     height: 140px;
     margin: 0 10px;
@@ -1248,9 +1248,9 @@ input[type="number"]::-webkit-inner-spin-button {
     flex-shrink: 0;
     border: 2px solid;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  }
-  
-  .roulette-pointer {
+}
+
+.roulette-pointer {
     position: absolute;
     left: 50%;
     top: 0;
@@ -1258,14 +1258,14 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 3px;
     height: 100%;
     background: linear-gradient(to bottom, 
-      transparent 0%, 
-      #ff0000 20%, 
-      #ff0000 80%, 
-      transparent 100%);
+        transparent 0%, 
+        #ff0000 20%, 
+        #ff0000 80%, 
+        transparent 100%);
     z-index: 10;
-  }
-  
-  .roulette-pointer::after {
+}
+
+.roulette-pointer::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -1277,218 +1277,8 @@ input[type="number"]::-webkit-inner-spin-button {
     border-right: 15px solid transparent;
     border-top: 25px solid #ff0000;
     filter: drop-shadow(0 0 5px rgba(255,0,0,0.7));
-  }
-  
-  .win-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .win-modal.active {
-    display: flex;
-    animation: fadeIn 0.3s;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-/* Модальное окно */
-.modern-modal-content {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border-radius: 20px;
-    padding: 30px;
-    text-align: center;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.1);
 }
 
-.prize-animation {
-    position: relative;
-    margin: -70px auto 20px;
-    width: 180px;
-    height: 180px;
-}
-
-.prize-item {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    border: 3px solid;
-    background: rgba(0,0,0,0.3);
-    animation: pulse 2s infinite alternate;
-}
-
-.prize-item img {
-    max-width: 80%;
-    max-height: 80%;
-    z-index: 2;
-}
-
-.particles {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
-
-/* Анимации */
-@keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 10px currentColor; }
-    100% { transform: scale(1.05); box-shadow: 0 0 30px currentColor; }
-}
-
-/* Редкости */
-.common { border-color: #576574; color: #576574; }
-.rare { border-color: #2e86de; color: #2e86de; }
-.epic { border-color: #9b59b6; color: #9b59b6; }
-.legendary { border-color: #f1c40f; color: #f1c40f; animation: pulseLegendary 1.5s infinite alternate; }
-
-@keyframes pulseLegendary {
-    0% { transform: scale(1); box-shadow: 0 0 10px #f1c40f; }
-    100% { transform: scale(1.1); box-shadow: 0 0 40px #f1c40f; }
-}
-
-/* Сетка предметов */
-.case-items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
-}
-
-.case-item {
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    transition: all 0.3s;
-}
-
-.case-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px var(--shadow-color);
-}
-
-.case-item .item-image {
-    width: 100%;
-    height: 100px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: var(--primary);
-    background-color: rgba(138, 43, 226, 0.1);
-    border-radius: 8px;
-}
-
-.case-item .item-info {
-    text-align: center;
-}
-
-.case-item h4 {
-    font-size: 0.95rem;
-    margin: 5px 0;
-    color: var(--text-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Стили для страницы кейса */
-.case-page {
-    padding-bottom: 60px;
-    overflow-y: auto;
-    height: calc(100vh - 120px);
-}
-
-.case-items-container {
-    height: auto;
-    overflow: visible;
-    padding-bottom: 60px;
-}
-
-.case-items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
-    overflow: visible;
-}
-
-/* Адаптивные стили */
-@media (max-width: 480px) {
-    .case-items-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .case-page {
-        padding-bottom: 60px;
-    }
-}
-
-@media (max-width: 360px) {
-    .case-items-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .case-page {
-        padding-bottom: 50px;
-    }
-}
-
-.item-rarity {
-    font-size: 0.8rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
-.item-rarity.common {
-    color: #95a5a6;
-}
-
-.item-rarity.rare {
-    color: #3498db;
-}
-
-.item-rarity.epic {
-    color: #9b59b6;
-}
-
-.item-rarity.legendary {
-    color: #f1c40f;
-}
-
-.item-chance {
-    font-size: 0.8rem;
-    color: var(--text-color);
-    opacity: 0.7;
-}
-
-/* Секция результатов */
 /* Win Modal Styles */
 .win-modal {
     position: fixed;
@@ -1496,87 +1286,46 @@ input[type="number"]::-webkit-inner-spin-button {
     left: 0;
     right: 0;
     bottom: 0;
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
-  
-  .win-modal.active {
-    opacity: 1;
-    pointer-events: all;
-  }
-  
-  .win-modal-overlay {
+}
+
+.win-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s;
+}
+
+.win-modal-overlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0,0,0,0.8);
     backdrop-filter: blur(10px);
-  }
-  
-  .win-modal-content {
+}
+
+.win-modal-content {
     position: relative;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     border-radius: 20px;
     width: 90%;
     max-width: 350px;
     padding: 25px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transform: scale(0.9);
-    opacity: 0;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
     z-index: 2;
-  }
-  
-  .win-modal.active .win-modal-content {
-    transform: scale(1);
-    opacity: 1;
-  }
-  
-  .win-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .win-modal-header h3 {
-    color: #8a2be2;
-    font-size: 1.3rem;
-    margin: 0;
-    background: linear-gradient(90deg, #8a2be2, #6c5ce7);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  
-  .win-modal-close {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: color 0.3s;
-  }
-  
-  .win-modal-close:hover {
-    color: white;
-  }
-  
-  .won-item-container {
+}
+
+.won-item-container {
     text-align: center;
     margin: 20px 0;
     position: relative;
-  }
-  
-  .won-item-rarity {
+}
+
+.won-item-rarity {
     position: absolute;
     top: -10px;
     left: 50%;
@@ -1586,9 +1335,9 @@ input[type="number"]::-webkit-inner-spin-button {
     border-radius: 50%;
     z-index: 0;
     opacity: 0.3;
-  }
-  
-  .won-item-image {
+}
+
+.won-item-image {
     position: relative;
     width: 180px;
     height: 180px;
@@ -1597,57 +1346,55 @@ input[type="number"]::-webkit-inner-spin-button {
     align-items: center;
     justify-content: center;
     z-index: 2;
-  }
-  
-  .won-item-image img {
+}
+
+.won-item-image img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     border-radius: 12px;
-    z-index: 2;
-    position: relative;
-  }
-  
-  .won-item-details {
+}
+
+.won-item-details {
     margin-top: 20px;
-  }
-  
-  .won-item-name {
+}
+
+.won-item-name {
     font-size: 1.3rem;
     margin: 10px 0;
     color: white;
     font-weight: 600;
-  }
-  
-  .won-item-meta {
+}
+
+.won-item-meta {
     display: flex;
     justify-content: center;
     gap: 15px;
     margin-top: 10px;
-  }
-  
-  .won-item-rarity-badge {
+}
+
+.won-item-rarity-badge {
     padding: 5px 12px;
     border-radius: 20px;
     font-weight: 600;
     font-size: 0.9rem;
-  }
-  
-  .won-item-price {
+}
+
+.won-item-price {
     padding: 5px 12px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.1);
     font-weight: 700;
     font-size: 0.9rem;
-  }
-  
-  .win-modal-actions {
+}
+
+.win-modal-actions {
     display: flex;
     gap: 10px;
     margin-top: 25px;
-  }
-  
-  .win-modal-btn {
+}
+
+.win-modal-btn {
     flex: 1;
     padding: 12px;
     border-radius: 12px;
@@ -1659,62 +1406,43 @@ input[type="number"]::-webkit-inner-spin-button {
     align-items: center;
     justify-content: center;
     gap: 8px;
-  }
-  
-  .win-modal-btn.keep-btn {
+}
+
+.win-modal-btn.keep-btn {
     background: linear-gradient(135deg, #8a2be2 0%, #6c5ce7 100%);
     color: white;
-  }
-  
-  .win-modal-btn.sell-btn {
-    background: rgba(255, 255, 255, 0.1);
+}
+
+.win-modal-btn.sell-btn {
+    background: rgba(255,255,255,0.1);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .win-modal-btn.keep-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
-  }
-  
-  .win-modal-btn.sell-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  /* Rarity Colors */
-  .common .won-item-rarity { background: #576574; }
-  .common .won-item-rarity-badge { background: #576574; color: white; }
-  .rare .won-item-rarity { background: #2e86de; }
-  .rare .won-item-rarity-badge { background: #2e86de; color: white; }
-  .epic .won-item-rarity { background: #9b59b6; }
-  .epic .won-item-rarity-badge { background: #9b59b6; color: white; }
-  .legendary .won-item-rarity { background: #f1c40f; }
-  .legendary .won-item-rarity-badge { background: #f1c40f; color: #000; font-weight: 700; }
-  
-  /* Confetti Animation */
-  .confetti-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 1;
-    pointer-events: none;
-  }
-  
-  .confetti {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: #f00;
-    opacity: 0;
-  }
-  
-  /* Legendary Animation */
-  .legendary .won-item-image {
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Rarity Colors */
+.common { border-color: #576574; color: #576574; }
+.common .won-item-rarity-badge { background: #576574; color: white; }
+.rare { border-color: #2e86de; color: #2e86de; }
+.rare .won-item-rarity-badge { background: #2e86de; color: white; }
+.epic { border-color: #9b59b6; color: #9b59b6; }
+.epic .won-item-rarity-badge { background: #9b59b6; color: white; }
+.legendary { border-color: #f1c40f; color: #f1c40f; }
+.legendary .won-item-rarity-badge { background: #f1c40f; color: #000; font-weight: 700; }
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.legendary .won-item-image {
     animation: pulseLegendary 1.5s infinite alternate;
-  }
+}
+
+@keyframes pulseLegendary {
+    0% { transform: scale(1); filter: drop-shadow(0 0 10px #f1c40f); }
+    100% { transform: scale(1.05); filter: drop-shadow(0 0 30px #f1c40f); }
+}
   
   @keyframes pulseLegendary {
     0% { 
