@@ -23,8 +23,8 @@ async function loadCasePage(caseId) {
     try {
         // Загружаем данные кейса и предметов
         const [caseResponse, itemsResponse] = await Promise.all([
-            apiRequest(`/case/${caseId}`),
-            apiRequest(`/case/${caseId}/items`)
+            apiRequest(`/users/case/${caseId}`),
+            apiRequest(`/users/case/${caseId}/items`)
         ]);
         
         if (!caseResponse.success || !itemsResponse.success) {
@@ -114,7 +114,7 @@ async function openCase() {
     
     try {
         // Отправляем запрос на открытие кейса
-        const response = await apiRequest('/open-case', 'POST', {
+        const response = await apiRequest('/users/open-case', 'POST', {
             user_id: currentUser?.id || 0,
             case_id: currentCase.id,
             count: selectedCount,
