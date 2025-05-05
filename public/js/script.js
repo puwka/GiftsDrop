@@ -463,80 +463,131 @@ function updateOpenButtons() {
 }
 
 // В script.js обновите функцию openCase:
+let rouletteInstance = null;
+
+class Roulette {
+  constructor(items) {
+    this.items = items;
+    this.winningItem = null;
+    this.animationFrame = null;
+    this.startTime = null;
+    this.duration = 7000;
+    this.track = document.getElementById('caseItemsTrack');
+    this.pointer = document.querySelector('.roulette-pointer');
+  }
+
+  async start() {
+    // 1. Выбираем выигрышный предмет ДО анимации
+    this.winningItem = selectItemWithChance(this.items);
+    
+    // 2. Создаем дорожку (3 полных круга + выигрышный предмет в конце)
+    const scrollItems = [];
+    for (let i = 0; i < 3; i++) {
+      scrollItems.push(...[...this.items].sort(() => Math.random() - 0.5));
+    }
+    scrollItems.push(this.winningItem);
+    
+    // 3. Рендерим предметы
+    this.track.innerHTML = scrollItems.map(item => `
+      <div class="roulette-item ${item.rarity}" 
+           style="background-image: url('${item.image_url}')"
+           data-id="${item.id}"></div>
+    `).join('');
+    
+    // 4. Рассчитываем параметры анимации
+    const itemWidth = 140;
+    const containerWidth = document.querySelector('.case-items-horizontal-container').offsetWidth;
+    const winningIndex = scrollItems.findIndex(i => i.id === this.winningItem.id);
+    const stopPosition = (winningIndex * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
+    
+    // 5. Запускаем анимацию
+    this.startTime = Date.now();
+    this.animate(stopPosition);
+    
+    // 6. Возвращаем промис, который выполнится после анимации
+    return new Promise(resolve => {
+      setTimeout(() => {
+        this.stop();
+        resolve(this.winningItem);
+      }, this.duration);
+    });
+  }
+
+  animate(targetPosition) {
+    const elapsed = Date.now() - this.startTime;
+    const progress = Math.min(elapsed / this.duration, 1);
+    
+    // Кривая замедления
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    const currentPos = easeOut * targetPosition;
+    
+    this.track.style.transform = `translateX(-${currentPos}px)`;
+    
+    if (progress < 1) {
+      this.animationFrame = requestAnimationFrame(() => this.animate(targetPosition));
+    }
+  }
+
+  stop() {
+    cancelAnimationFrame(this.animationFrame);
+    this.highlightWinningItem();
+  }
+
+  highlightWinningItem() {
+    const items = this.track.querySelectorAll('.roulette-item');
+    items.forEach(item => {
+      if (item.dataset.id === this.winningItem.id) {
+        item.classList.add('highlighted');
+        // Позиционируем точно по центру
+        const rect = item.getBoundingClientRect();
+        const pointerRect = this.pointer.getBoundingClientRect();
+        const offset = rect.left + rect.width/2 - pointerRect.left;
+        this.track.style.transform = `translateX(calc(-${this.track.style.transform.match(/translateX\(-(.*?)px\)/)[1]}px + ${offset}px))`;
+      }
+    });
+  }
+}
+
 async function openCase() {
-    if (!currentUser || !currentCase) return;
+  if (!currentUser || !currentCase) return;
 
-    const openBtn = document.getElementById('openCaseBtn');
-    if (openBtn) openBtn.disabled = true;
+  const openBtn = document.getElementById('openCaseBtn');
+  if (openBtn) openBtn.disabled = true;
 
-    // 1. Подготовка рулетки
+  try {
+    // Инициализация
     document.getElementById('caseStaticView').classList.add('hidden');
     document.getElementById('caseRouletteView').classList.remove('hidden');
-
-    const track = document.getElementById('caseItemsTrack');
-    track.innerHTML = '';
     
-    // 2. Создаем дорожку с 5 кругами + выигрышный предмет
-    rouletteItems = [];
-    for (let i = 0; i < 5; i++) {
-        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-    }
+    // Запуск рулетки
+    rouletteInstance = new Roulette(caseItems);
+    const winningItem = await rouletteInstance.start();
     
-    // 3. Выбираем выигрышный предмет ДО анимации
-    targetItem = selectItemWithChance(caseItems);
-    rouletteItems.push(targetItem);
-    
-    // 4. Отображаем предметы
-    track.style.width = `${rouletteItems.length * 140}px`;
-    rouletteItems.forEach(item => {
-        const itemEl = document.createElement('div');
-        itemEl.className = `roulette-item ${item.rarity}`;
-        itemEl.style.backgroundImage = `url('${item.image_url}')`;
-        itemEl.dataset.id = item.id;
-        track.appendChild(itemEl);
-    });
-
-    // 5. Запускаем анимацию
-    const startTime = Date.now();
-    const duration = 7000; // 7 секунд
-    const containerWidth = document.querySelector('.case-items-horizontal-container').offsetWidth;
-    const targetPosition = (rouletteItems.length - 3) * 140 - containerWidth/2;
-    
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Кривая замедления
-        const easing = 1 - Math.pow(1 - progress, 3);
-        
-        if (progress < 1) {
-            const pos = easing * targetPosition;
-            track.style.transform = `translateX(-${pos}px)`;
-            rouletteAnimationId = requestAnimationFrame(animate);
-        } else {
-            // Точная остановка на выигрышном предмете
-            track.style.transform = `translateX(-${targetPosition}px)`;
-            track.style.transition = 'transform 0.5s ease-out';
-            
-            // Показываем выигрыш
-            setTimeout(() => showWinModal(targetItem), 500);
-        }
-    }
-    
-    rouletteAnimationId = requestAnimationFrame(animate);
-
-    // 6. Отправляем данные на сервер
+    // Сохранение результата
     const response = await apiRequest('/users/open-case', 'POST', {
-        user_id: currentUser.id,
-        case_id: currentCase.id,
-        item_id: targetItem.id,
-        is_demo: isDemoMode
+      user_id: currentUser.id,
+      case_id: currentCase.id,
+      item_id: winningItem.id,
+      is_demo: isDemoMode
     });
 
-    if (!response.success) {
-        cancelAnimationFrame(rouletteAnimationId);
-        showToast("Ошибка при открытии кейса", "error");
+    if (!response.success) throw new Error('Ошибка сохранения');
+    
+    // Показ результата
+    showWinModal(winningItem);
+    
+    if (!isDemoMode) {
+      balance -= currentCase.price * selectedCount;
+      updateBalanceDisplay();
     }
+    
+  } catch (error) {
+    console.error('Open case error:', error);
+    showToast(error.message || "Ошибка при открытии кейса", "error");
+  } finally {
+    if (openBtn) openBtn.disabled = false;
+    rouletteInstance = null;
+  }
 }
 
 // Улучшенная функция выбора предмета с учетом шансов
@@ -564,38 +615,31 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
 
 // Новая функция для показа модального окна с выигрышем
 function showWinModal(item) {
-    // Проверяем, что это именно тот предмет, на котором остановилась рулетка
-    if (item.id !== targetItem?.id) {
-        console.error('Несоответствие предметов!');
-        item = targetItem; // Принудительно используем целевой предмет
+    // Проверяем, что выигрыш соответствует рулетке
+    if (rouletteInstance && item.id !== rouletteInstance.winningItem.id) {
+      console.warn('Несоответствие предметов! Исправляем...');
+      item = rouletteInstance.winningItem;
     }
-
+  
     const modal = document.getElementById('winModal');
     modal.innerHTML = `
-        <div class="modern-modal-content">
-            <div class="prize-animation">
-                <div class="prize-item ${item.rarity}">
-                    <img src="${item.image_url}" alt="${item.name}">
-                    <div class="particles"></div>
-                </div>
-            </div>
-            <h3>Вы выиграли!</h3>
-            <h2>${item.name}</h2>
-            <div class="prize-details">
-                <span class="rarity ${item.rarity}">${getRarityName(item.rarity)}</span>
-                <span class="price">${item.price} 🪙</span>
-            </div>
-            <div class="modal-actions">
-                <button onclick="keepItem()" class="btn-keep">Оставить</button>
-                <button onclick="sellItem()" class="btn-sell">Продать за ${Math.floor(item.price*0.7)} 🪙</button>
-            </div>
+      <div class="modern-modal">
+        <div class="prize-item ${item.rarity}">
+          <img src="${item.image_url}" alt="${item.name}">
+          <div class="particles"></div>
         </div>
+        <h2>${item.name}</h2>
+        <div class="prize-rarity ${item.rarity}">${getRarityName(item.rarity)}</div>
+        <div class="prize-value">${item.price} 🪙</div>
+        <div class="modal-actions">
+          <button onclick="keepItem()" class="btn-keep">Оставить</button>
+          <button onclick="sellItem()" class="btn-sell">Продать за ${Math.floor(item.price*0.7)} 🪙</button>
+        </div>
+      </div>
     `;
     modal.classList.remove('hidden');
-
-    // Запускаем анимацию частиц
     createParticles(modal.querySelector('.particles'), item.rarity);
-}
+  }
 
 // Создание частиц для анимации выигрыша
 function createParticles(container, rarity) {
