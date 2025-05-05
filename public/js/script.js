@@ -37,12 +37,7 @@ let userLevel = 1;
 let userXP = 0;
 // В начале файла script.js
 let wonItem = null; // Будет хранить выигранный предмет
-// Глобальные переменные для управления рулеткой
-let rouletteAnimation;
-let currentWinningItem;
-let rouletteItems = [];
 let rouletteAnimationId;
-let targetItem = null;
 
 async function authenticateUser(userData) {
     try {
