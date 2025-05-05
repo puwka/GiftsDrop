@@ -39,9 +39,9 @@
                     
                     <div id="caseRouletteView" class="hidden">
                         <h3 class="section-subtitle">Прокрутите для открытия:</h3>
-                        <div class="case-items-horizontal-container">
+                        <div id="rouletteContainer" class="roulette-container">
+                            <div id="rouletteTrack" class="roulette-track"></div>
                             <div class="roulette-pointer"></div>
-                            <div class="roulette-track" id="caseItemsTrack"></div>
                         </div>
                     </div>
                 </div>
@@ -111,41 +111,22 @@
     </nav>
 
     <!-- Добавить перед закрывающим тегом body в case.html -->
-    <div id="winModal" class="win-modal hidden">
-        <div class="win-modal-overlay"></div>
+    <div id="winModal" class="win-modal">
         <div class="win-modal-content">
-          <div class="win-modal-header">
-            <h3>ПОЗДРАВЛЯЕМ!</h3>
-            <button class="win-modal-close" onclick="closeWinModal()">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <div class="won-item-container">
-            <div class="won-item-rarity"></div>
-            <div class="won-item-image">
-              <img src="" alt="Выигранный предмет">
-            </div>
-            <div class="won-item-details">
-              <h4 class="won-item-name"></h4>
-              <div class="won-item-meta">
-                <span class="won-item-rarity-badge"></span>
-                <span class="won-item-price"></span>
-              </div>
+          <div class="prize-animation">
+            <div class="prize-item">
+              <img id="wonItemImage" src="" alt="Выигранный предмет">
             </div>
           </div>
-          
-          <div class="win-modal-actions">
-            <button class="win-modal-btn sell-btn" onclick="sellItem()">
-              <i class="fas fa-coins"></i> Продать за <span class="sell-price"></span> 🪙
-            </button>
-            <button class="win-modal-btn keep-btn" onclick="keepItem()">
-              <i class="fas fa-check"></i> Оставить
-            </button>
+          <h3>Вы выиграли!</h3>
+          <h2 id="wonItemName"></h2>
+          <div class="prize-details">
+            <span id="wonItemRarity" class="rarity"></span>
+            <span class="price"><span id="wonItemPrice"></span> 🪙</span>
           </div>
-          
-          <div class="win-modal-effects">
-            <div class="confetti-container"></div>
+          <div class="modal-actions">
+            <button onclick="keepItem()" class="btn-keep">Оставить</button>
+            <button onclick="sellItem()" class="btn-sell">Продать за <span id="sellPrice"></span> 🪙</button>
           </div>
         </div>
     </div>
