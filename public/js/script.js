@@ -597,49 +597,6 @@ function showWinModal(item) {
     createParticles(modal.querySelector('.particles'), item.rarity);
 }
 
-// Создание частиц для анимации выигрыша
-function createParticles(container, rarity) {
-    const colors = {
-        common: '#576574',
-        rare: '#2e86de',
-        epic: '#9b59b6',
-        legendary: '#f1c40f'
-    };
-    
-    const color = colors[rarity] || '#ffffff';
-    
-    for (let i = 0; i < 50; i++) {
-        const particle = document.createElement('div');
-        particle.style.position = 'absolute';
-        particle.style.width = `${Math.random() * 5 + 2}px`;
-        particle.style.height = particle.style.width;
-        particle.style.backgroundColor = color;
-        particle.style.borderRadius = '50%';
-        particle.style.opacity = '0';
-        
-        // Позиционирование
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 80 + 20;
-        const x = 50 + Math.cos(angle) * distance;
-        const y = 50 + Math.sin(angle) * distance;
-        
-        particle.style.left = `${x}%`;
-        particle.style.top = `${y}%`;
-        
-        // Анимация
-        particle.animate([
-            { opacity: 0, transform: 'translate(0,0) scale(0)' },
-            { opacity: 1, transform: 'translate(0,0) scale(1)' },
-            { opacity: 0, transform: `translate(${(Math.random()-0.5)*50}px, ${(Math.random()-0.5)*50}px) scale(0)` }
-        ], {
-            duration: 2000 + Math.random() * 3000,
-            delay: Math.random() * 1000,
-            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
-        });
-        
-        container.appendChild(particle);
-    }
-}
 
 async function keepItem() {
     const modal = document.getElementById('winModal');
