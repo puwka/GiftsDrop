@@ -35,9 +35,6 @@ let currentUser = null;
 let balance = 0;
 let userLevel = 1;
 let userXP = 0;
-// В начале файла script.js
-let wonItem = null; // Будет хранить выигранный предмет
-let rouletteAnimationId;
 
 async function authenticateUser(userData) {
     try {
@@ -75,7 +72,7 @@ async function updateBalance(amount, type = 'deposit', description = '') {
         
         if (response.success) {
             balance = response.new_balance;
-            localStorage.setItem('userBalance', balance); // Сохраняем
+            localStorage.setItem('userBalance', balance);
             updateBalanceDisplay();
             return true;
         }
@@ -139,23 +136,19 @@ function updateLevelDisplay() {
 
 // ==================== Tab Navigation ====================
 function openTab(tabName, clickedElement) {
-    // Проверяем, что tabName существует
     if (!tabName) {
         console.error('Tab name is undefined');
         return;
     }
 
-    // Скрыть все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Убрать активное состояние у всех кнопок
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Показать выбранную вкладку
     const tab = document.getElementById(tabName);
     if (!tab) {
         console.error(`Tab with id ${tabName} not found`);
@@ -163,13 +156,11 @@ function openTab(tabName, clickedElement) {
     }
     tab.classList.add('active');
     
-    // Активировать кнопку
     const button = clickedElement || document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
     if (button) {
         button.classList.add('active');
     }
 
-    // Загружаем данные для вкладки профиля
     if (tabName === 'profile') {
         loadProfileData();
     }
@@ -222,17 +213,14 @@ function updateTransactionsList(transactions) {
 }
 
 function navigateTo(url) {
-    // Сохраняем баланс перед переходом
     if (currentUser) {
         localStorage.setItem('userBalance', balance);
     }
     
-    // Если URL содержит хэш (например, #bonuses), делаем плавный скролл
     if (url.includes('#')) {
         const [base, hash] = url.split('#');
         window.location.href = base;
         
-        // После загрузки страницы скроллим к нужному разделу
         window.addEventListener('load', () => {
             const section = document.getElementById(hash);
             if (section) {
@@ -329,454 +317,20 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Добавляем в script.js
-let currentCase = null;
-let caseItems = [];
-let selectedCount = 1;
-let isDemoMode = false;
-
-async function loadCasePage(caseId) {
-    try {
-        console.log(`Загрузка кейса ID: ${caseId}`);
-        const response = await apiRequest(`/users/case/${caseId}`);
-        console.log('Ответ сервера:', response);
-        
-        if (!response.success) throw new Error(response.error || 'Case not found');
-        
-        currentCase = response.case;
-        caseItems = response.items || [];
-        console.log('Получено предметов:', caseItems.length);
-        
-        // Показываем статичное изображение кейса
-        renderCasePage();
-        
-    } catch (error) {
-        console.error('Ошибка загрузки кейса:', error);
-        showToast("Ошибка загрузки кейса", "error");
-        setTimeout(() => window.location.href = 'index.html', 2000);
-    }
-}
-
-function showLoading(show) {
-    const loader = document.getElementById('loader');
-    if (loader) loader.style.display = show ? 'block' : 'none';
-}
-
-function renderCasePage() {
-    if (!currentCase) return;
-    
-    console.log('Рендеринг кейса:', currentCase);
-
-    const staticView = document.getElementById('caseStaticView');
-    if (staticView) {
-        staticView.querySelector('.case-image').style.backgroundImage = 
-            currentCase.image_url ? `url('${currentCase.image_url}')` : '';
-        staticView.querySelector('.case-image i').style.display = 
-            currentCase.image_url ? 'none' : 'block';
-    }
-
-    // Обновляем основную информацию о кейсе
-    document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
-    
-    // Создаем перемешанный массив предметов для прокрутки
-    const shuffledItems = [...caseItems].sort(() => Math.random() - 0.5);
-    
-    // Рендерим предметы для горизонтального скролла (только картинки)
-    const itemsContainer = document.getElementById('caseItemsTrack');
-    if (itemsContainer) {
-        itemsContainer.innerHTML = shuffledItems.map(item => `
-            <div class="roulette-item ${item.rarity || 'common'}" 
-                 style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-            </div>
-        `).join('');
-    }
-    
-    // Рендерим предметы для сетки внизу (полная информация)
-    const itemsGrid = document.getElementById('caseItemsGrid');
-    if (itemsGrid) {
-        itemsGrid.innerHTML = caseItems.map(item => `
-            <div class="case-item" data-rarity="${item.rarity}">
-                <div class="item-image" style="background-image: url('${item.image_url || 'img/default-item.png'}')">
-                    ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
-                </div>
-                <div class="item-info">
-                    <h4>${item.name || 'Неизвестный предмет'}</h4>
-                    <p class="item-rarity ${item.rarity || 'common'}">
-                        ${getRarityName(item.rarity)}
-                    </p>
-                    <p class="item-chance">
-                        ${item.drop_chance ? `Шанс: ${item.drop_chance}%` : ''}
-                    </p>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    console.log('Предметы отрендерены');
-}
-
-function goBack() {
-    // Сохраняем баланс в URL перед переходом
-    const balanceParam = `balance=${balance}`;
-    const url = `index.html?${balanceParam}`;
-    
-    // Если в Telegram WebApp - используем его API
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        window.history.back();
-    } else {
-        window.location.href = url;
-    }
-}
-
-function getRarityName(rarity) {
-    const names = {
-        'common': 'Обычный',
-        'rare': 'Редкий',
-        'epic': 'Эпический',
-        'legendary': 'Легендарный'
-    };
-    return names[rarity] || rarity;
-}
-
-function updateOpenButtons() {
-    const demoBtn = document.getElementById('demoOpenBtn');
-    const openBtn = document.getElementById('openCaseBtn');
-    const quickOpenBtn = document.getElementById('quickOpenBtn');
-    
-    if (isDemoMode) {
-        demoBtn.classList.add('active');
-        openBtn.classList.remove('active');
-        quickOpenBtn.classList.remove('active');
-    } else {
-        demoBtn.classList.remove('active');
-        openBtn.classList.add('active');
-        quickOpenBtn.classList.add('active');
-    }
-    
-    document.getElementById('openCount').textContent = selectedCount;
-    document.getElementById('totalCost').textContent = isDemoMode ? 0 : currentCase.price * selectedCount;
-}
-
-// В script.js обновите функцию openCase:
-// Обновленная функция openCase в script.js
-async function openCase() {
-    if (!currentUser || !currentCase) return;
-
-    const openBtn = document.getElementById('openCaseBtn');
-    if (openBtn) openBtn.disabled = true;
-
-    // Проверяем баланс в реальном режиме
-    if (!isDemoMode && balance < currentCase.price * selectedCount) {
-        showToast("Недостаточно средств", "error");
-        openBtn.disabled = false;
-        return;
-    }
-
-    // Получаем элементы DOM
-    const staticView = document.getElementById('caseStaticView');
-    const rouletteView = document.getElementById('caseRouletteView');
-    const track = document.getElementById('rouletteTrack');
-    const container = document.querySelector('.roulette-container');
-    
-    // Показываем рулетку
-    staticView.classList.add('hidden');
-    rouletteView.classList.remove('hidden');
-    track.innerHTML = '';
-    
-    // Выбираем выигрышный предмет с учетом шансов
-    const targetItem = selectItemWithChance(caseItems);
-    
-    // Создаем дорожку с 5 кругами + выигрышный предмет
-    const rouletteItems = [];
-    for (let i = 0; i < 5; i++) {
-        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-    }
-    rouletteItems.push(targetItem);
-    
-    // Отображаем предметы
-    track.style.width = `${rouletteItems.length * 140}px`;
-    rouletteItems.forEach((item, index) => {
-        const itemEl = document.createElement('div');
-        itemEl.className = `roulette-item ${item.rarity}`;
-        itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
-        itemEl.dataset.id = item.id;
-        if (index === rouletteItems.length - 1) {
-            itemEl.dataset.winning = 'true';
-        }
-        track.appendChild(itemEl);
-    });
-
-    // Рассчитываем позицию остановки (центрируем выигрышный предмет)
-    const itemWidth = 140;
-    const itemsPerScreen = 3;
-    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
-    const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
-    
-    // Запускаем анимацию
-    track.style.transform = 'translateX(0)';
-    track.style.transition = 'none';
-    void track.offsetWidth; // Trigger reflow
-    
-    track.style.transition = 'transform 5s cubic-bezier(0.19, 1, 0.22, 1)';
-    track.style.transform = `translateX(-${targetPosition}px)`;
-    
-    // После завершения анимации показываем модальное окно
-    setTimeout(() => {
-        showWinModal(targetItem);
-        if (!isDemoMode) {
-            sendCaseOpening(targetItem);
-        }
-        
-        // Возвращаем в исходное состояние после закрытия модального окна
-        const checkModalClose = setInterval(() => {
-            if (!document.getElementById('winModal').classList.contains('active')) {
-                clearInterval(checkModalClose);
-                staticView.classList.remove('hidden');
-                rouletteView.classList.add('hidden');
-                track.style.transform = 'translateX(0)';
-                track.style.transition = 'none';
-                if (openBtn) openBtn.disabled = false;
-            }
-        }, 100);
-    }, 5000);
-}
-
-// Обновленная функция showWinModal
-function showWinModal(item) {
-    const modal = document.getElementById('winModal');
-    if (!modal || !item) return;
-    
-    // Устанавливаем данные предмета
-    document.getElementById('wonItemName').textContent = item.name || 'Неизвестный предмет';
-    document.getElementById('wonItemPrice').textContent = item.price || 0;
-    document.getElementById('wonItemRarity').textContent = getRarityName(item.rarity);
-    document.getElementById('wonItemRarity').className = `rarity ${item.rarity}`;
-    
-    const imgElement = document.getElementById('wonItemImage');
-    if (item.image_url) {
-        imgElement.src = item.image_url;
-        imgElement.style.display = 'block';
-    } else {
-        imgElement.style.display = 'none';
-        document.querySelector('.prize-item').innerHTML = `<i class="fas fa-gift"></i>`;
-    }
-    
-    // Устанавливаем цену продажи
-    const sellPrice = Math.floor((item.price || 0) * 0.7);
-    document.getElementById('sellPrice').textContent = sellPrice;
-    
-    // Устанавливаем класс редкости для анимации
-    const prizeItem = document.querySelector('.prize-item');
-    prizeItem.className = 'prize-item';
-    prizeItem.classList.add(item.rarity);
-    
-    // Показываем модальное окно
-    modal.classList.add('active');
-    
-    // Запускаем конфетти для легендарных предметов
-    if (item.rarity === 'legendary') {
-        createConfetti();
-    }
-    
-    // Сохраняем выигранный предмет
-    wonItem = item;
-}
-
-// Функция закрытия модального окна
-function closeWinModal() {
-    const modal = document.getElementById('winModal');
-    modal.classList.remove('active');
-    wonItem = null;
-}
-
-// Функция создания конфетти
-function createConfetti() {
-    const container = document.querySelector('.confetti-container');
-    container.innerHTML = '';
-    
-    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-    const count = 100;
-    
-    for (let i = 0; i < count; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = `${Math.random() * 100}%`;
-        confetti.style.top = '-10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-        confetti.style.opacity = '0';
-        
-        container.appendChild(confetti);
-        
-        // Анимация
-        const animation = confetti.animate([
-            { 
-                top: '-10px',
-                opacity: 0,
-                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
-            },
-            { 
-                top: `${10 + Math.random() * 80}%`,
-                opacity: 1,
-                transform: `rotate(${Math.random() * 360}deg) scale(1)`
-            },
-            { 
-                top: '110%',
-                opacity: 0,
-                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
-            }
-        ], {
-            duration: 2000 + Math.random() * 3000,
-            delay: Math.random() * 1000,
-            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
-        });
-        
-        animation.onfinish = () => confetti.remove();
-    }
-}
-
-// Обновленные функции для работы с предметом
-async function keepItem() {
-    closeWinModal();
-    showToast(`Предмет "${wonItem.name}" добавлен в вашу коллекцию`, "success");
-    wonItem = null;
-}
-
-async function sellItem() {
-    if (!wonItem) return;
-    
-    const sellPrice = Math.floor(wonItem.price * 0.7);
-    const success = await updateBalance(
-        sellPrice,
-        'sell',
-        `Продажа предмета: ${wonItem.name}`
-    );
-    
-    if (success) {
-        closeWinModal();
-        showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
-        wonItem = null;
-    } else {
-        showToast("Ошибка при продаже предмета", "error");
-    }
-}
-
-// Функция отправки данных об открытии на сервер
-async function sendCaseOpening() {
-    try {
-        const response = await apiRequest('/users/open-case', 'POST', {
-            user_id: currentUser.id,
-            case_id: currentCase.id,
-            item_id: targetItem.id,
-            is_demo: isDemoMode
-        });
-
-        if (!response.success) {
-            console.error('Ошибка сохранения открытия кейса');
-        }
-    } catch (error) {
-        console.error('Ошибка при отправке данных:', error);
-    }
-}
-
-// Улучшенная функция выбора предмета с учетом шансов
-function selectItemWithChance(items) {
-    // Создаем "лотерейные билеты" с учетом шансов
-    const lotteryTickets = [];
-    items.forEach(item => {
-        const chance = item.drop_chance || 1;
-        for (let i = 0; i < chance; i++) {
-            lotteryTickets.push(item);
-        }
-    });
-    
-    // Выбираем случайный "билет"
-    const randomIndex = Math.floor(Math.random() * lotteryTickets.length);
-    return lotteryTickets[randomIndex];
-}
-
-// Функция для расчета позиции остановки
-function calculateStopPosition(winningIndex, itemWidth, totalItems) {
-    const itemsPerScreen = 3; // Примерное количество видимых предметов
-    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
-    return (winningIndex * itemWidth) + centerOffset;
-}
-
-function toggleDemoMode() {
-    isDemoMode = !isDemoMode;
-    updateOpenButtons();
-}
-
-function changeCount(change) {
-    selectedCount = Math.max(1, Math.min(3, selectedCount + change));
-    updateOpenButtons();
-}
-
-function backToCase() {
-    document.getElementById('caseOpenSection').classList.remove('hidden');
-    document.getElementById('caseResultsSection').classList.add('hidden');
-}
-
-function initCaseCategories() {
-    const categoryBtns = document.querySelectorAll('.category-btn');
-    const caseCategories = document.querySelectorAll('.case-category');
-    
-    categoryBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            categoryBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            caseCategories.forEach(cat => cat.classList.remove('show'));
-            
-            const category = btn.dataset.category;
-            document.querySelector(`.case-category.${category}`).classList.add('show');
-            
-            // Плавная прокрутка к началу
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-    });
-
-    // Обновляем счетчики для категорий
-    const categoryCounts = {
-        all: document.querySelectorAll('.case-category.all .case-card').length,
-        free: document.querySelectorAll('.case-category.free .case-card').length,
-        branded: document.querySelectorAll('.case-category.branded .case-card').length,
-        exclusive: document.querySelectorAll('.case-category.exclusive .case-card').length,
-        farm: document.querySelectorAll('.case-category.farm .case-card').length
-    };
-
-    categoryBtns.forEach(btn => {
-        const count = categoryCounts[btn.dataset.category] || 0;
-        const countSpan = btn.querySelector('.category-count') || document.createElement('span');
-        countSpan.className = 'category-count';
-        countSpan.textContent = count;
-        
-        if (!btn.querySelector('.category-count')) {
-            btn.appendChild(countSpan);
-        }
-    });
-}
-
 // ==================== Initialization ====================
 async function initApp() {
     try {
-        // Получаем баланс из URL (если есть)
         const urlParams = new URLSearchParams(window.location.search);
         const urlBalance = urlParams.get('balance');
         
         if (urlBalance) {
             balance = parseInt(urlBalance);
-            localStorage.setItem('userBalance', balance); // Дублируем в localStorage
+            localStorage.setItem('userBalance', balance);
         } else {
-            // Если в URL нет, пробуем взять из localStorage
             const savedBalance = localStorage.getItem('userBalance');
             if (savedBalance) balance = parseInt(savedBalance);
         }
 
-        // Остальная логика инициализации...
         const authResult = initTelegramAuth();
         
         if (authResult?.data) {
@@ -786,16 +340,14 @@ async function initApp() {
                 return;
             }
         } else {
-            // Режим тестирования
             currentUser = getTestUserData();
-            balance = balance || 1000; // Если баланс не задан, ставим 1000
+            balance = balance || 1000;
             showToast("Режим тестирования", "warning");
         }
 
         updateProfile();
         updateBalanceDisplay();
         updateLevelDisplay();
-        initCaseCategories();
         
         setTimeout(() => openTab('cases'), 0);
         
@@ -806,7 +358,6 @@ async function initApp() {
 }
 
 function highlightCurrentTab() {
-    // Для case.html всегда активен таб "Кейсы"
     if (window.location.pathname.includes('case.html')) {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === 'cases');
@@ -814,19 +365,16 @@ function highlightCurrentTab() {
         return;
     }
     
-    // Для index.html определяем по хэшу
     const currentTab = window.location.hash.replace('#', '') || 'cases';
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === currentTab);
     });
 }
 
-// Добавьте функцию для закрытия приложения через Telegram
 function closeApp() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
         Telegram.WebApp.close();
     } else {
-        // Альтернативное действие, если не в Telegram
         window.location.href = 'index.html';
     }
 }
@@ -866,7 +414,6 @@ function getTestUserData() {
 
 // ==================== Event Listeners ====================
 function initEventListeners() {
-    // Навигация
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
@@ -874,13 +421,10 @@ function initEventListeners() {
         });
     });
     
-    // Кнопка пополнения
     document.querySelector('.deposit-btn')?.addEventListener('click', openDepositModal);
     
-    // Кнопки в модалках
     document.querySelector('.modal-button.secondary')?.addEventListener('click', closeDepositModal);
     
-    // Переключение вкладок депозита
     document.querySelectorAll('.deposit-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
@@ -892,55 +436,12 @@ function initEventListeners() {
         highlightCurrentTab();
     });
     
-    // Обработчики пополнения
     document.getElementById('depositTonBtn')?.addEventListener('click', processTonDeposit);
     document.getElementById('depositStarsBtn')?.addEventListener('click', processStarsDeposit);
     
-    // Автоматический расчет суммы при вводе
     document.getElementById('tonAmount')?.addEventListener('input', function() {
         const amount = parseFloat(this.value) || 0;
         document.getElementById('tonGiftcoin').textContent = Math.floor(amount * 200);
-    });
-
-    // Добавляем в initEventListeners()
-    document.getElementById('demoOpenBtn')?.addEventListener('click', toggleDemoMode);
-    document.getElementById('openCaseBtn')?.addEventListener('click', openCase);
-    document.getElementById('quickOpenBtn')?.addEventListener('click', () => {
-        selectedCount = 3;
-        openCase();
-    });
-    document.getElementById('increaseCount')?.addEventListener('click', () => changeCount(1));
-    document.getElementById('decreaseCount')?.addEventListener('click', () => changeCount(-1));
-    document.getElementById('backToCaseBtn')?.addEventListener('click', backToCase);
-
-    // В initEventListeners() добавьте:
-    document.getElementById('backToCaseBtn')?.addEventListener('click', () => {
-        document.getElementById('caseOpenSection').classList.remove('hidden');
-        document.getElementById('caseResultSection').classList.add('hidden');
-    });
-
-    document.getElementById('keepItemBtn')?.addEventListener('click', keepItem);
-    document.getElementById('sellItemBtn')?.addEventListener('click', sellItem);
-    
-    // Сброс анимации при закрытии модального окна
-    document.getElementById('winModal')?.addEventListener('click', function(e) {
-        if (e.target === this) {
-            const itemsTrack = document.getElementById('caseItemsTrack');
-            if (itemsTrack) {
-                itemsTrack.classList.remove('roulette-animation');
-            }
-        }
-    });
-
-    document.querySelectorAll('.case-card').forEach(card => {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            card.style.setProperty('--mouse-x', `${x}px`);
-            card.style.setProperty('--mouse-y', `${y}px`);
-        });
     });
 }
 
@@ -951,8 +452,6 @@ window.closeDepositModal = closeDepositModal;
 window.switchDepositTab = switchDepositTab;
 window.processTonDeposit = processTonDeposit;
 window.processStarsDeposit = processStarsDeposit;
-window.keepItem = keepItem;
-window.sellItem = sellItem;
 
 // ==================== Start Application ====================
 document.addEventListener('DOMContentLoaded', function() {
