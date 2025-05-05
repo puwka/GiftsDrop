@@ -130,27 +130,46 @@ async function openCase() {
     }
 }
 
-// Добавить в case-script.js
+// Обновленная функция показа анимации открытия
 function showCaseOpeningAnimation(item) {
     const staticView = document.getElementById('caseStaticView');
     const rouletteView = document.getElementById('caseRouletteView');
     
-    // Переключаем вид
-    staticView.classList.add('hidden');
-    rouletteView.classList.remove('hidden');
+    // Добавляем эффект исчезновения статичного вида
+    staticView.style.transition = 'opacity 0.3s';
+    staticView.style.opacity = '0';
     
-    // Создаем дорожку рулетки
-    createRouletteTrack(item);
-    
-    // После завершения анимации показываем выигрыш
+    setTimeout(() => {
+        staticView.classList.add('hidden');
+        rouletteView.classList.remove('hidden');
+        createRouletteTrack(item);
+        
+        // Добавляем звуковые эффекты (если нужно)
+        // new Audio('spin-sound.mp3').play();
+        
+    }, 300);
+
+    // После завершения анимации
     setTimeout(() => {
         showWinModal(item);
         resetCaseView();
         
-        // Разблокируем кнопку
         const openBtn = document.getElementById('openCaseBtn');
         if (openBtn) openBtn.disabled = false;
-    }, 4000);
+    }, 3800); // Синхронизируем с длительностью анимации
+}
+
+// Обновленная функция сброса вида
+function resetCaseView() {
+    const staticView = document.getElementById('caseStaticView');
+    const rouletteView = document.getElementById('caseRouletteView');
+    const track = document.getElementById('rouletteTrack');
+    
+    rouletteView.classList.add('hidden');
+    staticView.style.opacity = '1';
+    staticView.classList.remove('hidden');
+    track.style.transform = 'translateX(0)';
+    track.style.transition = 'none';
 }
 
 // Добавить в case-script.js
@@ -185,53 +204,55 @@ function createConfetti() {
 // Создание дорожки для анимации рулетки
 function createRouletteTrack(targetItem) {
     const track = document.getElementById('rouletteTrack');
-    const rouletteItems = [];
+    track.innerHTML = ''; // Очищаем предыдущие элементы
     
-    // Добавляем случайные предметы (5 наборов)
-    for (let i = 0; i < 5; i++) {
-        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+    // Создаем 50 случайных предметов для плавной анимации
+    const rouletteItems = [];
+    for (let i = 0; i < 50; i++) {
+        const randomItem = caseItems[Math.floor(Math.random() * caseItems.length)];
+        rouletteItems.push(randomItem);
     }
     
     // Добавляем целевой предмет в конец
     rouletteItems.push(targetItem);
     
-    // Отображаем предметы
+    // Отображаем предметы с плавными переходами
     track.style.width = `${rouletteItems.length * 140}px`;
     rouletteItems.forEach((item, index) => {
         const itemEl = document.createElement('div');
         itemEl.className = `roulette-item ${item.rarity}`;
         itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
-        itemEl.innerHTML = !item.image_url ? `<i class="fas fa-gift"></i>` : '';
+        
+        // Добавляем эффекты для редких предметов
+        if (item.rarity === 'epic') {
+            itemEl.style.boxShadow = '0 0 15px #9b59b6';
+        } else if (item.rarity === 'legendary') {
+            itemEl.style.boxShadow = '0 0 25px #f1c40f';
+            itemEl.style.animation = 'pulseLegendary 1s infinite alternate';
+        }
+        
         if (index === rouletteItems.length - 1) {
             itemEl.dataset.winning = 'true';
+            itemEl.style.border = '2px solid gold';
         }
+        
         track.appendChild(itemEl);
     });
 
-    // Анимация рулетки
+    // Улучшенная анимация с эффектом замедления
     const itemWidth = 140;
     const itemsPerScreen = 3;
     const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
     const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
     
+    // Начальная позиция
     track.style.transform = 'translateX(0)';
     track.style.transition = 'none';
     void track.offsetWidth; // Trigger reflow
     
-    track.style.transition = 'transform 4s cubic-bezier(0.19, 1, 0.22, 1)';
+    // Анимация с эффектом замедления
+    track.style.transition = 'transform 3.5s cubic-bezier(0.15, 0.85, 0.35, 1)';
     track.style.transform = `translateX(-${targetPosition}px)`;
-}
-
-// Сброс вида после открытия
-function resetCaseView() {
-    const staticView = document.getElementById('caseStaticView');
-    const rouletteView = document.getElementById('caseRouletteView');
-    const track = document.getElementById('rouletteTrack');
-    
-    staticView.classList.remove('hidden');
-    rouletteView.classList.add('hidden');
-    track.style.transform = 'translateX(0)';
-    track.style.transition = 'none';
 }
 
 // Обновление общей стоимости
