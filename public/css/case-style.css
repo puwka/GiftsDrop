@@ -196,20 +196,14 @@
 }
 
 /* Обновленные стили для карточек предметов */
-.case-items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 12px;
-    padding: 0 5px;
-}
-
 .case-item {
     background: var(--card-bg);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px var(--shadow-color);
     border: 1px solid var(--border-color);
-    transition: all 0.2s;
+    transition: all 0.3s;
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -217,7 +211,7 @@
 
 .item-image {
     width: 100%;
-    height: 80px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -228,7 +222,7 @@
 }
 
 .item-image i {
-    font-size: 1.8rem;
+    font-size: 2.5rem;
     color: white;
     z-index: 1;
     opacity: 0.8;
@@ -241,87 +235,92 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(0,0,0,0.5) 0%, transparent 100%);
 }
 
 .item-info {
-    padding: 8px;
+    padding: 12px;
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background: rgba(0, 0, 0, 0.1);
-    flex-grow: 1;
+    background: rgba(0, 0, 0, 0.2);
 }
 
-.item-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: white;
-    text-align: center;
-    margin-bottom: 4px;
+.item-info h4 {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 600;
+    color: white;
+}
+
+.item-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
 }
 
 .item-rarity {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    text-align: center;
-    margin-bottom: 4px;
-    color: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 .item-chance {
     font-size: 0.75rem;
-    font-weight: 700;
-    text-align: center;
-    color: white;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 3px;
-    border-radius: 4px;
-    margin-top: auto;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-/* Цвета редкостей */
+/* Стили для разных редкостей */
 .case-item[data-rarity="common"] .item-rarity {
-    color: #a0a0a0;
+    background: #576574;
+    color: white;
 }
+
 .case-item[data-rarity="rare"] .item-rarity {
-    color: #4d9de0;
+    background: #2e86de;
+    color: white;
 }
+
 .case-item[data-rarity="epic"] .item-rarity {
-    color: #b56fe6;
+    background: #9b59b6;
+    color: white;
 }
+
 .case-item[data-rarity="legendary"] .item-rarity {
-    color: #f8d347;
+    background: #f1c40f;
+    color: #000;
+    font-weight: 700;
 }
 
 /* Эффекты при наведении */
 .case-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
-/* Адаптивность для очень маленьких экранов */
-@media (max-width: 360px) {
-    .case-items-grid {
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-        gap: 8px;
-    }
-    
+.case-item:hover .item-image::after {
+    background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
     .item-image {
-        height: 70px;
+        height: 100px;
     }
     
-    .item-name {
-        font-size: 0.75rem;
+    .item-info h4 {
+        font-size: 0.85rem;
     }
     
-    .item-rarity {
-        font-size: 0.65rem;
-    }
-    
-    .item-chance {
+    .item-rarity, .item-chance {
         font-size: 0.7rem;
     }
 }

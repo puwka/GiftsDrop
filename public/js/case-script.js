@@ -74,9 +74,13 @@ function renderCasePage() {
                     ${!item.image_url ? `<i class="fas fa-gift"></i>` : ''}
                 </div>
                 <div class="item-info">
-                    <div class="item-name">${item.name || 'Без названия'}</div>
-                    <div class="item-rarity">${getRarityName(item.rarity)}</div>
-                    <div class="item-chance">${item.drop_chance || '0.00'}%</div>
+                    <h4>${item.name || 'Без названия'}</h4>
+                    <p class="item-rarity ${item.rarity || 'common'}">
+                        ${getRarityName(item.rarity)}
+                    </p>
+                    <p class="item-chance">
+                        Шанс: ${item.drop_chance || '0.00'}%
+                    </p>
                 </div>
             </div>
         `).join('');
