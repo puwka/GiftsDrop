@@ -111,15 +111,42 @@
     </nav>
 
     <!-- Добавить перед закрывающим тегом body в case.html -->
-    <div id="winModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="won-item-header">
-                <h3><i class="fas fa-trophy"></i> ПОБЕДА!</h3>
-                <button class="close-modal" onclick="keepItem()">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div id="winModal" class="win-modal hidden">
+        <div class="win-modal-overlay"></div>
+        <div class="win-modal-content">
+          <div class="win-modal-header">
+            <h3>ПОЗДРАВЛЯЕМ!</h3>
+            <button class="win-modal-close" onclick="closeWinModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="won-item-container">
+            <div class="won-item-rarity"></div>
+            <div class="won-item-image">
+              <img src="" alt="Выигранный предмет">
             </div>
-            <div id="wonItemContainer" class="won-item-container"></div>
+            <div class="won-item-details">
+              <h4 class="won-item-name"></h4>
+              <div class="won-item-meta">
+                <span class="won-item-rarity-badge"></span>
+                <span class="won-item-price"></span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="win-modal-actions">
+            <button class="win-modal-btn sell-btn" onclick="sellItem()">
+              <i class="fas fa-coins"></i> Продать за <span class="sell-price"></span> 🪙
+            </button>
+            <button class="win-modal-btn keep-btn" onclick="keepItem()">
+              <i class="fas fa-check"></i> Оставить
+            </button>
+          </div>
+          
+          <div class="win-modal-effects">
+            <div class="confetti-container"></div>
+          </div>
         </div>
     </div>
 

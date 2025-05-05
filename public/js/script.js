@@ -464,40 +464,42 @@ async function openCase() {
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    // 1. Подготовка рулетки
-    document.getElementById('caseStaticView').classList.add('hidden');
-    document.getElementById('caseRouletteView').classList.remove('hidden');
-
+    // Сохраняем исходное состояние
+    const staticView = document.getElementById('caseStaticView');
+    const rouletteView = document.getElementById('caseRouletteView');
     const track = document.getElementById('caseItemsTrack');
+    
+    // Показываем рулетку
+    staticView.classList.add('hidden');
+    rouletteView.classList.remove('hidden');
     track.innerHTML = '';
     
-    // 2. Создаем дорожку с 5 кругами + выигрышный предмет
-    rouletteItems = [];
+    // Создаем дорожку с 5 кругами + выигрышный предмет
+    const rouletteItems = [];
     for (let i = 0; i < 5; i++) {
         rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
     }
     
-    // 3. Выбираем выигрышный предмет ДО анимации с учетом шансов
-    targetItem = selectItemWithChance(caseItems);
+    // Выбираем выигрышный предмет с учетом шансов
+    const targetItem = selectItemWithChance(caseItems);
     rouletteItems.push(targetItem);
     
-    // 4. Отображаем предметы
+    // Отображаем предметы
     track.style.width = `${rouletteItems.length * 140}px`;
     rouletteItems.forEach((item, index) => {
         const itemEl = document.createElement('div');
         itemEl.className = `roulette-item ${item.rarity}`;
         itemEl.style.backgroundImage = `url('${item.image_url}')`;
         itemEl.dataset.id = item.id;
-        // Помечаем выигрышный предмет
         if (index === rouletteItems.length - 1) {
             itemEl.dataset.winning = 'true';
         }
         track.appendChild(itemEl);
     });
 
-    // 5. Запускаем анимацию
+    // Запускаем анимацию
     const startTime = Date.now();
-    const duration = 7000; // 7 секунд
+    const duration = 5000; // 5 секунд
     const containerWidth = document.querySelector('.case-items-horizontal-container').offsetWidth;
     const targetPosition = (rouletteItems.length - 3) * 140 - containerWidth/2;
     
@@ -511,7 +513,7 @@ async function openCase() {
         if (progress < 1) {
             const pos = easing * targetPosition;
             track.style.transform = `translateX(-${pos}px)`;
-            rouletteAnimationId = requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
         } else {
             // Точная остановка на выигрышном предмете
             track.style.transform = `translateX(-${targetPosition}px)`;
@@ -520,13 +522,146 @@ async function openCase() {
             // Показываем выигрыш
             setTimeout(() => {
                 showWinModal(targetItem);
-                // Отправляем данные на сервер после анимации
-                sendCaseOpening();
+                sendCaseOpening(targetItem);
+                
+                // Возвращаем в исходное состояние через 1 секунду после закрытия модального окна
+                setTimeout(() => {
+                    staticView.classList.remove('hidden');
+                    rouletteView.classList.add('hidden');
+                    track.style.transform = 'translateX(0)';
+                    track.style.transition = 'none';
+                    if (openBtn) openBtn.disabled = false;
+                }, 1000);
             }, 500);
         }
     }
     
-    rouletteAnimationId = requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
+}
+
+// Новая функция для показа модального окна
+function showWinModal(item) {
+    const modal = document.getElementById('winModal');
+    if (!modal) return;
+    
+    // Устанавливаем данные предмета
+    document.querySelector('.won-item-name').textContent = item.name || 'Неизвестный предмет';
+    document.querySelector('.won-item-price').textContent = `${item.price} 🪙`;
+    document.querySelector('.won-item-rarity-badge').textContent = getRarityName(item.rarity);
+    
+    const imgElement = document.querySelector('.won-item-image img');
+    if (item.image_url) {
+        imgElement.src = item.image_url;
+        imgElement.style.display = 'block';
+    } else {
+        imgElement.style.display = 'none';
+        document.querySelector('.won-item-image').innerHTML = `<i class="fas fa-gift"></i>`;
+    }
+    
+    // Устанавливаем редкость
+    const rarityElement = document.querySelector('.won-item-rarity');
+    rarityElement.className = 'won-item-rarity';
+    rarityElement.classList.add(item.rarity);
+    
+    document.querySelector('.won-item-rarity-badge').className = 'won-item-rarity-badge';
+    document.querySelector('.won-item-rarity-badge').classList.add(item.rarity);
+    
+    // Устанавливаем цену продажи
+    const sellPrice = Math.floor(item.price * 0.7);
+    document.querySelector('.sell-price').textContent = sellPrice;
+    
+    // Показываем модальное окно
+    modal.classList.add('active');
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+    
+    // Запускаем конфетти для легендарных предметов
+    if (item.rarity === 'legendary') {
+        createConfetti();
+    }
+    
+    // Сохраняем выигранный предмет
+    wonItem = item;
+}
+
+// Функция закрытия модального окна
+function closeWinModal() {
+    const modal = document.getElementById('winModal');
+    modal.classList.remove('active', 'show');
+    wonItem = null;
+}
+
+// Функция создания конфетти
+function createConfetti() {
+    const container = document.querySelector('.confetti-container');
+    container.innerHTML = '';
+    
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+    const count = 100;
+    
+    for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.top = '-10px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.opacity = '0';
+        
+        container.appendChild(confetti);
+        
+        // Анимация
+        const animation = confetti.animate([
+            { 
+                top: '-10px',
+                opacity: 0,
+                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
+            },
+            { 
+                top: `${10 + Math.random() * 80}%`,
+                opacity: 1,
+                transform: `rotate(${Math.random() * 360}deg) scale(1)`
+            },
+            { 
+                top: '110%',
+                opacity: 0,
+                transform: `rotate(${Math.random() * 360}deg) scale(0.5)`
+            }
+        ], {
+            duration: 2000 + Math.random() * 3000,
+            delay: Math.random() * 1000,
+            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+        });
+        
+        animation.onfinish = () => confetti.remove();
+    }
+}
+
+// Обновленные функции для работы с предметом
+async function keepItem() {
+    closeWinModal();
+    showToast(`Предмет "${wonItem.name}" добавлен в вашу коллекцию`, "success");
+    wonItem = null;
+}
+
+async function sellItem() {
+    if (!wonItem) return;
+    
+    const sellPrice = Math.floor(wonItem.price * 0.7);
+    const success = await updateBalance(
+        sellPrice,
+        'sell',
+        `Продажа предмета: ${wonItem.name}`
+    );
+    
+    if (success) {
+        closeWinModal();
+        showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
+        wonItem = null;
+    } else {
+        showToast("Ошибка при продаже предмета", "error");
+    }
 }
 
 // Функция отправки данных об открытии на сервер
@@ -568,119 +703,6 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
     const itemsPerScreen = 3; // Примерное количество видимых предметов
     const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
     return (winningIndex * itemWidth) + centerOffset;
-}
-
-// Функция показа модального окна с выигрышем
-function showWinModal(item) {
-    wonItem = item; // Сохраняем выигрышный предмет
-    
-    const modal = document.getElementById('winModal');
-    if (!modal) return;
-    
-    modal.innerHTML = `
-        <div class="modern-modal-content">
-            <div class="prize-animation">
-                <div class="prize-item ${item.rarity}">
-                    <img src="${item.image_url}" alt="${item.name}">
-                    <div class="particles"></div>
-                </div>
-            </div>
-            <h3>Вы выиграли!</h3>
-            <h2>${item.name}</h2>
-            <div class="prize-details">
-                <span class="rarity ${item.rarity}">${getRarityName(item.rarity)}</span>
-                <span class="price">${item.price} 🪙</span>
-            </div>
-            <div class="modal-actions">
-                <button onclick="keepItem()" class="btn-keep">Оставить</button>
-                <button onclick="sellItem()" class="btn-sell">Продать за ${Math.floor(item.price*0.7)} 🪙</button>
-            </div>
-        </div>
-    `;
-    modal.classList.remove('hidden');
-
-    // Запускаем анимацию частиц
-    createParticles(modal.querySelector('.particles'), item.rarity);
-}
-
-// Функция для создания анимации частиц
-function createParticles(container, rarity) {
-    if (!container) return;
-    
-    const colors = {
-        common: '#576574',
-        rare: '#2e86de',
-        epic: '#9b59b6',
-        legendary: '#f1c40f'
-    };
-    
-    container.innerHTML = '';
-    const particleCount = rarity === 'legendary' ? 50 : 30;
-    
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.style.position = 'absolute';
-        particle.style.width = `${Math.random() * 6 + 2}px`;
-        particle.style.height = particle.style.width;
-        particle.style.backgroundColor = colors[rarity] || '#576574';
-        particle.style.borderRadius = '50%';
-        particle.style.opacity = Math.random() * 0.5 + 0.5;
-        
-        // Начальная позиция
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 100 + 50;
-        particle.style.left = `calc(50% + ${Math.cos(angle) * distance}px)`;
-        particle.style.top = `calc(50% + ${Math.sin(angle) * distance}px)`;
-        
-        // Анимация
-        const animation = particle.animate([
-            { 
-                transform: 'translate(0, 0) scale(1)',
-                opacity: 1 
-            },
-            { 
-                transform: `translate(${(Math.random() - 0.5) * 200}px, ${(Math.random() - 0.5) * 200}px) scale(0)`,
-                opacity: 0 
-            }
-        ], {
-            duration: Math.random() * 2000 + 1000,
-            iterations: Infinity,
-            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
-        });
-        
-        container.appendChild(particle);
-    }
-}
-
-
-async function keepItem() {
-    const modal = document.getElementById('winModal');
-    if (modal) modal.classList.add('hidden');
-    wonItem = null; // Очищаем выигранный предмет
-}
-
-async function sellItem() {
-    const modal = document.getElementById('winModal');
-    if (!modal || !wonItem) return;
-    
-    const sellPrice = Math.floor((wonItem.price || 0) * 0.7);
-    
-    try {
-        const success = await updateBalance(
-            sellPrice,
-            'sell',
-            `Продажа предмета: ${wonItem.name}`
-        );
-        
-        if (success) {
-            showToast(`Предмет продан за ${sellPrice} 🪙`, "success");
-            modal.classList.add('hidden');
-            wonItem = null; // Очищаем выигранный предмет
-        }
-    } catch (error) {
-        console.error('Sell item error:', error);
-        showToast("Ошибка при продаже предмета", "error");
-    }
 }
 
 function toggleDemoMode() {
