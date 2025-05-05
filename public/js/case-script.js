@@ -1,46 +1,12 @@
-// ==================== API Functions ====================
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000' 
-    : 'https://gifts-drop.vercel.app';
-
-async function apiRequest(endpoint, method = 'GET', data = null) {
-    try {
-        const options = {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        };
-
-        if (data) {
-            options.body = JSON.stringify(data);
-        }
-
-        const response = await fetch(`${API_URL}/api${endpoint}`, options);
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-    }
-}
-
 // case-script.js
 let currentCase = null;
 let caseItems = [];
 let selectedCount = 1;
 let isDemoMode = false;
 let wonItem = null;
-let rouletteAnimationId;
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Получаем ID кейса из URL
         const urlParams = new URLSearchParams(window.location.search);
         const caseId = urlParams.get('id');
         
@@ -48,10 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('ID кейса не указан');
         }
         
-        // Загружаем данные кейса
         await loadCasePage(caseId);
-        
-        // Инициализация кнопок
         initCaseButtons();
         
     } catch (error) {
@@ -63,23 +26,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadCasePage(caseId) {
     try {
-        console.log(`Загрузка кейса ID: ${caseId}`);
-        const response = await apiRequest(`/users/case/${caseId}`);
-        console.log('Ответ сервера:', response);
+        // Загружаем данные кейса и предметов с сервера
+        const [caseResponse, itemsResponse] = await Promise.all([
+            apiRequest(`/users/case/${caseId}`),
+            apiRequest(`/users/case/${caseId}/items`)
+        ]);
         
-        if (!response.success) throw new Error(response.error || 'Case not found');
+        if (!caseResponse.success || !itemsResponse.success) {
+            throw new Error(caseResponse.error || itemsResponse.error || 'Ошибка загрузки данных');
+        }
         
-        currentCase = response.case;
-        caseItems = response.items || [];
-        console.log('Получено предметов:', caseItems.length);
+        currentCase = caseResponse.case;
+        caseItems = itemsResponse.items;
         
-        // Показываем статичное изображение кейса
         renderCasePage();
         
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
-        showToast("Ошибка загрузки кейса", "error");
-        setTimeout(() => window.location.href = 'index.html', 2000);
+        throw error;
     }
 }
 
@@ -90,7 +54,7 @@ function renderCasePage() {
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     document.getElementById('totalCost').textContent = currentCase.price * selectedCount;
     
-    // Рендерим предметы для сетки внизу
+    // Рендерим предметы для сетки
     const itemsGrid = document.getElementById('caseItemsGrid');
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
@@ -110,47 +74,6 @@ function renderCasePage() {
             </div>
         `).join('');
     }
-}
-
-function initCaseButtons() {
-    document.getElementById('demoOpenBtn').addEventListener('click', toggleDemoMode);
-    document.getElementById('openCaseBtn').addEventListener('click', openCase);
-    document.getElementById('quickOpenBtn').addEventListener('click', () => {
-        selectedCount = 3;
-        updateOpenButtons();
-        openCase();
-    });
-    document.getElementById('increaseCount').addEventListener('click', () => changeCount(1));
-    document.getElementById('decreaseCount').addEventListener('click', () => changeCount(-1));
-}
-
-function toggleDemoMode() {
-    isDemoMode = !isDemoMode;
-    updateOpenButtons();
-}
-
-function changeCount(change) {
-    selectedCount = Math.max(1, Math.min(10, selectedCount + change));
-    updateOpenButtons();
-}
-
-function updateOpenButtons() {
-    const demoBtn = document.getElementById('demoOpenBtn');
-    const openBtn = document.getElementById('openCaseBtn');
-    const quickOpenBtn = document.getElementById('quickOpenBtn');
-    
-    if (isDemoMode) {
-        demoBtn.classList.add('active');
-        openBtn.classList.remove('active');
-        quickOpenBtn.classList.remove('active');
-    } else {
-        demoBtn.classList.remove('active');
-        openBtn.classList.add('active');
-        quickOpenBtn.classList.add('active');
-    }
-    
-    document.getElementById('openCount').textContent = selectedCount;
-    document.getElementById('totalCost').textContent = isDemoMode ? 0 : currentCase.price * selectedCount;
 }
 
 async function openCase() {
@@ -176,63 +99,83 @@ async function openCase() {
     rouletteView.classList.remove('hidden');
     track.innerHTML = '';
     
-    // Выбираем выигрышный предмет с учетом шансов
-    const targetItem = selectItemWithChance(caseItems);
-    
-    // Создаем дорожку с 5 кругами + выигрышный предмет
-    const rouletteItems = [];
-    for (let i = 0; i < 5; i++) {
-        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-    }
-    rouletteItems.push(targetItem);
-    
-    // Отображаем предметы
-    track.style.width = `${rouletteItems.length * 140}px`;
-    rouletteItems.forEach((item, index) => {
-        const itemEl = document.createElement('div');
-        itemEl.className = `roulette-item ${item.rarity}`;
-        itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
-        itemEl.innerHTML = !item.image_url ? `<i class="fas fa-gift"></i>` : '';
-        if (index === rouletteItems.length - 1) {
-            itemEl.dataset.winning = 'true';
-        }
-        track.appendChild(itemEl);
-    });
-
-    // Рассчитываем позицию остановки (центрируем выигрышный предмет)
-    const itemWidth = 140;
-    const itemsPerScreen = 3;
-    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
-    const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
-    
-    // Запускаем анимацию
-    track.style.transform = 'translateX(0)';
-    track.style.transition = 'none';
-    void track.offsetWidth; // Trigger reflow
-    
-    track.style.transition = 'transform 4s cubic-bezier(0.19, 1, 0.22, 1)';
-    track.style.transform = `translateX(-${targetPosition}px)`;
-    
-    // После завершения анимации показываем модальное окно
-    setTimeout(() => {
-        showWinModal(targetItem);
-        if (!isDemoMode) {
-            // Здесь должен быть вызов API для сохранения открытия кейса
-            updateBalance(-currentCase.price * selectedCount, 'case', `Открытие кейса: ${currentCase.name}`);
+    try {
+        // Отправляем запрос на открытие кейса
+        const response = await apiRequest('/cases/open', 'POST', {
+            case_id: currentCase.id,
+            count: selectedCount,
+            is_demo: isDemoMode
+        });
+        
+        if (!response.success) {
+            throw new Error(response.error || 'Ошибка открытия кейса');
         }
         
-        // Возвращаем в исходное состояние после закрытия модального окна
-        const checkModalClose = setInterval(() => {
-            if (!document.getElementById('winModal').classList.contains('active')) {
-                clearInterval(checkModalClose);
-                staticView.classList.remove('hidden');
-                rouletteView.classList.add('hidden');
-                track.style.transform = 'translateX(0)';
-                track.style.transition = 'none';
-                if (openBtn) openBtn.disabled = false;
+        const wonItems = response.items || [];
+        if (wonItems.length === 0) {
+            throw new Error('Не получены выигранные предметы');
+        }
+        
+        // Для демонстрации берем первый выигранный предмет
+        const targetItem = wonItems[0];
+        
+        // Создаем дорожку с предметами
+        const rouletteItems = [];
+        for (let i = 0; i < 5; i++) {
+            rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+        }
+        rouletteItems.push(targetItem);
+        
+        // Отображаем предметы
+        track.style.width = `${rouletteItems.length * 140}px`;
+        rouletteItems.forEach((item, index) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = `roulette-item ${item.rarity}`;
+            itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
+            itemEl.innerHTML = !item.image_url ? `<i class="fas fa-gift"></i>` : '';
+            if (index === rouletteItems.length - 1) {
+                itemEl.dataset.winning = 'true';
             }
-        }, 100);
-    }, 4000);
+            track.appendChild(itemEl);
+        });
+
+        // Анимация рулетки
+        const itemWidth = 140;
+        const itemsPerScreen = 3;
+        const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
+        const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
+        
+        track.style.transform = 'translateX(0)';
+        track.style.transition = 'none';
+        void track.offsetWidth;
+        
+        track.style.transition = 'transform 4s cubic-bezier(0.19, 1, 0.22, 1)';
+        track.style.transform = `translateX(-${targetPosition}px)`;
+        
+        // После завершения анимации показываем модальное окно
+        setTimeout(() => {
+            showWinModal(targetItem);
+            
+            // Возвращаем в исходное состояние после закрытия модального окна
+            const checkModalClose = setInterval(() => {
+                if (!document.getElementById('winModal').classList.contains('active')) {
+                    clearInterval(checkModalClose);
+                    staticView.classList.remove('hidden');
+                    rouletteView.classList.add('hidden');
+                    track.style.transform = 'translateX(0)';
+                    track.style.transition = 'none';
+                    if (openBtn) openBtn.disabled = false;
+                }
+            }, 100);
+        }, 4000);
+        
+    } catch (error) {
+        console.error('Ошибка открытия кейса:', error);
+        showToast(error.message || "Ошибка открытия кейса", "error");
+        staticView.classList.remove('hidden');
+        rouletteView.classList.add('hidden');
+        if (openBtn) openBtn.disabled = false;
+    }
 }
 
 function showWinModal(item) {
