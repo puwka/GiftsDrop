@@ -109,7 +109,6 @@ async function openCase() {
         const requestData = {
             user_id: currentUser?.id || null,
             case_id: currentCase.id,
-            count: selectedCount,
             is_demo: isDemoMode
         };
 
