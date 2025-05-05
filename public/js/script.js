@@ -40,6 +40,9 @@ let wonItem = null; // Будет хранить выигранный предм
 // Глобальные переменные для управления рулеткой
 let rouletteAnimation;
 let currentWinningItem;
+let rouletteItems = [];
+let rouletteAnimationId;
+let targetItem = null;
 
 async function authenticateUser(userData) {
     try {
@@ -461,93 +464,78 @@ function updateOpenButtons() {
 
 // В script.js обновите функцию openCase:
 async function openCase() {
-    if (!currentUser || !currentCase) {
-        showToast("Ошибка: данные не загружены", "error");
-        return;
-    }
+    if (!currentUser || !currentCase) return;
 
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    try {
-        // Инициализация рулетки
-        document.getElementById('caseStaticView').classList.add('hidden');
-        const rouletteView = document.getElementById('caseRouletteView');
-        rouletteView.classList.remove('hidden');
+    // 1. Подготовка рулетки
+    document.getElementById('caseStaticView').classList.add('hidden');
+    document.getElementById('caseRouletteView').classList.remove('hidden');
 
-        const itemsTrack = document.getElementById('caseItemsTrack');
-        const rouletteContainer = document.querySelector('.case-items-horizontal-container');
-        
-        // Очистка предыдущего состояния
-        itemsTrack.innerHTML = '';
-        itemsTrack.style.transition = 'none';
-        itemsTrack.style.transform = 'translateX(0)';
-        
-        // Создаем дорожку для рулетки (5 кругов + выигрышный предмет)
-        const scrollItems = [];
-        for (let i = 0; i < 5; i++) {
-            scrollItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
-        }
-        
-        // Выбираем выигрышный предмет
-        currentWinningItem = selectItemWithChance(caseItems);
-        scrollItems.push(currentWinningItem);
+    const track = document.getElementById('caseItemsTrack');
+    track.innerHTML = '';
+    
+    // 2. Создаем дорожку с 5 кругами + выигрышный предмет
+    rouletteItems = [];
+    for (let i = 0; i < 5; i++) {
+        rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
+    }
+    
+    // 3. Выбираем выигрышный предмет ДО анимации
+    targetItem = selectItemWithChance(caseItems);
+    rouletteItems.push(targetItem);
+    
+    // 4. Отображаем предметы
+    track.style.width = `${rouletteItems.length * 140}px`;
+    rouletteItems.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = `roulette-item ${item.rarity}`;
+        itemEl.style.backgroundImage = `url('${item.image_url}')`;
+        itemEl.dataset.id = item.id;
+        track.appendChild(itemEl);
+    });
 
-        // Добавляем предметы в DOM
-        itemsTrack.innerHTML = scrollItems.map(item => `
-            <div class="roulette-item ${item.rarity || 'common'}" 
-                 style="background-image: url('${item.image_url || 'img/default-item.png'}')"
-                 data-item-id="${item.id}">
-                 <div class="item-glow"></div>
-            </div>
-        `).join('');
-
-        // Рассчитываем параметры анимации
-        const itemWidth = 140;
-        const containerWidth = rouletteContainer.offsetWidth;
-        const totalWidth = scrollItems.length * itemWidth;
-        const stopPosition = totalWidth - containerWidth - (containerWidth/2 - itemWidth/2);
-
-        // Запускаем анимацию
-        setTimeout(() => {
-            itemsTrack.style.transition = 'transform 7s cubic-bezier(0.15, 0.85, 0.15, 1)';
-            itemsTrack.style.transform = `translateX(-${stopPosition}px)`;
-        }, 50);
-
-        // Отправляем запрос на сервер
-        const response = await apiRequest('/users/open-case', 'POST', {
-            user_id: currentUser.id,
-            case_id: currentCase.id,
-            item_id: currentWinningItem.id,
-            is_demo: isDemoMode
-        });
-
-        if (!response.success) throw new Error(response.error || 'Не удалось открыть кейс');
+    // 5. Запускаем анимацию
+    const startTime = Date.now();
+    const duration = 7000; // 7 секунд
+    const containerWidth = document.querySelector('.case-items-horizontal-container').offsetWidth;
+    const targetPosition = (rouletteItems.length - 3) * 140 - containerWidth/2;
+    
+    function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
         
-        // Ждем завершения анимации
-        await new Promise(resolve => setTimeout(resolve, 7000));
+        // Кривая замедления
+        const easing = 1 - Math.pow(1 - progress, 3);
         
-        // Показываем выигрыш
-        showWinModal(currentWinningItem);
-        
-        if (!isDemoMode) {
-            balance -= currentCase.price * selectedCount;
-            updateBalanceDisplay();
-        }
-        
-    } catch (error) {
-        console.error('Open case error:', error);
-        showToast(error.message || "Ошибка при открытии кейса", "error");
-    } finally {
-        setTimeout(() => {
-            if (openBtn) openBtn.disabled = false;
-            document.getElementById('caseStaticView').classList.remove('hidden');
-            document.getElementById('caseRouletteView').classList.add('hidden');
+        if (progress < 1) {
+            const pos = easing * targetPosition;
+            track.style.transform = `translateX(-${pos}px)`;
+            rouletteAnimationId = requestAnimationFrame(animate);
+        } else {
+            // Точная остановка на выигрышном предмете
+            track.style.transform = `translateX(-${targetPosition}px)`;
+            track.style.transition = 'transform 0.5s ease-out';
             
-            const itemsTrack = document.getElementById('caseItemsTrack');
-            itemsTrack.style.transition = 'none';
-            itemsTrack.style.transform = 'translateX(0)';
-        }, 1000);
+            // Показываем выигрыш
+            setTimeout(() => showWinModal(targetItem), 500);
+        }
+    }
+    
+    rouletteAnimationId = requestAnimationFrame(animate);
+
+    // 6. Отправляем данные на сервер
+    const response = await apiRequest('/users/open-case', 'POST', {
+        user_id: currentUser.id,
+        case_id: currentCase.id,
+        item_id: targetItem.id,
+        is_demo: isDemoMode
+    });
+
+    if (!response.success) {
+        cancelAnimationFrame(rouletteAnimationId);
+        showToast("Ошибка при открытии кейса", "error");
     }
 }
 
@@ -575,51 +563,82 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
 }
 
 // Новая функция для показа модального окна с выигрышем
-// Современное модальное окно выигрыша
 function showWinModal(item) {
-    const modal = document.getElementById('winModal');
-    const container = document.getElementById('wonItemContainer');
-    const sellPrice = Math.floor((item.price || 0) * 0.7);
+    // Проверяем, что это именно тот предмет, на котором остановилась рулетка
+    if (item.id !== targetItem?.id) {
+        console.error('Несоответствие предметов!');
+        item = targetItem; // Принудительно используем целевой предмет
+    }
 
-    container.innerHTML = `
-        <div class="won-item-card ${item.rarity || 'common'}">
-            <div class="item-header">
-                <span class="rarity-badge">${getRarityName(item.rarity)}</span>
-                <span class="item-value">${item.price || '0'} 🪙</span>
-            </div>
-            <div class="item-image">
-                ${item.image_url ? 
-                    `<img src="${item.image_url}" alt="${item.name}" loading="lazy">` : 
-                    `<i class="fas fa-gift"></i>`}
-                <div class="item-halo"></div>
-            </div>
-            <div class="item-details">
-                <h3 class="item-name">${item.name || 'Неизвестный предмет'}</h3>
-                <div class="item-meta">
-                    <span><i class="fas fa-box-open"></i> ${item.category || 'Кейс'}</span>
-                    <span><i class="fas fa-percentage"></i> Шанс: ${item.drop_chance || '1'}%</span>
+    const modal = document.getElementById('winModal');
+    modal.innerHTML = `
+        <div class="modern-modal-content">
+            <div class="prize-animation">
+                <div class="prize-item ${item.rarity}">
+                    <img src="${item.image_url}" alt="${item.name}">
+                    <div class="particles"></div>
                 </div>
             </div>
-            <div class="item-actions">
-                <button id="keepItemBtn" class="action-btn keep-btn">
-                    <i class="fas fa-check"></i> В инвентарь
-                </button>
-                <button id="sellItemBtn" class="action-btn sell-btn">
-                    <i class="fas fa-coins"></i> Продать за ${sellPrice} 🪙
-                </button>
+            <h3>Вы выиграли!</h3>
+            <h2>${item.name}</h2>
+            <div class="prize-details">
+                <span class="rarity ${item.rarity}">${getRarityName(item.rarity)}</span>
+                <span class="price">${item.price} 🪙</span>
+            </div>
+            <div class="modal-actions">
+                <button onclick="keepItem()" class="btn-keep">Оставить</button>
+                <button onclick="sellItem()" class="btn-sell">Продать за ${Math.floor(item.price*0.7)} 🪙</button>
             </div>
         </div>
     `;
-
-    document.getElementById('sellPrice').textContent = sellPrice;
     modal.classList.remove('hidden');
 
-    // Анимация появления
-    setTimeout(() => {
-        const card = container.querySelector('.won-item-card');
-        card.style.transform = 'scale(1)';
-        card.style.opacity = '1';
-    }, 10);
+    // Запускаем анимацию частиц
+    createParticles(modal.querySelector('.particles'), item.rarity);
+}
+
+// Создание частиц для анимации выигрыша
+function createParticles(container, rarity) {
+    const colors = {
+        common: '#576574',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    
+    const color = colors[rarity] || '#ffffff';
+    
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'absolute';
+        particle.style.width = `${Math.random() * 5 + 2}px`;
+        particle.style.height = particle.style.width;
+        particle.style.backgroundColor = color;
+        particle.style.borderRadius = '50%';
+        particle.style.opacity = '0';
+        
+        // Позиционирование
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 80 + 20;
+        const x = 50 + Math.cos(angle) * distance;
+        const y = 50 + Math.sin(angle) * distance;
+        
+        particle.style.left = `${x}%`;
+        particle.style.top = `${y}%`;
+        
+        // Анимация
+        particle.animate([
+            { opacity: 0, transform: 'translate(0,0) scale(0)' },
+            { opacity: 1, transform: 'translate(0,0) scale(1)' },
+            { opacity: 0, transform: `translate(${(Math.random()-0.5)*50}px, ${(Math.random()-0.5)*50}px) scale(0)` }
+        ], {
+            duration: 2000 + Math.random() * 3000,
+            delay: Math.random() * 1000,
+            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+        });
+        
+        container.appendChild(particle);
+    }
 }
 
 async function keepItem() {
