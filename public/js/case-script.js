@@ -60,29 +60,31 @@ function normalizeDropChances() {
 }
 
 // Отображение данных кейса
-function renderCaseContents(items) {
-    const container = document.querySelector('.case-contents');
-    if (!container) return;
-  
-    container.innerHTML = `
-      <h2 class="case-contents-title">СОДЕРЖИМОЕ КЕЙСА</h2>
-      ${items.map(item => `
-        <div class="item-card ${item.rarity || 'common'}">
-          <div class="item-header">
-            <span class="item-name">${item.name}</span>
-            <div class="item-values">
-              <span class="item-value"><i class="fas fa-star"></i> ${formatNumber(item.stars || 0)}</span>
-              <span class="item-value"><i class="fas fa-comment"></i> ${formatNumber(item.comments || 0)}</span>
+function renderCasePage() {
+    if (!currentCase) return;
+    
+    document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
+    updateTotalCost();
+
+    const itemsGrid = document.getElementById('caseItemsGrid');
+    if (itemsGrid) {
+        itemsGrid.innerHTML = caseItems.map(item => `
+            <div class="case-item" data-rarity="${item.rarity || 'common'}">
+                <div class="item-image" style="${item.image_url ? `background-image: url('${item.image_url}')` : ''}">
+                    ${!item.image_url ? `<i class="fas fa-gift"></i>` : ''}
+                </div>
+                <div class="item-info">
+                    <h4>${item.name || 'Предмет'}</h4>
+                    <div class="item-rarity ${item.rarity || 'common'}">
+                        ${getRarityName(item.rarity)}
+                    </div>
+                    <p class="item-chance">
+                        Шанс: ${item.drop_chance ? parseFloat(item.drop_chance).toFixed(2) : '0.00'}%
+                    </p>
+                </div>
             </div>
-          </div>
-          <div class="item-rarity">${getRarityName(item.rarity)}</div>
-        </div>
-      `).join('')}
-    `;
-}
-  
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        `).join('');
+    }
 }
 
 // Открытие кейса
