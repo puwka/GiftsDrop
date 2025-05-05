@@ -352,20 +352,21 @@
 .roulette-container {
     position: relative;
     width: 100%;
+    height: 160px;
     margin: 2rem 0;
-    height: 140px;
     overflow: hidden;
     perspective: 1000px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .roulette-track {
     display: flex;
     position: absolute;
+    height: 140px;
+    top: 10px;
     left: 0;
-    top: 0;
-    height: 100%;
-    transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
-    align-items: center;
     will-change: transform;
 }
 
@@ -376,23 +377,20 @@
     background: var(--card-bg);
     border-radius: 12px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--text-color);
-    font-weight: 600;
-    box-shadow: 0 5px 15px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    transform-style: preserve-3d;
-    transition: transform 0.3s;
-    position: relative;
-    overflow: hidden;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.roulette-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.roulette-item.winning-item {
+    border: 2px solid gold;
+    box-shadow: 0 0 20px gold;
+    animation: pulse-gold 0.5s infinite alternate;
 }
 
 .roulette-pointer {
@@ -411,11 +409,16 @@
     content: '';
     position: absolute;
     top: 0;
-    left: -10px;
-    width: 24px;
-    height: 24px;
+    left: -8px;
+    width: 20px;
+    height: 20px;
     background: var(--primary);
     clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+@keyframes pulse-gold {
+    from { transform: scale(1); box-shadow: 0 0 10px gold; }
+    to { transform: scale(1.05); box-shadow: 0 0 30px gold; }
 }
 
 /* Win Modal */

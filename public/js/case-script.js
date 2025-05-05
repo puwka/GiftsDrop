@@ -88,20 +88,14 @@ function renderCasePage() {
 }
 
 // Открытие кейса
+let isAnimationRunning = false;
+
 async function openCase() {
-    if (!currentCase) return;
+    if (isAnimationRunning || !currentCase) return;
+    isAnimationRunning = true;
 
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
-
-    if (!isDemoMode) {
-        const balance = parseFloat(document.querySelector('.balance-amount').textContent || 0);
-        if (balance < currentCase.price * selectedCount) {
-            showToast("Недостаточно средств", "error");
-            openBtn.disabled = false;
-            return;
-        }
-    }
 
     try {
         const requestData = {
@@ -111,64 +105,118 @@ async function openCase() {
         };
 
         const response = await apiRequest('/users/open-case', 'POST', requestData);
-        
-        if (!response.success) {
-            throw new Error(response.error || 'Ошибка открытия кейса');
-        }
+        if (!response.success) throw new Error(response.error || 'Ошибка открытия кейса');
 
-        const wonItems = response.items || [];
-        if (wonItems.length === 0) {
-            throw new Error('Не получены выигранные предметы');
-        }
-
-        showCaseOpeningAnimation(wonItems[0]);
-
+        await showCaseOpeningAnimation(response.items[0]);
     } catch (error) {
         console.error('Ошибка открытия кейса:', error);
         showToast(error.message || "Ошибка открытия кейса", "error");
+    } finally {
+        isAnimationRunning = false;
         if (openBtn) openBtn.disabled = false;
     }
 }
 
-// Обновленная функция показа анимации открытия
-function showCaseOpeningAnimation(item) {
+async function showCaseOpeningAnimation(item) {
     const staticView = document.getElementById('caseStaticView');
     const rouletteView = document.getElementById('caseRouletteView');
     const track = document.getElementById('rouletteTrack');
-    
-    // Скрываем статичный вид
+
+    // 1. Подготовка анимации
     staticView.classList.add('hidden');
     rouletteView.classList.remove('hidden');
-    
-    // Создаем дорожку рулетки
-    createRouletteTrack(item);
-    
-    // Ждем завершения анимации рулетки
-    track.addEventListener('transitionend', function onTransitionEnd() {
-        // Удаляем обработчик, чтобы он не срабатывал повторно
-        track.removeEventListener('transitionend', onTransitionEnd);
-        
-        // Показываем окно выигрыша
-        showWinModal(item);
-        resetCaseView();
-        
-        // Разблокируем кнопку
-        const openBtn = document.getElementById('openCaseBtn');
-        if (openBtn) openBtn.disabled = false;
-    });
-}
+    track.innerHTML = '';
 
-// Обновленная функция сброса вида
-function resetCaseView() {
-    const staticView = document.getElementById('caseStaticView');
-    const rouletteView = document.getElementById('caseRouletteView');
-    const track = document.getElementById('rouletteTrack');
+    // 2. Создаем дорожку с эффектом накопления скорости
+    const rouletteItems = [];
+    const spinUpItems = 15; // Элементы для разгона
+    const mainSpinItems = 50; // Основные элементы
+    const slowDownItems = 15; // Элементы для замедления
+
+    // Фаза разгона
+    for (let i = 0; i < spinUpItems; i++) {
+        rouletteItems.push(caseItems[Math.floor(Math.random() * caseItems.length)]);
+    }
+
+    // Основная фаза
+    for (let i = 0; i < mainSpinItems; i++) {
+        rouletteItems.push(caseItems[Math.floor(Math.random() * caseItems.length)]);
+    }
+
+    // Фаза замедления (повторяем несколько последних предметов)
+    const lastItems = [];
+    for (let i = 0; i < slowDownItems - 5; i++) {
+        lastItems.push(caseItems[Math.floor(Math.random() * caseItems.length)]);
+    }
     
-    rouletteView.classList.add('hidden');
-    staticView.style.opacity = '1';
-    staticView.classList.remove('hidden');
-    track.style.transform = 'translateX(0)';
-    track.style.transition = 'none';
+    // Последние 5 элементов перед выигрышным
+    for (let i = 5; i > 0; i--) {
+        lastItems.push(caseItems[Math.floor(Math.random() * caseItems.length)]);
+    }
+    
+    // Выигрышный элемент
+    lastItems.push(item);
+    rouletteItems.push(...lastItems);
+
+    // 3. Рендерим элементы
+    track.style.width = `${rouletteItems.length * 140}px`;
+    rouletteItems.forEach((item, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = `roulette-item ${item.rarity}`;
+        
+        if (item.image_url) {
+            itemEl.style.backgroundImage = `url('${item.image_url}')`;
+        } else {
+            itemEl.innerHTML = '<i class="fas fa-gift"></i>';
+        }
+        
+        if (index === rouletteItems.length - 1) {
+            itemEl.dataset.winning = 'true';
+            itemEl.classList.add('winning-item');
+        }
+        
+        track.appendChild(itemEl);
+    });
+
+    // 4. Запуск анимации с прогрессивным замедлением
+    await new Promise(resolve => {
+        const startTime = Date.now();
+        const totalDuration = 4000; // 4 секунды общее время
+        const startSpeed = 0.3;
+        const endSpeed = 0.02;
+        
+        let currentPosition = 0;
+        const targetPosition = track.scrollWidth - rouletteView.clientWidth;
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / totalDuration, 1);
+            
+            // Кривая замедления
+            const speed = startSpeed + (endSpeed - startSpeed) * Math.pow(progress, 0.5);
+            currentPosition += speed * (targetPosition - currentPosition);
+            
+            track.style.transform = `translateX(-${currentPosition}px)`;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Точная остановка на выигрышном элементе
+                const finalPosition = track.scrollWidth - rouletteView.clientWidth - 140;
+                track.style.transition = 'transform 0.5s cubic-bezier(0.1, 0.8, 0.2, 1)';
+                track.style.transform = `translateX(-${finalPosition}px)`;
+                
+                // Ждем завершения финальной анимации
+                setTimeout(resolve, 600);
+            }
+        };
+        
+        track.style.transition = 'none';
+        requestAnimationFrame(animate);
+    });
+
+    // 5. Показываем окно выигрыша
+    showWinModal(item);
 }
 
 // Добавить в case-script.js
@@ -311,41 +359,52 @@ function updateOpenButtons() {
 function showWinModal(item) {
     const modal = document.getElementById('winModal');
     if (!modal || !item) return;
+
+    // Анимация появления модального окна
+    modal.style.opacity = '0';
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'none';
     
-    // Устанавливаем данные предмета
-    document.getElementById('wonItemName').textContent = item.name;
-    document.getElementById('wonItemPrice').textContent = item.price;
-    document.getElementById('wonItemRarity').textContent = getRarityName(item.rarity);
-    document.getElementById('wonItemRarity').className = `rarity ${item.rarity}`;
+    setTimeout(() => {
+        modal.style.transition = 'opacity 0.3s ease';
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'all';
+        
+        // Заполняем данные о выигрыше
+        document.getElementById('wonItemName').textContent = item.name;
+        document.getElementById('wonItemPrice').textContent = item.price;
+        document.getElementById('wonItemRarity').textContent = getRarityName(item.rarity);
+        document.getElementById('wonItemRarity').className = `rarity ${item.rarity}`;
+        
+        const imgElement = document.getElementById('wonItemImage');
+        if (item.image_url) {
+            imgElement.src = item.image_url;
+            imgElement.style.display = 'block';
+        }
+        
+        // Запускаем конфетти для редких предметов
+        if (item.rarity === 'legendary') {
+            setTimeout(createConfetti, 300);
+        }
+    }, 100);
+}
+
+function resetCaseView() {
+    const staticView = document.getElementById('caseStaticView');
+    const rouletteView = document.getElementById('caseRouletteView');
+    const track = document.getElementById('rouletteTrack');
     
-    const imgElement = document.getElementById('wonItemImage');
-    if (item.image_url) {
-        imgElement.src = item.image_url;
-        imgElement.style.display = 'block';
-    } else {
-        imgElement.style.display = 'none';
-        document.querySelector('.prize-item').innerHTML = `<i class="fas fa-gift"></i>`;
-    }
+    rouletteView.style.opacity = '1';
+    staticView.style.opacity = '1';
     
-    // Устанавливаем цену продажи (70% от стоимости)
-    const sellPrice = Math.floor((item.price || 0) * 0.7);
-    document.getElementById('sellPrice').textContent = sellPrice;
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(0)';
+    track.innerHTML = '';
     
-    // Устанавливаем класс редкости для анимации
-    const prizeItem = document.querySelector('.prize-item');
-    prizeItem.className = 'prize-item';
-    prizeItem.classList.add(item.rarity);
-    
-    // Показываем модальное окно
-    modal.classList.add('active');
-    
-    // Запускаем конфетти для легендарных предметов
-    if (item.rarity === 'legendary') {
-        createConfetti();
-    }
-    
-    // Сохраняем выигранный предмет
-    wonItem = item;
+    setTimeout(() => {
+        rouletteView.classList.add('hidden');
+        staticView.classList.remove('hidden');
+    }, 50);
 }
 
 // Получение названия редкости
