@@ -70,16 +70,16 @@ function renderCasePage() {
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
             <div class="case-item" data-rarity="${item.rarity || 'common'}">
-                <div class="item-image" style="background-image: url('${item.image_url || ''}')">
+                <div class="item-image" style="${item.image_url ? `background-image: url('${item.image_url}')` : ''}">
                     ${!item.image_url ? `<i class="fas fa-gift"></i>` : ''}
                 </div>
                 <div class="item-info">
-                    <h4>${item.name || 'Без названия'}</h4>
-                    <p class="item-rarity ${item.rarity || 'common'}">
+                    <h4>${item.name || 'Предмет'}</h4>
+                    <div class="item-rarity ${item.rarity || 'common'}">
                         ${getRarityName(item.rarity)}
-                    </p>
+                    </div>
                     <p class="item-chance">
-                        Шанс: ${item.drop_chance || '0.00'}%
+                        Шанс: ${item.drop_chance ? parseFloat(item.drop_chance).toFixed(2) : '0.00'}%
                     </p>
                 </div>
             </div>
@@ -308,6 +308,7 @@ function showWinModal(item) {
 // Получение названия редкости
 function getRarityName(rarity) {
     const names = {
+        'uncommon': 'Дефолт',
         'common': 'Обычный',
         'rare': 'Редкий',
         'epic': 'Эпический',
