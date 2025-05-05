@@ -75,12 +75,10 @@ function renderCasePage() {
                 </div>
                 <div class="item-info">
                     <h4>${item.name || 'Без названия'}</h4>
-                    <p class="item-rarity ${item.rarity || 'common'}">
-                        ${getRarityName(item.rarity)}
-                    </p>
-                    <p class="item-chance">
-                        Шанс: ${item.drop_chance || '0.00'}%
-                    </p>
+                    <div class="item-stats">
+                        <span class="item-rarity">${getRarityName(item.rarity)}</span>
+                        <span class="item-chance">${item.drop_chance || '0.00'}%</span>
+                    </div>
                 </div>
             </div>
         `).join('');
