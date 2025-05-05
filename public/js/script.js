@@ -464,10 +464,11 @@ async function openCase() {
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    // Сохраняем исходное состояние
+    // Получаем элементы DOM
     const staticView = document.getElementById('caseStaticView');
     const rouletteView = document.getElementById('caseRouletteView');
     const track = document.getElementById('caseItemsTrack');
+    const container = document.querySelector('.case-items-horizontal-container');
     
     // Показываем рулетку
     staticView.classList.add('hidden');
@@ -480,7 +481,7 @@ async function openCase() {
         rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
     }
     
-    // Выбираем выигрышный предмет с учетом шансов
+    // Выбираем выигрышный предмет с учетом шансов (ДО анимации)
     const targetItem = selectItemWithChance(caseItems);
     rouletteItems.push(targetItem);
     
@@ -497,52 +498,63 @@ async function openCase() {
         track.appendChild(itemEl);
     });
 
+    // Рассчитываем позицию остановки (центрируем выигрышный предмет)
+    const itemWidth = 140;
+    const itemsPerScreen = 3;
+    const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
+    const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
+    
     // Запускаем анимацию
-    const startTime = Date.now();
-    const duration = 5000; // 5 секунд
-    const containerWidth = document.querySelector('.case-items-horizontal-container').offsetWidth;
-    const targetPosition = (rouletteItems.length - 3) * 140 - containerWidth/2;
-    
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+    return new Promise((resolve) => {
+        const startTime = Date.now();
+        const duration = 5000; // 5 секунд анимации
         
-        // Кривая замедления
-        const easing = 1 - Math.pow(1 - progress, 3);
-        
-        if (progress < 1) {
-            const pos = easing * targetPosition;
-            track.style.transform = `translateX(-${pos}px)`;
-            requestAnimationFrame(animate);
-        } else {
-            // Точная остановка на выигрышном предмете
-            track.style.transform = `translateX(-${targetPosition}px)`;
-            track.style.transition = 'transform 0.5s ease-out';
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
             
-            // Показываем выигрыш
-            setTimeout(() => {
-                showWinModal(targetItem);
-                sendCaseOpening(targetItem);
+            // Кривая замедления (ease-out)
+            const easing = 1 - Math.pow(1 - progress, 3);
+            
+            if (progress < 1) {
+                const pos = easing * targetPosition;
+                track.style.transform = `translateX(-${pos}px)`;
+                requestAnimationFrame(animate);
+            } else {
+                // Точная остановка на выигрышном предмете
+                track.style.transform = `translateX(-${targetPosition}px)`;
+                track.style.transition = 'transform 0.5s ease-out';
                 
-                // Возвращаем в исходное состояние через 1 секунду после закрытия модального окна
+                // Ждем завершения анимации остановки
                 setTimeout(() => {
-                    staticView.classList.remove('hidden');
-                    rouletteView.classList.add('hidden');
-                    track.style.transform = 'translateX(0)';
-                    track.style.transition = 'none';
-                    if (openBtn) openBtn.disabled = false;
-                }, 1000);
-            }, 500);
+                    // Показываем модальное окно с выигранным предметом
+                    showWinModal(targetItem);
+                    sendCaseOpening(targetItem);
+                    
+                    // Возвращаем в исходное состояние после закрытия модального окна
+                    const checkModalClose = setInterval(() => {
+                        if (!document.getElementById('winModal').classList.contains('active')) {
+                            clearInterval(checkModalClose);
+                            staticView.classList.remove('hidden');
+                            rouletteView.classList.add('hidden');
+                            track.style.transform = 'translateX(0)';
+                            track.style.transition = 'none';
+                            if (openBtn) openBtn.disabled = false;
+                            resolve();
+                        }
+                    }, 100);
+                }, 500); // Ждем завершения анимации остановки
+            }
         }
-    }
-    
-    requestAnimationFrame(animate);
+        
+        requestAnimationFrame(animate);
+    });
 }
 
 // Новая функция для показа модального окна
 function showWinModal(item) {
     const modal = document.getElementById('winModal');
-    if (!modal) return;
+    if (!modal || !item) return;
     
     // Устанавливаем данные предмета
     document.querySelector('.won-item-name').textContent = item.name || 'Неизвестный предмет';
@@ -559,9 +571,9 @@ function showWinModal(item) {
     }
     
     // Устанавливаем редкость
-    const rarityElement = document.querySelector('.won-item-rarity');
-    rarityElement.className = 'won-item-rarity';
-    rarityElement.classList.add(item.rarity);
+    const container = document.querySelector('.won-item-container');
+    container.className = 'won-item-container';
+    container.classList.add(item.rarity);
     
     document.querySelector('.won-item-rarity-badge').className = 'won-item-rarity-badge';
     document.querySelector('.won-item-rarity-badge').classList.add(item.rarity);
@@ -572,9 +584,6 @@ function showWinModal(item) {
     
     // Показываем модальное окно
     modal.classList.add('active');
-    setTimeout(() => {
-        modal.classList.add('show');
-    }, 10);
     
     // Запускаем конфетти для легендарных предметов
     if (item.rarity === 'legendary') {
