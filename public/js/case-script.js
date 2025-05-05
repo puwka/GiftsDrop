@@ -94,7 +94,6 @@ async function openCase() {
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    // В функции openCase в case-script.js заменить проверку баланса на:
     if (!isDemoMode) {
         const balance = parseFloat(document.querySelector('.balance-amount').textContent || 0);
         if (balance < currentCase.price * selectedCount) {
@@ -105,14 +104,11 @@ async function openCase() {
     }
 
     try {
-        // Формируем корректный запрос
         const requestData = {
             user_id: currentUser?.id || null,
             case_id: currentCase.id,
             is_demo: isDemoMode
         };
-
-        console.log("Отправляемые данные:", requestData); // Для отладки
 
         const response = await apiRequest('/users/open-case', 'POST', requestData);
         
@@ -120,13 +116,11 @@ async function openCase() {
             throw new Error(response.error || 'Ошибка открытия кейса');
         }
 
-        // Обработка успешного ответа
         const wonItems = response.items || [];
         if (wonItems.length === 0) {
             throw new Error('Не получены выигранные предметы');
         }
 
-        // Показываем анимацию и результат
         showCaseOpeningAnimation(wonItems[0]);
 
     } catch (error) {

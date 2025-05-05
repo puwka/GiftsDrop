@@ -259,9 +259,9 @@ router.get('/case/:id', async (req, res) => {
 });
 
 router.post('/open-case', async (req, res) => {
-    const { user_id, case_id, item_id, is_demo = false } = req.body;
+    const { user_id, case_id, is_demo = false } = req.body;
     
-    if (!user_id || !case_id || !item_id) {
+    if (!user_id || !case_id) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -269,16 +269,39 @@ router.post('/open-case', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // Проверяем существование предмета
-        const itemCheck = await client.query(
-            'SELECT * FROM items WHERE id = $1', 
-            [item_id]
-        );
-        if (itemCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Item not found' });
-        }
-        const wonItem = itemCheck.rows[0];
+        // Получаем предметы кейса
+        const itemsResult = await client.query(`
+            SELECT i.*, ci.adjusted_chance 
+            FROM cases_items ci
+            JOIN items i ON ci.item_id = i.id
+            WHERE ci.case_id = $1
+        `, [case_id]);
         
+        if (itemsResult.rows.length === 0) {
+            return res.status(404).json({ error: 'No items found in this case' });
+        }
+        
+        // Выбираем случайный предмет с учетом шансов
+        const items = itemsResult.rows;
+        const totalChance = items.reduce((sum, item) => sum + parseFloat(item.adjusted_chance || item.drop_chance || 1), 0);
+        
+        let random = Math.random() * totalChance;
+        let selectedItem = null;
+        
+        for (const item of items) {
+            const chance = parseFloat(item.adjusted_chance || item.drop_chance || 1);
+            if (random <= chance) {
+                selectedItem = item;
+                break;
+            }
+            random -= chance;
+        }
+        
+        // Если по какой-то причине предмет не выбран, берем первый
+        if (!selectedItem) {
+            selectedItem = items[0];
+        }
+
         // Для реального открытия - списываем средства
         if (!is_demo) {
             const caseCheck = await client.query(
@@ -300,14 +323,14 @@ router.post('/open-case', async (req, res) => {
             `INSERT INTO cases_openings 
              (user_id, case_id, item_id, is_demo, opened_at)
              VALUES ($1, $2, $3, $4, NOW())`,
-            [user_id, case_id, item_id, is_demo]
+            [user_id, case_id, selectedItem.id, is_demo]
         );
         
         await client.query('COMMIT');
         
         res.json({ 
             success: true,
-            item: wonItem
+            items: [selectedItem] // Возвращаем массив для совместимости
         });
         
     } catch (err) {
