@@ -63,25 +63,23 @@ function normalizeDropChances() {
 function renderCasePage() {
     if (!currentCase) return;
     
-    // Обновляем цену кейса
     document.getElementById('casePrice').textContent = `${currentCase.price} 🪙`;
     updateTotalCost();
-    
-    // Рендерим предметы
+
     const itemsGrid = document.getElementById('caseItemsGrid');
     if (itemsGrid) {
         itemsGrid.innerHTML = caseItems.map(item => `
-            <div class="case-item" data-rarity="${item.rarity}">
+            <div class="case-item" data-rarity="${item.rarity || 'common'}">
                 <div class="item-image" style="background-image: url('${item.image_url || ''}')">
-                    ${!item.image_url ? `<i class="fas fa-box-open"></i>` : ''}
+                    ${!item.image_url ? `<i class="fas fa-gift"></i>` : ''}
                 </div>
                 <div class="item-info">
-                    <h4>${item.name}</h4>
-                    <p class="item-rarity ${item.rarity}">
+                    <h4>${item.name || 'Без названия'}</h4>
+                    <p class="item-rarity ${item.rarity || 'common'}">
                         ${getRarityName(item.rarity)}
                     </p>
                     <p class="item-chance">
-                        Шанс: ${item.drop_chance}%
+                        Шанс: ${item.drop_chance || '0.00'}%
                     </p>
                 </div>
             </div>
@@ -220,10 +218,31 @@ function updateTotalCost() {
 // Изменение количества
 function changeCount(delta) {
     const newCount = selectedCount + delta;
-    if (newCount >= 1 && newCount <= 10) {
+    if (newCount >= 1 && newCount <= 3) {
         selectedCount = newCount;
         document.getElementById('openCount').textContent = selectedCount;
         updateTotalCost();
+    }
+}
+
+// В функции normalizeDropChances()
+function normalizeDropChances() {
+    if (!caseItems.length) return;
+    
+    // Проверяем наличие drop_chance и преобразуем в числа
+    caseItems.forEach(item => {
+        if (!item.drop_chance && item.adjusted_chance) {
+            item.drop_chance = item.adjusted_chance;
+        }
+        item.drop_chance = parseFloat(item.drop_chance) || 1; // Значение по умолчанию 1, если не указано
+    });
+
+    // Нормализуем шансы в проценты
+    const totalChance = caseItems.reduce((sum, item) => sum + item.drop_chance, 0);
+    if (totalChance !== 100) {
+        caseItems.forEach(item => {
+            item.drop_chance = ((item.drop_chance / totalChance) * 100).toFixed(2);
+        });
     }
 }
 
