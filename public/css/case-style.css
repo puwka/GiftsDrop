@@ -211,21 +211,44 @@
 
 .item-image {
     width: 100%;
-    height: 130px;
+    height: 80px; /* Уменьшаем высоту */
     display: flex;
     align-items: center;
     justify-content: center;
-    background-size: cover;
+    background-size: contain; /* Изменяем на contain */
     background-position: center;
+    background-repeat: no-repeat; /* Добавляем no-repeat */
     position: relative;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: transparent !important; /* Убираем фон */
+    padding: 10px; /* Добавляем отступы */
 }
 
 .item-image i {
-    font-size: 2.5rem;
-    color: white;
+    font-size: 2rem; /* Уменьшаем размер иконки */
+    color: rgba(255, 255, 255, 0.9); /* Делаем иконку более прозрачной */
     z-index: 1;
-    opacity: 0.8;
+}
+
+.item-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent; /* Убираем градиентный оверлей */
+    z-index: 0;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .item-image {
+        height: 70px;
+    }
+    
+    .item-image i {
+        font-size: 1.8rem;
+    }
 }
 
 .item-image::after {
