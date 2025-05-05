@@ -10,6 +10,7 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Шапка -->
         <header class="app-header">
             <div class="header-content">
                 <h1>GiftRush</h1>
@@ -25,7 +26,8 @@
             </div>
         </header>
 
-        <main class="app-main case-page">
+        <!-- Основной контент -->
+        <main class="app-main case-page" style="overflow-y: auto; height: calc(100vh - 120px);">
             <div id="caseOpenSection">
                 <div class="case-preview">
                     <div id="caseStaticView">
@@ -37,8 +39,8 @@
                     
                     <div id="caseRouletteView" class="hidden">
                         <h3 class="section-subtitle">Прокрутите для открытия:</h3>
-                        <div class="roulette-container">
-                            <div class="roulette-track" id="rouletteTrack"></div>
+                        <div id="rouletteContainer" class="roulette-container">
+                            <div id="rouletteTrack" class="roulette-track"></div>
                             <div class="roulette-pointer"></div>
                         </div>
                     </div>
@@ -71,55 +73,61 @@
                 </div>
                 
                 <h3 class="section-subtitle">Предметы в кейсе:</h3>
-                <div class="case-items-grid" id="caseItemsGrid"></div>
+                <div class="case-items-container" style="height: auto; overflow: visible; padding-bottom: 80px;">
+                    <div class="case-items-grid" id="caseItemsGrid"></div>
+                </div>
+            </div>
+            
+            <!-- В основной контент добавьте секцию для результатов -->
+            <div id="caseResultSection" class="hidden">
+                <h2 class="section-title">ВАШ ВЫИГРЫШ</h2>
+                
+                <div class="result-container">
+                    <div id="caseResultContainer" class="won-item-container"></div>
+                </div>
+                
+                <button id="backToCaseBtn" class="open-btn primary">
+                    <i class="fas fa-arrow-left"></i>
+                    НАЗАД К КЕЙСУ
+                </button>
             </div>
         </main>
-
-        <nav class="bottom-nav">
-            <button class="nav-btn active" data-tab="cases" onclick="navigateTo('index.html')">
-                <i class="fas fa-gift"></i>
-                <span>Кейсы</span>
-            </button>
-            <button class="nav-btn" data-tab="bonuses" onclick="navigateTo('index.html#bonuses')">
-                <i class="fas fa-sync-alt"></i>
-                <span>Бонусы</span>
-            </button>
-            <button class="nav-btn" data-tab="profile" onclick="navigateTo('index.html#profile')">
-                <i class="fas fa-user"></i>
-                <span>Профиль</span>
-            </button>
-        </nav>
     </div>
 
+    <!-- Нижнее меню -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-tab="cases" onclick="navigateTo('index.html')">
+            <i class="fas fa-gift"></i>
+            <span>Кейсы</span>
+        </button>
+        <button class="nav-btn" data-tab="bonuses" onclick="navigateTo('index.html#bonuses')">
+            <i class="fas fa-sync-alt"></i>
+            <span>Бонусы</span>
+        </button>
+        <button class="nav-btn" data-tab="profile" onclick="navigateTo('index.html#profile')">
+            <i class="fas fa-user"></i>
+            <span>Профиль</span>
+        </button>
+    </nav>
+
+    <!-- Добавить перед закрывающим тегом body в case.html -->
     <div id="winModal" class="win-modal">
-        <div class="win-modal-overlay"></div>
         <div class="win-modal-content">
-            <div class="win-modal-header">
-                <h3><i class="fas fa-trophy"></i> ПОБЕДА!</h3>
+          <div class="prize-animation">
+            <div class="prize-item">
+              <img id="wonItemImage" src="" alt="Выигранный предмет">
             </div>
-            
-            <div class="won-item-container">
-                <div class="won-item-rarity"></div>
-                <div class="won-item-image">
-                    <img src="" alt="Выигранный предмет">
-                </div>
-                <div class="won-item-details">
-                    <h4 class="won-item-name"></h4>
-                    <div class="won-item-meta">
-                        <span class="won-item-rarity-badge"></span>
-                        <span class="won-item-price"></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="win-modal-actions">
-                <button class="win-modal-btn sell-btn" onclick="sellItem()">
-                    <i class="fas fa-coins"></i> Продать за <span class="sell-price"></span> 🪙
-                </button>
-                <button class="win-modal-btn keep-btn" onclick="keepItem()">
-                    <i class="fas fa-check"></i> Оставить
-                </button>
-            </div>
+          </div>
+          <h3>Вы выиграли!</h3>
+          <h2 id="wonItemName"></h2>
+          <div class="prize-details">
+            <span id="wonItemRarity" class="rarity"></span>
+            <span class="price"><span id="wonItemPrice"></span> 🪙</span>
+          </div>
+          <div class="modal-actions">
+            <button onclick="keepItem()" class="btn-keep">Оставить</button>
+            <button onclick="sellItem()" class="btn-sell">Продать за <span id="sellPrice"></span> 🪙</button>
+          </div>
         </div>
     </div>
 
@@ -128,16 +136,31 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // Инициализация приложения
                 await initApp();
+                
+                // Получаем ID кейса из URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const caseId = urlParams.get('id');
                 
-                if (!caseId) throw new Error('ID кейса не указан');
+                if (!caseId) {
+                    throw new Error('ID кейса не указан');
+                }
+                
+                // Загружаем данные кейса
                 await loadCasePage(caseId);
+                
             } catch (error) {
-                console.error('Ошибка:', error);
+                console.error('Ошибка инициализации:', error);
                 showToast(error.message || "Ошибка загрузки", "error");
                 setTimeout(() => window.location.href = 'index.html', 2000);
+            }
+        });
+
+        // Добавьте в конец script.js
+        window.addEventListener('beforeunload', () => {
+            if (!window.location.href.includes('index.html')) {
+                localStorage.removeItem('userBalance');
             }
         });
     </script>
