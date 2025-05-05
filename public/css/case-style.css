@@ -619,3 +619,28 @@
         height: 60px;
     }
 }
+
+/* Добавить в конец case-style.css */
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+}
+
+.confetti:nth-child(odd) {
+    width: 8px;
+    height: 16px;
+}
+
+.confetti:nth-child(even) {
+    width: 16px;
+    height: 8px;
+}

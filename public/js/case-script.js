@@ -94,11 +94,14 @@ async function openCase() {
     const openBtn = document.getElementById('openCaseBtn');
     if (openBtn) openBtn.disabled = true;
 
-    // Проверка баланса в реальном режиме
-    if (!isDemoMode && balance < currentCase.price * selectedCount) {
-        showToast("Недостаточно средств", "error");
-        openBtn.disabled = false;
-        return;
+    // В функции openCase в case-script.js заменить проверку баланса на:
+    if (!isDemoMode) {
+        const balance = parseFloat(document.querySelector('.balance-amount').textContent || 0);
+        if (balance < currentCase.price * selectedCount) {
+            showToast("Недостаточно средств", "error");
+            openBtn.disabled = false;
+            return;
+        }
     }
 
     try {
@@ -131,6 +134,58 @@ async function openCase() {
         console.error('Ошибка открытия кейса:', error);
         showToast(error.message || "Ошибка открытия кейса", "error");
         if (openBtn) openBtn.disabled = false;
+    }
+}
+
+// Добавить в case-script.js
+function showCaseOpeningAnimation(item) {
+    const staticView = document.getElementById('caseStaticView');
+    const rouletteView = document.getElementById('caseRouletteView');
+    
+    // Переключаем вид
+    staticView.classList.add('hidden');
+    rouletteView.classList.remove('hidden');
+    
+    // Создаем дорожку рулетки
+    createRouletteTrack(item);
+    
+    // После завершения анимации показываем выигрыш
+    setTimeout(() => {
+        showWinModal(item);
+        resetCaseView();
+        
+        // Разблокируем кнопку
+        const openBtn = document.getElementById('openCaseBtn');
+        if (openBtn) openBtn.disabled = false;
+    }, 4000);
+}
+
+// Добавить в case-script.js
+function createConfetti() {
+    const container = document.querySelector('.confetti-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Случайный цвет
+        const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.background = color;
+        
+        // Случайная позиция и анимация
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.top = `${Math.random() * 100}%`;
+        confetti.style.opacity = '1';
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+        // Анимация падения
+        confetti.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+        
+        container.appendChild(confetti);
     }
 }
 
