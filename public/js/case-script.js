@@ -101,58 +101,35 @@ async function openCase() {
         return;
     }
 
-    // Переключаем вид на рулетку
-    const staticView = document.getElementById('caseStaticView');
-    const rouletteView = document.getElementById('caseRouletteView');
-    const track = document.getElementById('rouletteTrack');
-    
-    staticView.classList.add('hidden');
-    rouletteView.classList.remove('hidden');
-    track.innerHTML = '';
-    
     try {
-        // Отправляем запрос на открытие кейса
-        const response = await apiRequest('/users/open-case', 'POST', {
-            user_id: currentUser?.id || 0,
+        // Формируем корректный запрос
+        const requestData = {
+            user_id: currentUser?.id || null,
             case_id: currentCase.id,
             count: selectedCount,
             is_demo: isDemoMode
-        });
+        };
+
+        console.log("Отправляемые данные:", requestData); // Для отладки
+
+        const response = await apiRequest('/cases/open', 'POST', requestData);
         
         if (!response.success) {
             throw new Error(response.error || 'Ошибка открытия кейса');
         }
-        
-        // Получаем выигранные предметы
-        const wonItems = Array.isArray(response.items) ? response.items : [response.item];
-        if (!wonItems.length) {
+
+        // Обработка успешного ответа
+        const wonItems = response.items || [];
+        if (wonItems.length === 0) {
             throw new Error('Не получены выигранные предметы');
         }
-        
-        // Для демонстрации берем первый выигранный предмет
-        const targetItem = wonItems[0];
-        
-        // Создаем дорожку с предметами для анимации
-        createRouletteTrack(targetItem);
-        
-        // После анимации показываем модальное окно с выигрышем
-        setTimeout(() => {
-            showWinModal(targetItem);
-            
-            // Возвращаем в исходное состояние после закрытия модального окна
-            const checkModalClose = setInterval(() => {
-                if (!document.getElementById('winModal').classList.contains('active')) {
-                    clearInterval(checkModalClose);
-                    resetCaseView();
-                    if (openBtn) openBtn.disabled = false;
-                }
-            }, 100);
-        }, 4000);
-        
+
+        // Показываем анимацию и результат
+        showCaseOpeningAnimation(wonItems[0]);
+
     } catch (error) {
         console.error('Ошибка открытия кейса:', error);
         showToast(error.message || "Ошибка открытия кейса", "error");
-        resetCaseView();
         if (openBtn) openBtn.disabled = false;
     }
 }
