@@ -113,20 +113,13 @@
     <!-- Добавить перед закрывающим тегом body в case.html -->
     <div id="winModal" class="modal hidden">
         <div class="modal-content">
-            <h3><i class="fas fa-trophy"></i> ПОЗДРАВЛЯЕМ!</h3>
-            
-            <div id="wonItemContainer" class="won-item-container">
-                <!-- Здесь будет отображаться выигранный предмет -->
-            </div>
-            
-            <div class="win-actions">
-                <button id="keepItemBtn" class="modal-button primary">
-                    <i class="fas fa-check"></i> ОСТАВИТЬ
-                </button>
-                <button id="sellItemBtn" class="modal-button secondary">
-                    <i class="fas fa-coins"></i> ПРОДАТЬ ЗА <span id="sellPrice">0</span> 🪙
+            <div class="won-item-header">
+                <h3><i class="fas fa-trophy"></i> ПОБЕДА!</h3>
+                <button class="close-modal" onclick="keepItem()">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
+            <div id="wonItemContainer" class="won-item-container"></div>
         </div>
     </div>
 
