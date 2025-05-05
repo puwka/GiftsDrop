@@ -1,3 +1,35 @@
+// ==================== API Functions ====================
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000' 
+    : 'https://gifts-drop.vercel.app';
+
+async function apiRequest(endpoint, method = 'GET', data = null) {
+    try {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_URL}/api${endpoint}`, options);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
 // case-script.js
 let currentCase = null;
 let caseItems = [];
@@ -31,27 +63,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadCasePage(caseId) {
     try {
-        // Здесь должна быть загрузка данных с сервера
-        // Для примера используем мок данные
-        currentCase = {
-            id: caseId,
-            name: "Премиум кейс",
-            price: 500,
-            image_url: ""
-        };
+        console.log(`Загрузка кейса ID: ${caseId}`);
+        const response = await apiRequest(`/users/case/${caseId}`);
+        console.log('Ответ сервера:', response);
         
-        caseItems = [
-            { id: 1, name: "Обычный предмет", rarity: "common", price: 100, drop_chance: 50, image_url: "" },
-            { id: 2, name: "Редкий предмет", rarity: "rare", price: 250, drop_chance: 30, image_url: "" },
-            { id: 3, name: "Эпический предмет", rarity: "epic", price: 500, drop_chance: 15, image_url: "" },
-            { id: 4, name: "Легендарный предмет", rarity: "legendary", price: 1000, drop_chance: 5, image_url: "" }
-        ];
+        if (!response.success) throw new Error(response.error || 'Case not found');
         
+        currentCase = response.case;
+        caseItems = response.items || [];
+        console.log('Получено предметов:', caseItems.length);
+        
+        // Показываем статичное изображение кейса
         renderCasePage();
         
     } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
-        throw error;
+        showToast("Ошибка загрузки кейса", "error");
+        setTimeout(() => window.location.href = 'index.html', 2000);
     }
 }
 
