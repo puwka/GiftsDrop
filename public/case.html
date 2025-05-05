@@ -77,20 +77,6 @@
                     <div class="case-items-grid" id="caseItemsGrid"></div>
                 </div>
             </div>
-            
-            <!-- В основной контент добавьте секцию для результатов -->
-            <div id="caseResultSection" class="hidden">
-                <h2 class="section-title">ВАШ ВЫИГРЫШ</h2>
-                
-                <div class="result-container">
-                    <div id="caseResultContainer" class="won-item-container"></div>
-                </div>
-                
-                <button id="backToCaseBtn" class="open-btn primary">
-                    <i class="fas fa-arrow-left"></i>
-                    НАЗАД К КЕЙСУ
-                </button>
-            </div>
         </main>
     </div>
 
@@ -110,24 +96,25 @@
         </button>
     </nav>
 
-    <!-- Добавить перед закрывающим тегом body в case.html -->
+    <!-- Модальное окно выигрыша -->
     <div id="winModal" class="win-modal">
         <div class="win-modal-content">
-          <div class="prize-animation">
-            <div class="prize-item">
-              <img id="wonItemImage" src="" alt="Выигранный предмет">
+            <div class="confetti-container"></div>
+            <div class="prize-animation">
+                <div class="prize-item">
+                    <img id="wonItemImage" src="" alt="Выигранный предмет">
+                </div>
             </div>
-          </div>
-          <h3>Вы выиграли!</h3>
-          <h2 id="wonItemName"></h2>
-          <div class="prize-details">
-            <span id="wonItemRarity" class="rarity"></span>
-            <span class="price"><span id="wonItemPrice"></span> 🪙</span>
-          </div>
-          <div class="modal-actions">
-            <button onclick="keepItem()" class="btn-keep">Оставить</button>
-            <button onclick="sellItem()" class="btn-sell">Продать за <span id="sellPrice"></span> 🪙</button>
-          </div>
+            <h3>Вы выиграли!</h3>
+            <h2 id="wonItemName"></h2>
+            <div class="prize-details">
+                <span id="wonItemRarity" class="rarity"></span>
+                <span class="price"><span id="wonItemPrice"></span> 🪙</span>
+            </div>
+            <div class="modal-actions">
+                <button onclick="keepItem()" class="btn-keep">Оставить</button>
+                <button onclick="sellItem()" class="btn-sell">Продать за <span id="sellPrice"></span> 🪙</button>
+            </div>
         </div>
     </div>
 
@@ -157,7 +144,7 @@
             }
         });
 
-        // Добавьте в конец script.js
+        // Очищаем localStorage при закрытии страницы кейса
         window.addEventListener('beforeunload', () => {
             if (!window.location.href.includes('index.html')) {
                 localStorage.removeItem('userBalance');
