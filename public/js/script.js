@@ -482,17 +482,21 @@ async function openCase() {
         rouletteItems.push(...[...caseItems].sort(() => Math.random() - 0.5));
     }
     
-    // 3. Выбираем выигрышный предмет ДО анимации
+    // 3. Выбираем выигрышный предмет ДО анимации с учетом шансов
     targetItem = selectItemWithChance(caseItems);
     rouletteItems.push(targetItem);
     
     // 4. Отображаем предметы
     track.style.width = `${rouletteItems.length * 140}px`;
-    rouletteItems.forEach(item => {
+    rouletteItems.forEach((item, index) => {
         const itemEl = document.createElement('div');
         itemEl.className = `roulette-item ${item.rarity}`;
         itemEl.style.backgroundImage = `url('${item.image_url}')`;
         itemEl.dataset.id = item.id;
+        // Помечаем выигрышный предмет
+        if (index === rouletteItems.length - 1) {
+            itemEl.dataset.winning = 'true';
+        }
         track.appendChild(itemEl);
     });
 
@@ -519,23 +523,32 @@ async function openCase() {
             track.style.transition = 'transform 0.5s ease-out';
             
             // Показываем выигрыш
-            setTimeout(() => showWinModal(targetItem), 500);
+            setTimeout(() => {
+                showWinModal(targetItem);
+                // Отправляем данные на сервер после анимации
+                sendCaseOpening();
+            }, 500);
         }
     }
     
     rouletteAnimationId = requestAnimationFrame(animate);
+}
 
-    // 6. Отправляем данные на сервер
-    const response = await apiRequest('/users/open-case', 'POST', {
-        user_id: currentUser.id,
-        case_id: currentCase.id,
-        item_id: targetItem.id,
-        is_demo: isDemoMode
-    });
+// Функция отправки данных об открытии на сервер
+async function sendCaseOpening() {
+    try {
+        const response = await apiRequest('/users/open-case', 'POST', {
+            user_id: currentUser.id,
+            case_id: currentCase.id,
+            item_id: targetItem.id,
+            is_demo: isDemoMode
+        });
 
-    if (!response.success) {
-        cancelAnimationFrame(rouletteAnimationId);
-        showToast("Ошибка при открытии кейса", "error");
+        if (!response.success) {
+            console.error('Ошибка сохранения открытия кейса');
+        }
+    } catch (error) {
+        console.error('Ошибка при отправке данных:', error);
     }
 }
 
@@ -562,15 +575,13 @@ function calculateStopPosition(winningIndex, itemWidth, totalItems) {
     return (winningIndex * itemWidth) + centerOffset;
 }
 
-// Новая функция для показа модального окна с выигрышем
+// Функция показа модального окна с выигрышем
 function showWinModal(item) {
-    // Проверяем, что это именно тот предмет, на котором остановилась рулетка
-    if (item.id !== targetItem?.id) {
-        console.error('Несоответствие предметов!');
-        item = targetItem; // Принудительно используем целевой предмет
-    }
-
+    wonItem = item; // Сохраняем выигрышный предмет
+    
     const modal = document.getElementById('winModal');
+    if (!modal) return;
+    
     modal.innerHTML = `
         <div class="modern-modal-content">
             <div class="prize-animation">
@@ -595,6 +606,55 @@ function showWinModal(item) {
 
     // Запускаем анимацию частиц
     createParticles(modal.querySelector('.particles'), item.rarity);
+}
+
+// Функция для создания анимации частиц
+function createParticles(container, rarity) {
+    if (!container) return;
+    
+    const colors = {
+        common: '#576574',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    
+    container.innerHTML = '';
+    const particleCount = rarity === 'legendary' ? 50 : 30;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'absolute';
+        particle.style.width = `${Math.random() * 6 + 2}px`;
+        particle.style.height = particle.style.width;
+        particle.style.backgroundColor = colors[rarity] || '#576574';
+        particle.style.borderRadius = '50%';
+        particle.style.opacity = Math.random() * 0.5 + 0.5;
+        
+        // Начальная позиция
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 100 + 50;
+        particle.style.left = `calc(50% + ${Math.cos(angle) * distance}px)`;
+        particle.style.top = `calc(50% + ${Math.sin(angle) * distance}px)`;
+        
+        // Анимация
+        const animation = particle.animate([
+            { 
+                transform: 'translate(0, 0) scale(1)',
+                opacity: 1 
+            },
+            { 
+                transform: `translate(${(Math.random() - 0.5) * 200}px, ${(Math.random() - 0.5) * 200}px) scale(0)`,
+                opacity: 0 
+            }
+        ], {
+            duration: Math.random() * 2000 + 1000,
+            iterations: Infinity,
+            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+        });
+        
+        container.appendChild(particle);
+    }
 }
 
 
@@ -625,43 +685,6 @@ async function sellItem() {
     } catch (error) {
         console.error('Sell item error:', error);
         showToast("Ошибка при продаже предмета", "error");
-    }
-}
-
-function showCaseResult(item) {
-    // 1. Находим контейнер
-    const container = document.getElementById('caseResultContainer');
-    if (!container) {
-        console.error('Result container not found');
-        return;
-    }
-    
-    // 2. Создаем HTML для предмета
-    const rarityClass = item.rarity || 'common';
-    const rarityName = getRarityName(item.rarity);
-    
-    container.innerHTML = `
-        <div class="won-item ${rarityClass}">
-            <div class="item-image">
-                ${item.image_url ? 
-                    `<img src="${item.image_url}" alt="${item.name}" loading="lazy">` : 
-                    `<i class="fas fa-gift"></i>`}
-            </div>
-            <div class="item-details">
-                <h3>${item.name || 'Неизвестный предмет'}</h3>
-                <p class="rarity-badge ${rarityClass}">${rarityName}</p>
-                ${item.price ? `<p class="item-price">Цена: ${item.price} 🪙</p>` : ''}
-            </div>
-        </div>
-    `;
-    
-    // 3. Показываем секцию с результатами
-    document.getElementById('caseOpenSection').classList.add('hidden');
-    document.getElementById('caseResultSection').classList.remove('hidden');
-    
-    // 4. Добавляем анимацию для редких предметов
-    if (rarityClass === 'legendary') {
-        container.querySelector('.won-item').classList.add('animate-pulse');
     }
 }
 
