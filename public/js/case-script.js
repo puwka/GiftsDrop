@@ -112,7 +112,7 @@ async function openCase() {
 
         console.log("Отправляемые данные:", requestData); // Для отладки
 
-        const response = await apiRequest('/cases/open', 'POST', requestData);
+        const response = await apiRequest('/users/open-case', 'POST', requestData);
         
         if (!response.success) {
             throw new Error(response.error || 'Ошибка открытия кейса');
