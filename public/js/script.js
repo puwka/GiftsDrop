@@ -350,6 +350,11 @@ async function initApp() {
         updateLevelDisplay();
         
         setTimeout(() => openTab('cases'), 0);
+
+        // Убираем автоматическое открытие вкладки cases
+        if (!window.location.pathname.includes('case.html')) {
+            setTimeout(() => openTab('cases'), 0);
+        }
         
     } catch (error) {
         console.error('Initialization error:', error);

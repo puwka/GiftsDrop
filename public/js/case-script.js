@@ -5,6 +5,19 @@ let selectedCount = 1;
 let isDemoMode = false;
 let wonItem = null;
 
+// Переносим функцию initCaseButtons в начало
+function initCaseButtons() {
+    document.getElementById('demoOpenBtn').addEventListener('click', toggleDemoMode);
+    document.getElementById('openCaseBtn').addEventListener('click', openCase);
+    document.getElementById('quickOpenBtn').addEventListener('click', () => {
+        selectedCount = 3;
+        updateOpenButtons();
+        openCase();
+    });
+    document.getElementById('increaseCount').addEventListener('click', () => changeCount(1));
+    document.getElementById('decreaseCount').addEventListener('click', () => changeCount(-1));
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -15,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         await loadCasePage(caseId);
-        initCaseButtons();
+        initCaseButtons(); // Теперь функция определена
         
     } catch (error) {
         console.error('Ошибка инициализации:', error);
@@ -23,6 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => window.location.href = 'index.html', 2000);
     }
 });
+
+// Остальной код остается без изменений...
 
 async function loadCasePage(caseId) {
     try {
