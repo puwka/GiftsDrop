@@ -134,29 +134,28 @@ async function openCase() {
 function showCaseOpeningAnimation(item) {
     const staticView = document.getElementById('caseStaticView');
     const rouletteView = document.getElementById('caseRouletteView');
+    const track = document.getElementById('rouletteTrack');
     
-    // Добавляем эффект исчезновения статичного вида
-    staticView.style.transition = 'opacity 0.3s';
-    staticView.style.opacity = '0';
+    // Скрываем статичный вид
+    staticView.classList.add('hidden');
+    rouletteView.classList.remove('hidden');
     
-    setTimeout(() => {
-        staticView.classList.add('hidden');
-        rouletteView.classList.remove('hidden');
-        createRouletteTrack(item);
+    // Создаем дорожку рулетки
+    createRouletteTrack(item);
+    
+    // Ждем завершения анимации рулетки
+    track.addEventListener('transitionend', function onTransitionEnd() {
+        // Удаляем обработчик, чтобы он не срабатывал повторно
+        track.removeEventListener('transitionend', onTransitionEnd);
         
-        // Добавляем звуковые эффекты (если нужно)
-        // new Audio('spin-sound.mp3').play();
-        
-    }, 300);
-
-    // После завершения анимации
-    setTimeout(() => {
+        // Показываем окно выигрыша
         showWinModal(item);
         resetCaseView();
         
+        // Разблокируем кнопку
         const openBtn = document.getElementById('openCaseBtn');
         if (openBtn) openBtn.disabled = false;
-    }, 3800); // Синхронизируем с длительностью анимации
+    });
 }
 
 // Обновленная функция сброса вида
@@ -204,11 +203,11 @@ function createConfetti() {
 // Создание дорожки для анимации рулетки
 function createRouletteTrack(targetItem) {
     const track = document.getElementById('rouletteTrack');
-    track.innerHTML = ''; // Очищаем предыдущие элементы
+    track.innerHTML = '';
     
-    // Создаем 50 случайных предметов для плавной анимации
+    // Создаем более длинную дорожку для плавности
     const rouletteItems = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 80; i++) {
         const randomItem = caseItems[Math.floor(Math.random() * caseItems.length)];
         rouletteItems.push(randomItem);
     }
@@ -216,42 +215,40 @@ function createRouletteTrack(targetItem) {
     // Добавляем целевой предмет в конец
     rouletteItems.push(targetItem);
     
-    // Отображаем предметы с плавными переходами
+    // Рендерим предметы
     track.style.width = `${rouletteItems.length * 140}px`;
     rouletteItems.forEach((item, index) => {
         const itemEl = document.createElement('div');
         itemEl.className = `roulette-item ${item.rarity}`;
-        itemEl.style.backgroundImage = item.image_url ? `url('${item.image_url}')` : '';
         
-        // Добавляем эффекты для редких предметов
-        if (item.rarity === 'epic') {
-            itemEl.style.boxShadow = '0 0 15px #9b59b6';
-        } else if (item.rarity === 'legendary') {
-            itemEl.style.boxShadow = '0 0 25px #f1c40f';
-            itemEl.style.animation = 'pulseLegendary 1s infinite alternate';
+        if (item.image_url) {
+            itemEl.style.backgroundImage = `url('${item.image_url}')`;
+        } else {
+            itemEl.innerHTML = '<i class="fas fa-gift"></i>';
         }
         
         if (index === rouletteItems.length - 1) {
             itemEl.dataset.winning = 'true';
             itemEl.style.border = '2px solid gold';
+            itemEl.style.boxShadow = '0 0 20px gold';
         }
         
         track.appendChild(itemEl);
     });
 
-    // Улучшенная анимация с эффектом замедления
+    // Анимация с правильными параметрами
     const itemWidth = 140;
     const itemsPerScreen = 3;
     const centerOffset = Math.floor(itemsPerScreen / 2) * itemWidth;
     const targetPosition = (rouletteItems.length - 3) * itemWidth - centerOffset;
     
-    // Начальная позиция
+    // Сброс перед анимацией
     track.style.transform = 'translateX(0)';
     track.style.transition = 'none';
-    void track.offsetWidth; // Trigger reflow
+    void track.offsetWidth;
     
-    // Анимация с эффектом замедления
-    track.style.transition = 'transform 3.5s cubic-bezier(0.15, 0.85, 0.35, 1)';
+    // Запуск анимации
+    track.style.transition = 'transform 3.8s cubic-bezier(0.2, 0.8, 0.3, 1)';
     track.style.transform = `translateX(-${targetPosition}px)`;
 }
 

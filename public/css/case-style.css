@@ -719,3 +719,35 @@
     50% { transform: scale(1.05); box-shadow: 0 0 30px #f1c40f; }
     100% { transform: scale(1); box-shadow: 0 0 15px #f1c40f; }
 }
+
+.roulette-track {
+    display: flex;
+    position: absolute;
+    left: 0;
+    top: 10px;
+    height: 140px;
+    transition: transform 3.8s cubic-bezier(0.2, 0.8, 0.3, 1);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+.roulette-item {
+    min-width: 120px;
+    height: 120px;
+    margin: 0 10px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.3s;
+}
+
+.win-modal {
+    transition: opacity 0.3s ease 0.2s; /* Задержка для плавного появления */
+}
